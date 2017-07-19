@@ -119,35 +119,35 @@ namespace Nesp.Core.Tests
         public void SpaceOneTest()
         {
             var actual = Parse("123456 abc.def", p => p.list());
-            Assert.AreEqual("(list (token (numeric 123456)) (whiteSpace  ) (token (id abc.def)))", actual);
+            Assert.AreEqual("(list (token (numeric 123456)) (token (id abc.def)))", actual);
         }
 
         [Test]
         public void SpaceTwoTest()
         {
             var actual = Parse("123456  abc.def", p => p.list());
-            Assert.AreEqual("(list (token (numeric 123456)) (whiteSpace   ) (token (id abc.def)))", actual);
+            Assert.AreEqual("(list (token (numeric 123456)) (token (id abc.def)))", actual);
         }
 
         [Test]
         public void TabOneTest()
         {
             var actual = Parse("123456\tabc.def", p => p.list());
-            Assert.AreEqual("(list (token (numeric 123456)) (whiteSpace \\t) (token (id abc.def)))", actual);
+            Assert.AreEqual("(list (token (numeric 123456)) (token (id abc.def)))", actual);
         }
 
         [Test]
         public void ReturnOneTest()
         {
             var actual = Parse("123456\rabc.def", p => p.list());
-            Assert.AreEqual("(list (token (numeric 123456)) (whiteSpace \\r) (token (id abc.def)))", actual);
+            Assert.AreEqual("(list (token (numeric 123456)) (token (id abc.def)))", actual);
         }
 
         [Test]
         public void NewlineOneTest()
         {
             var actual = Parse("123456\nabc.def", p => p.list());
-            Assert.AreEqual("(list (token (numeric 123456)) (whiteSpace \\n) (token (id abc.def)))", actual);
+            Assert.AreEqual("(list (token (numeric 123456)) (token (id abc.def)))", actual);
         }
         #endregion
 
@@ -163,14 +163,14 @@ namespace Nesp.Core.Tests
         public void ListTwoTest()
         {
             var actual = Parse("123456 abc.def", p => p.list());
-            Assert.AreEqual("(list (token (numeric 123456)) (whiteSpace  ) (token (id abc.def)))", actual);
+            Assert.AreEqual("(list (token (numeric 123456)) (token (id abc.def)))", actual);
         }
 
         [Test]
         public void ListThreeTest()
         {
             var actual = Parse("123456 abc.def -123.456", p => p.list());
-            Assert.AreEqual("(list (token (numeric 123456)) (whiteSpace  ) (token (id abc.def)) (whiteSpace  ) (token (numeric -123.456)))", actual);
+            Assert.AreEqual("(list (token (numeric 123456)) (token (id abc.def)) (token (numeric -123.456)))", actual);
         }
         #endregion
 
@@ -179,21 +179,21 @@ namespace Nesp.Core.Tests
         public void ExpressionOneValueTest()
         {
             var actual = Parse("(123456)", p => p.expression());
-            Assert.AreEqual("(expression (bracketLeft () (list (token (numeric 123456))) (bracketRight )))", actual);
+            Assert.AreEqual("(expression ( (list (token (numeric 123456))) ))", actual);
         }
 
         [Test]
         public void ExpressionTwoValuesTest()
         {
             var actual = Parse("(123456 abc.def)", p => p.expression());
-            Assert.AreEqual("(expression (bracketLeft () (list (token (numeric 123456)) (whiteSpace  ) (token (id abc.def))) (bracketRight )))", actual);
+            Assert.AreEqual("(expression ( (list (token (numeric 123456)) (token (id abc.def))) ))", actual);
         }
 
         [Test]
         public void ExpressionNestedValuesTest()
         {
             var actual = Parse("(123456 (abc.def -123.456))", p => p.expression());
-            Assert.AreEqual("(expression (bracketLeft () (list (token (numeric 123456)) (whiteSpace  ) (token (expression (bracketLeft () (list (token (id abc.def)) (whiteSpace  ) (token (numeric -123.456))) (bracketRight ))))) (bracketRight )))", actual);
+            Assert.AreEqual("(expression ( (list (token (numeric 123456)) (token (expression ( (list (token (id abc.def)) (token (numeric -123.456))) )))) ))", actual);
         }
         #endregion
     }
