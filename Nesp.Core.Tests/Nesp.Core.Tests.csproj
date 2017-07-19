@@ -7,7 +7,7 @@
     <ProjectGuid>{030282E8-4B66-4BE4-B254-BD0A513B15B1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Nesp.Core.Tests</RootNamespace>
+    <RootNamespace>Nesp</RootNamespace>
     <AssemblyName>Nesp.Core.Tests</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -42,7 +42,8 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="NespTests.cs" />
+    <Compile Include="NespVisitorTests.cs" />
+    <Compile Include="NespParserTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

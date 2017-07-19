@@ -21,12 +21,12 @@ using System;
 using Antlr4.Runtime;
 using NUnit.Framework;
 
-namespace Nesp.Core.Tests
+namespace Nesp
 {
     [TestFixture]
-    public class NespTests
+    public class NespParserTests
     {
-        private string Parse(string text, Func<NespParser, ParserRuleContext> parseToContext)
+        private static string Parse(string text, Func<NespParser, ParserRuleContext> parseToContext)
         {
             var inputStream = new AntlrInputStream(text);
             var lexer = new NespLexer(inputStream);
