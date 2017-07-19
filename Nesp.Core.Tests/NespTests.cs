@@ -17,6 +17,66 @@ namespace Nesp.Core.Tests
             return graphContext.ToStringTree(parser.RuleNames);
         }
 
+        #region Numeric
+        [Test]
+        public void IntegerNumericTest()
+        {
+            var actual = Parse("123456", p => p.numeric());
+            Assert.AreEqual("(numeric 123456)", actual);
+        }
+
+        [Test]
+        public void FloatingPointNumericTest()
+        {
+            var actual = Parse("123.456", p => p.numeric());
+            Assert.AreEqual("(numeric 123.456)", actual);
+        }
+
+        [Test]
+        public void PlusNumericTest()
+        {
+            var actual = Parse("+123456", p => p.numeric());
+            Assert.AreEqual("(numeric +123456)", actual);
+        }
+
+        [Test]
+        public void MinusNumericTest()
+        {
+            var actual = Parse("-123456", p => p.numeric());
+            Assert.AreEqual("(numeric -123456)", actual);
+        }
+        #endregion
+
+        #region String
+        [Test]
+        public void StringTest()
+        {
+            var actual = Parse("\"abcdef\"", p => p.@string());
+            Assert.AreEqual("(string \"abcdef\")", actual);
+        }
+
+        [Test]
+        public void StringWithEscapedTest()
+        {
+            var actual = Parse("\"abc\\tdef\"", p => p.@string());
+            Assert.AreEqual("(string \"abc\\tdef\")", actual);
+        }
+
+        [Test]
+        public void StringWithEscapedQuoteTest()
+        {
+            var actual = Parse("\"abc\\\"def\"", p => p.@string());
+            Assert.AreEqual("(string \"abc\\\"def\")", actual);
+        }
+
+        [Test]
+        public void StringWithEscapeCharTest()
+        {
+            var actual = Parse("\"abc\\\\def\"", p => p.@string());
+            Assert.AreEqual("(string \"abc\\\\def\")", actual);
+        }
+        #endregion
+
         #region Id
         [Test]
         public void SimpleIdTest()
@@ -66,35 +126,26 @@ namespace Nesp.Core.Tests
             var actual = Parse("abc.def.ghi", p => p.id());
             Assert.AreEqual("(id abc.def.ghi)", actual);
         }
-        #endregion
 
-        #region Numeric
         [Test]
-        public void IntegerNumericTest()
+        public void GenericIdTest()
         {
-            var actual = Parse("123456", p => p.numeric());
-            Assert.AreEqual("(numeric 123456)", actual);
+            var actual = Parse("abc.def.ghi<jkl>", p => p.id());
+            Assert.AreEqual("(id abc.def.ghi<jkl>)", actual);
         }
 
         [Test]
-        public void FloatingPointNumericTest()
+        public void GenericComplexIdTest()
         {
-            var actual = Parse("123.456", p => p.numeric());
-            Assert.AreEqual("(numeric 123.456)", actual);
+            var actual = Parse("abc.def.ghi<jkl.mno>", p => p.id());
+            Assert.AreEqual("(id abc.def.ghi<jkl.mno>)", actual);
         }
 
         [Test]
-        public void PlusNumericTest()
+        public void GenericComplexNestedIdTest()
         {
-            var actual = Parse("+123456", p => p.numeric());
-            Assert.AreEqual("(numeric +123456)", actual);
-        }
-
-        [Test]
-        public void MinusNumericTest()
-        {
-            var actual = Parse("-123456", p => p.numeric());
-            Assert.AreEqual("(numeric -123456)", actual);
+            var actual = Parse("abc.def.ghi<jkl.mno<pqr>>", p => p.id());
+            Assert.AreEqual("(id abc.def.ghi<jkl.mno<pqr>>)", actual);
         }
         #endregion
 
@@ -190,10 +241,17 @@ namespace Nesp.Core.Tests
         }
 
         [Test]
-        public void ExpressionNestedValuesTest()
+        public void ExpressionNestedValuesTest1()
         {
             var actual = Parse("(123456 (abc.def -123.456))", p => p.expression());
             Assert.AreEqual("(expression ( (list (token (numeric 123456)) (token (expression ( (list (token (id abc.def)) (token (numeric -123.456))) )))) ))", actual);
+        }
+
+        [Test]
+        public void ExpressionNestedValuesTest2()
+        {
+            var actual = Parse("(123456 (abc.def +123.456))", p => p.expression());
+            Assert.AreEqual("(expression ( (list (token (numeric 123456)) (token (expression ( (list (token (id abc.def)) (token (numeric +123.456))) )))) ))", actual);
         }
         #endregion
     }
