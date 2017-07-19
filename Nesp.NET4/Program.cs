@@ -17,7 +17,7 @@ namespace Nesp.NET4
             var commonTokenStream = new CommonTokenStream(lexer);
             var parser = new NespParser(commonTokenStream);
             var graphContext = parser.id();
-            Console.WriteLine(graphContext.ToStringTree());
+            Console.WriteLine(graphContext.ToStringTree(parser.RuleNames));
         }
     }
 }
