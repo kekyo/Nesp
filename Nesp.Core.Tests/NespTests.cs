@@ -173,5 +173,28 @@ namespace Nesp.Core.Tests
             Assert.AreEqual("(list (token (numeric 123456)) (whiteSpace  ) (token (id abc.def)) (whiteSpace  ) (token (numeric -123.456)))", actual);
         }
         #endregion
+
+        #region Expression
+        [Test]
+        public void ExpressionOneValueTest()
+        {
+            var actual = Parse("(123456)", p => p.expression());
+            Assert.AreEqual("(expression (bracketLeft () (list (token (numeric 123456))) (bracketRight )))", actual);
+        }
+
+        [Test]
+        public void ExpressionTwoValuesTest()
+        {
+            var actual = Parse("(123456 abc.def)", p => p.expression());
+            Assert.AreEqual("(expression (bracketLeft () (list (token (numeric 123456)) (whiteSpace  ) (token (id abc.def))) (bracketRight )))", actual);
+        }
+
+        [Test]
+        public void ExpressionNestedValuesTest()
+        {
+            var actual = Parse("(123456 (abc.def -123.456))", p => p.expression());
+            Assert.AreEqual("(expression (bracketLeft () (list (token (numeric 123456)) (whiteSpace  ) (token (expression (bracketLeft () (list (token (id abc.def)) (whiteSpace  ) (token (numeric -123.456))) (bracketRight ))))) (bracketRight )))", actual);
+        }
+        #endregion
     }
 }
