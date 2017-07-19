@@ -106,11 +106,59 @@ namespace Nesp
         }
 
         [Test]
-        public void EscapedStringConstantTest()
+        public void EscapedCharStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\\"def\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\"def", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedBStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\bdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\bdef", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedFStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\fdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\fdef", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedTStringConstantTest()
         {
             var expr = ParseAndVisit("\"abc\\tdef\"");
             var constExpr = (ConstantExpression)expr;
             Assert.AreEqual("abc\tdef", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedRStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\rdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\rdef", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedNStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\ndef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\ndef", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedVStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\vdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\vdef", constExpr.Value);
         }
         #endregion
     }
