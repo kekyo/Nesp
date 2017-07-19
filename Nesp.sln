@@ -1,0 +1,34 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nesp.NET4", "Nesp.NET4\Nesp.NET4.csproj", "{62A59A77-D13B-4370-AEF3-9811148EC2B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nesp.Core", "Nesp.Core\Nesp.Core.csproj", "{4611AB6D-9405-4DEC-8691-583F7F691C35}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nesp.Core.Tests", "Nesp.Core.Tests\Nesp.Core.Tests.csproj", "{030282E8-4B66-4BE4-B254-BD0A513B15B1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{62A59A77-D13B-4370-AEF3-9811148EC2B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{62A59A77-D13B-4370-AEF3-9811148EC2B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{62A59A77-D13B-4370-AEF3-9811148EC2B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{62A59A77-D13B-4370-AEF3-9811148EC2B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4611AB6D-9405-4DEC-8691-583F7F691C35}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4611AB6D-9405-4DEC-8691-583F7F691C35}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4611AB6D-9405-4DEC-8691-583F7F691C35}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4611AB6D-9405-4DEC-8691-583F7F691C35}.Release|Any CPU.Build.0 = Release|Any CPU
+		{030282E8-4B66-4BE4-B254-BD0A513B15B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{030282E8-4B66-4BE4-B254-BD0A513B15B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{030282E8-4B66-4BE4-B254-BD0A513B15B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{030282E8-4B66-4BE4-B254-BD0A513B15B1}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
