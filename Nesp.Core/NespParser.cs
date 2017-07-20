@@ -18,6 +18,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -26,12 +27,36 @@ using Antlr4.Runtime.Misc;
 
 namespace Nesp
 {
-    public sealed class NespVisitor : NespBaseVisitor<Expression>
+    public sealed class NespParser : NespGrammarBaseVisitor<Expression>
     {
         private static readonly ImmutableDictionary<string, MemberInfo[]> initialMembers;
 
-        static NespVisitor()
+        static NespParser()
         {
+            var reservedTypeNames = new Dictionary<Type, String>
+            {
+                { typeof(object), "object" },
+                { typeof(byte), "byte" },
+                { typeof(sbyte), "sbyte" },
+                { typeof(short), "short" },
+                { typeof(ushort), "ushort" },
+                { typeof(int), "int" },
+                { typeof(uint), "uint" },
+                { typeof(long), "long" },
+                { typeof(ulong), "ulong" },
+                { typeof(float), "float" },
+                { typeof(double), "double" },
+                { typeof(decimal), "decimal" },
+                { typeof(bool), "bool" },
+                { typeof(string), "string" },
+                { typeof(DateTime), "datetime" },
+                { typeof(TimeSpan), "timespan" },
+                { typeof(Guid), "guid" },
+                { typeof(Math), "math" },
+                { typeof(Enum), "enum" },
+                { typeof(Type), "type" },
+            };
+
             var assemblies = new[] {typeof(object), typeof(Uri), typeof(Enumerable)}
                 .Select(type => type.GetTypeInfo().Assembly);
             var members = assemblies
@@ -54,10 +79,26 @@ namespace Nesp
                 where mi.IsPublic && mi.IsStatic && !properties.ContainsKey(mi)
                 select (MemberInfo)mi;
 
+            var membersByName =
+                from member in properties.Values.Concat(methods).Concat(fields)
+                select new
+                {
+                    FullName = member.DeclaringType.FullName + "." + member.Name,
+                    Member = member
+                };
+            var reservedMembers =
+                from member in properties.Values.Concat(methods).Concat(fields)
+                let typeName = reservedTypeNames.GetValue(member.DeclaringType)
+                where typeName != null
+                select new
+                {
+                    FullName = typeName + "." + member.Name,
+                    Member = member
+                };
+
             var dict =
-                (from member in properties.Values.Concat(methods).Concat(fields)
-                 let fullName = member.DeclaringType.FullName + "." + member.Name
-                 group member by fullName)
+                (from entry in membersByName.Concat(reservedMembers)
+                 group entry.Member by entry.FullName)
                 .ToDictionary(g => g.Key, g => g.ToArray());
 
             initialMembers = new ImmutableDictionary<string, MemberInfo[]>(dict);
@@ -65,21 +106,21 @@ namespace Nesp
 
         private readonly ImmutableDictionary<string, MemberInfo[]> members = initialMembers;
 
-        public NespVisitor()
+        public NespParser()
         {
         }
 
-        public override Expression VisitExpression([NotNull] NespParser.ExpressionContext context)
-        {
-            return VisitChildren(context);
-        }
-
-        public override Expression VisitList([NotNull] NespParser.ListContext context)
+        public override Expression VisitExpression([NotNull] NespGrammarParser.ExpressionContext context)
         {
             return VisitChildren(context);
         }
 
-        public override Expression VisitString([NotNull] NespParser.StringContext context)
+        public override Expression VisitList([NotNull] NespGrammarParser.ListContext context)
+        {
+            return VisitChildren(context);
+        }
+
+        public override Expression VisitString([NotNull] NespGrammarParser.StringContext context)
         {
             var text = context.children[0].GetText();
             text = text.Substring(1, text.Length - 2);
@@ -128,7 +169,7 @@ namespace Nesp
             return Expression.Constant(sb.ToString());
         }
 
-        public override Expression VisitNumeric([NotNull] NespParser.NumericContext context)
+        public override Expression VisitNumeric([NotNull] NespGrammarParser.NumericContext context)
         {
             var numericText = context.children[0].GetText();
 
@@ -156,7 +197,7 @@ namespace Nesp
             throw new OverflowException();
         }
 
-        public override Expression VisitId([NotNull] NespParser.IdContext context)
+        public override Expression VisitId([NotNull] NespGrammarParser.IdContext context)
         {
             var id = context.children[0].GetText();
             if (members.TryGetValue(id, out var candidates))

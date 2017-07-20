@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{62A59A77-D13B-4370-AEF3-9811148EC2B0}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Nesp.NET4</RootNamespace>
-    <AssemblyName>Nesp.NET4</AssemblyName>
+    <RootNamespace>Nesp</RootNamespace>
+    <AssemblyName>Nesp</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

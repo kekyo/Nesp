@@ -18,25 +18,53 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
-using Antlr4.Runtime;
 
-namespace Nesp.NET4
+namespace Nesp
 {
-    class Program
+    public static class Program
     {
-        static void Main(string[] args)
+        private static string Format(object value)
         {
-            var parsedString = "hello abc";
-            var inputStream = new AntlrInputStream(parsedString);
-            var lexer = new NespLexer(inputStream);
-            var commonTokenStream = new CommonTokenStream(lexer);
-            var parser = new NespParser(commonTokenStream);
-            var graphContext = parser.id();
-            Console.WriteLine(graphContext.ToStringTree(parser.RuleNames));
+            if (value == null)
+            {
+                return "(null)";
+            }
+            if (value is string)
+            {
+                return "\"" + value + "\"";
+            }
+            var type = value.GetType();
+            if (type.IsPrimitive)
+            {
+                return value.ToString();
+            }
+
+            return $"{value} : {value.GetType().Name}";
+        }
+
+        private static async Task<int> MainAsync(string[] args)
+        {
+            Console.WriteLine("This is Nesp interpreter.");
+            Console.WriteLine("Copyright (c) 2017 Kouji Matsui (@kekyo2)");
+
+            var engine = new NespEngine(NespExpressionType.Repl);
+
+            while (true)
+            {
+                Console.Write("> ");
+                var replLine = Console.ReadLine();
+                var func = await engine.CompileExpressionAsync(replLine);
+                var result = func();
+                Console.WriteLine(Format(result));
+            }
+
+            return 0;
+        }
+
+        public static int Main(string[] args)
+        {
+            return MainAsync(args).Result;
         }
     }
 }

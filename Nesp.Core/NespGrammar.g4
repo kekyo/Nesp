@@ -17,7 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-grammar Nesp;
+grammar NespGrammar;
 
 expression : BRACKETLEFT WHITESPACE? list WHITESPACE? BRACKETRIGHT ;
 list : (expression | string | numeric | id) (WHITESPACE? (expression | string | numeric | id))* ;

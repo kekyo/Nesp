@@ -39,11 +39,12 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
-    <Antlr4 Include="Nesp.g4" />
+    <Antlr4 Include="NespGrammar.g4" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ImmutableDictionary.cs" />
-    <Compile Include="NespVisitor.cs" />
+    <Compile Include="NespEngine.cs" />
+    <Compile Include="NespParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

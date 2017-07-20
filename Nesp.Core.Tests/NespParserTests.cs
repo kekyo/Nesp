@@ -18,6 +18,9 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Reflection;
 using Antlr4.Runtime;
 using NUnit.Framework;
 
@@ -26,235 +29,198 @@ namespace Nesp
     [TestFixture]
     public class NespParserTests
     {
-        private static string Parse(string text, Func<NespParser, ParserRuleContext> parseToContext)
+        private Expression ParseAndVisit(string replLine)
         {
-            var inputStream = new AntlrInputStream(text);
-            var lexer = new NespLexer(inputStream);
+            var inputStream = new AntlrInputStream(replLine);
+            var lexer = new NespGrammarLexer(inputStream);
             var commonTokenStream = new CommonTokenStream(lexer);
-            var parser = new NespParser(commonTokenStream);
-            var graphContext = parseToContext(parser);
-            return graphContext.ToStringTree(parser.RuleNames);
+            var grammarParser = new NespGrammarParser(commonTokenStream);
+
+            var parser = new NespParser();
+            return parser.Visit(grammarParser.list());
         }
 
         #region Numeric
         [Test]
-        public void IntegerNumericTest()
+        public void ByteConstantTest()
         {
-            var actual = Parse("123456", p => p.numeric());
-            Assert.AreEqual("(numeric 123456)", actual);
+            var expr = ParseAndVisit("123");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual((byte)123, constExpr.Value);
         }
 
         [Test]
-        public void FloatingPointNumericTest()
+        public void Int16ConstantTest()
         {
-            var actual = Parse("123.456", p => p.numeric());
-            Assert.AreEqual("(numeric 123.456)", actual);
+            var expr = ParseAndVisit("12345");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual((short)12345, constExpr.Value);
         }
 
         [Test]
-        public void PlusNumericTest()
+        public void Int32ConstantTest()
         {
-            var actual = Parse("+123456", p => p.numeric());
-            Assert.AreEqual("(numeric +123456)", actual);
+            var expr = ParseAndVisit("1234567");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(1234567, constExpr.Value);
         }
 
         [Test]
-        public void MinusNumericTest()
+        public void Int64ConstantTest()
         {
-            var actual = Parse("-123456", p => p.numeric());
-            Assert.AreEqual("(numeric -123456)", actual);
+            var expr = ParseAndVisit("12345678901234");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(12345678901234L, constExpr.Value);
+        }
+
+        [Test]
+        public void DoubleConstantTest()
+        {
+            var expr = ParseAndVisit("123.45678901234567");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(123.45678901234567, constExpr.Value);
+        }
+
+        [Test]
+        public void PlusValueConstantTest()
+        {
+            var expr = ParseAndVisit("+123456");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(123456, constExpr.Value);
+        }
+
+        [Test]
+        public void MinusValueConstantTest()
+        {
+            var expr = ParseAndVisit("-123456");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(-123456, constExpr.Value);
         }
         #endregion
 
         #region String
         [Test]
-        public void StringTest()
+        public void StringConstantTest()
         {
-            var actual = Parse("\"abcdef\"", p => p.@string());
-            Assert.AreEqual("(string \"abcdef\")", actual);
+            var expr = ParseAndVisit("\"abcdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abcdef", constExpr.Value);
         }
 
         [Test]
-        public void StringWithEscapedTest()
+        public void EscapedCharStringConstantTest()
         {
-            var actual = Parse("\"abc\\tdef\"", p => p.@string());
-            Assert.AreEqual("(string \"abc\\tdef\")", actual);
+            var expr = ParseAndVisit("\"abc\\\"def\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\"def", constExpr.Value);
         }
 
         [Test]
-        public void StringWithEscapedQuoteTest()
+        public void EscapedBStringConstantTest()
         {
-            var actual = Parse("\"abc\\\"def\"", p => p.@string());
-            Assert.AreEqual("(string \"abc\\\"def\")", actual);
+            var expr = ParseAndVisit("\"abc\\bdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\bdef", constExpr.Value);
         }
 
         [Test]
-        public void StringWithEscapeCharTest()
+        public void EscapedFStringConstantTest()
         {
-            var actual = Parse("\"abc\\\\def\"", p => p.@string());
-            Assert.AreEqual("(string \"abc\\\\def\")", actual);
+            var expr = ParseAndVisit("\"abc\\fdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\fdef", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedTStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\tdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\tdef", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedRStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\rdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\rdef", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedNStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\ndef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\ndef", constExpr.Value);
+        }
+
+        [Test]
+        public void EscapedVStringConstantTest()
+        {
+            var expr = ParseAndVisit("\"abc\\vdef\"");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual("abc\vdef", constExpr.Value);
         }
         #endregion
 
         #region Id
         [Test]
-        public void SimpleIdTest()
+        public void FieldIdTest()
         {
-            var actual = Parse("abc", p => p.id());
-            Assert.AreEqual("(id abc)", actual);
+            var expr = ParseAndVisit("System.DBNull.Value");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(DBNull.Value, constExpr.Value);
         }
 
         [Test]
-        public void SimpleIdWithHeadUnderlineTest()
+        public void EnumIdTest()
         {
-            var actual = Parse("_abc", p => p.id());
-            Assert.AreEqual("(id _abc)", actual);
+            var expr = ParseAndVisit("System.DateTimeKind.Local");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(DateTimeKind.Local, constExpr.Value);
         }
 
         [Test]
-        public void SimpleIdWithCenterUnderlineTest()
+        public void PropertyIdTest()
         {
-            var actual = Parse("ab_c", p => p.id());
-            Assert.AreEqual("(id ab_c)", actual);
+            var expr = ParseAndVisit("System.IntPtr.Size");
+            var memberExpr = (MemberExpression)expr;
+            var pi = (PropertyInfo)memberExpr.Member;
+            Assert.IsNull(memberExpr.Expression);
+            Assert.AreEqual(typeof(IntPtr), pi.DeclaringType);
+            Assert.AreEqual(typeof(int), pi.PropertyType);
+            Assert.AreEqual("Size", pi.Name);
         }
 
         [Test]
-        public void SimpleIdWithTailUnderlineTest()
+        public void ReservedIdTest()
         {
-            var actual = Parse("abc_", p => p.id());
-            Assert.AreEqual("(id abc_)", actual);
-        }
-
-        [Test]
-        public void SimpleIdWithCenterNumberTest()
-        {
-            var actual = Parse("ab4c", p => p.id());
-            Assert.AreEqual("(id ab4c)", actual);
-        }
-
-        [Test]
-        public void SimpleIdWithTailNumberTest()
-        {
-            var actual = Parse("abc7", p => p.id());
-            Assert.AreEqual("(id abc7)", actual);
-        }
-
-        [Test]
-        public void ComplexIdTest()
-        {
-            var actual = Parse("abc.def.ghi", p => p.id());
-            Assert.AreEqual("(id abc.def.ghi)", actual);
-        }
-
-        [Test]
-        public void GenericIdTest()
-        {
-            var actual = Parse("abc.def.ghi<jkl>", p => p.id());
-            Assert.AreEqual("(id abc.def.ghi<jkl>)", actual);
-        }
-
-        [Test]
-        public void GenericComplexIdTest()
-        {
-            var actual = Parse("abc.def.ghi<jkl.mno>", p => p.id());
-            Assert.AreEqual("(id abc.def.ghi<jkl.mno>)", actual);
-        }
-
-        [Test]
-        public void GenericComplexNestedIdTest()
-        {
-            var actual = Parse("abc.def.ghi<jkl.mno<pqr>>", p => p.id());
-            Assert.AreEqual("(id abc.def.ghi<jkl.mno<pqr>>)", actual);
+            var expr = ParseAndVisit("int.MinValue");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(int.MinValue, constExpr.Value);
         }
         #endregion
 
-        #region WhiteSpace
+        #region Compilation
         [Test]
-        public void SpaceOneTest()
+        public void CompileFieldIdTest()
         {
-            var actual = Parse("123456 abc.def", p => p.list());
-            Assert.AreEqual("(list (numeric 123456) (id abc.def))", actual);
+            var expr = ParseAndVisit("System.DBNull.Value");
+            var lambda = Expression.Lambda<Func<DBNull>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var compiled = lambda.Compile();
+            var value = compiled();
+            Assert.AreEqual(DBNull.Value, value);
         }
 
         [Test]
-        public void SpaceTwoTest()
+        public void CompilePropertyIdTest()
         {
-            var actual = Parse("123456  abc.def", p => p.list());
-            Assert.AreEqual("(list (numeric 123456) (id abc.def))", actual);
-        }
-
-        [Test]
-        public void TabOneTest()
-        {
-            var actual = Parse("123456\tabc.def", p => p.list());
-            Assert.AreEqual("(list (numeric 123456) (id abc.def))", actual);
-        }
-
-        [Test]
-        public void ReturnOneTest()
-        {
-            var actual = Parse("123456\rabc.def", p => p.list());
-            Assert.AreEqual("(list (numeric 123456) (id abc.def))", actual);
-        }
-
-        [Test]
-        public void NewlineOneTest()
-        {
-            var actual = Parse("123456\nabc.def", p => p.list());
-            Assert.AreEqual("(list (numeric 123456) (id abc.def))", actual);
-        }
-        #endregion
-
-        #region List
-        [Test]
-        public void ListOneTest()
-        {
-            var actual = Parse("123456", p => p.list());
-            Assert.AreEqual("(list (numeric 123456))", actual);
-        }
-
-        [Test]
-        public void ListTwoTest()
-        {
-            var actual = Parse("123456 abc.def", p => p.list());
-            Assert.AreEqual("(list (numeric 123456) (id abc.def))", actual);
-        }
-
-        [Test]
-        public void ListThreeTest()
-        {
-            var actual = Parse("123456 abc.def -123.456", p => p.list());
-            Assert.AreEqual("(list (numeric 123456) (id abc.def) (numeric -123.456))", actual);
-        }
-        #endregion
-
-        #region Expression
-        [Test]
-        public void ExpressionOneValueTest()
-        {
-            var actual = Parse("(123456)", p => p.expression());
-            Assert.AreEqual("(expression ( (list (numeric 123456)) ))", actual);
-        }
-
-        [Test]
-        public void ExpressionTwoValuesTest()
-        {
-            var actual = Parse("(123456 abc.def)", p => p.expression());
-            Assert.AreEqual("(expression ( (list (numeric 123456) (id abc.def)) ))", actual);
-        }
-
-        [Test]
-        public void ExpressionNestedValuesTest1()
-        {
-            var actual = Parse("(123456 (abc.def -123.456))", p => p.expression());
-            Assert.AreEqual("(expression ( (list (numeric 123456) (expression ( (list (id abc.def) (numeric -123.456)) ))) ))", actual);
-        }
-
-        [Test]
-        public void ExpressionNestedValuesTest2()
-        {
-            var actual = Parse("(123456 (abc.def +123.456))", p => p.expression());
-            Assert.AreEqual("(expression ( (list (numeric 123456) (expression ( (list (id abc.def) (numeric +123.456)) ))) ))", actual);
+            var expr = ParseAndVisit("System.IntPtr.Size");
+            var lambda = Expression.Lambda<Func<int>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var compiled = lambda.Compile();
+            var size = compiled();
+            Assert.AreEqual(IntPtr.Size, size);
         }
         #endregion
     }
