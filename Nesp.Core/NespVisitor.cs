@@ -79,11 +79,6 @@ namespace Nesp
             return VisitChildren(context);
         }
 
-        public override Expression VisitToken([NotNull] NespParser.TokenContext context)
-        {
-            return VisitChildren(context);
-        }
-
         public override Expression VisitString([NotNull] NespParser.StringContext context)
         {
             var text = context.children[0].GetText();

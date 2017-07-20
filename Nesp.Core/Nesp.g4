@@ -20,8 +20,7 @@
 grammar Nesp;
 
 expression : BRACKETLEFT WHITESPACE? list WHITESPACE? BRACKETRIGHT ;
-list : token (WHITESPACE? token)* ;
-token : expression | string | numeric | id ;
+list : (expression | string | numeric | id) (WHITESPACE? (expression | string | numeric | id))* ;
 string : STRING ;
 numeric : NUMERIC ;
 id : ID ;
