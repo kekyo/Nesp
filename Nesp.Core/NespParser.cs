@@ -29,85 +29,21 @@ namespace Nesp
 {
     public sealed class NespParser : NespGrammarBaseVisitor<Expression>
     {
-        private static readonly ImmutableDictionary<string, MemberInfo[]> initialMembers;
+        private ImmutableDictionary<string, MemberInfo[]> members;
 
-        static NespParser()
+        public void AddMembers(IEnumerable<KeyValuePair<string, MemberInfo[]>> newMembers)
         {
-            var reservedTypeNames = new Dictionary<Type, String>
+            foreach (var entry in newMembers)
             {
-                { typeof(object), "object" },
-                { typeof(byte), "byte" },
-                { typeof(sbyte), "sbyte" },
-                { typeof(short), "short" },
-                { typeof(ushort), "ushort" },
-                { typeof(int), "int" },
-                { typeof(uint), "uint" },
-                { typeof(long), "long" },
-                { typeof(ulong), "ulong" },
-                { typeof(float), "float" },
-                { typeof(double), "double" },
-                { typeof(decimal), "decimal" },
-                { typeof(bool), "bool" },
-                { typeof(string), "string" },
-                { typeof(DateTime), "datetime" },
-                { typeof(TimeSpan), "timespan" },
-                { typeof(Guid), "guid" },
-                { typeof(Math), "math" },
-                { typeof(Enum), "enum" },
-                { typeof(Type), "type" },
-            };
-
-            var assemblies = new[] {typeof(object), typeof(Uri), typeof(Enumerable)}
-                .Select(type => type.GetTypeInfo().Assembly);
-            var members = assemblies
-                .SelectMany(assembly => assembly.DefinedTypes)
-                .Where(type => (type.IsValueType || type.IsClass) && type.IsPublic)
-                .SelectMany(type => type.DeclaredMembers)
-                .ToArray();
-            var fields =
-                from fi in members.OfType<FieldInfo>()
-                where fi.IsPublic && fi.IsStatic    // Include enums
-                select (MemberInfo)fi;
-            var properties =
-                (from pi in members.OfType<PropertyInfo>()
-                 let getter = pi.GetMethod
-                 where pi.CanRead && (getter != null) && getter.IsPublic && getter.IsStatic
-                 select new {mi = getter, pi})
-                .ToDictionary(entry => entry.mi, entry => (MemberInfo)entry.pi);
-            var methods =
-                from mi in members.OfType<MethodInfo>()
-                where mi.IsPublic && mi.IsStatic && !properties.ContainsKey(mi)
-                select (MemberInfo)mi;
-
-            var membersByName =
-                from member in properties.Values.Concat(methods).Concat(fields)
-                select new
+                if (members.TryGetValue(entry.Key, out var mis))
                 {
-                    FullName = member.DeclaringType.FullName + "." + member.Name,
-                    Member = member
-                };
-            var reservedMembers =
-                from member in properties.Values.Concat(methods).Concat(fields)
-                let typeName = reservedTypeNames.GetValue(member.DeclaringType)
-                where typeName != null
-                select new
+                    members.SetValue(entry.Key, mis.Concat(entry.Value).ToArray());
+                }
+                else
                 {
-                    FullName = typeName + "." + member.Name,
-                    Member = member
-                };
-
-            var dict =
-                (from entry in membersByName.Concat(reservedMembers)
-                 group entry.Member by entry.FullName)
-                .ToDictionary(g => g.Key, g => g.ToArray());
-
-            initialMembers = new ImmutableDictionary<string, MemberInfo[]>(dict);
-        }
-
-        private readonly ImmutableDictionary<string, MemberInfo[]> members = initialMembers;
-
-        public NespParser()
-        {
+                    members.AddValue(entry.Key, entry.Value);
+                }
+            }
         }
 
         public override Expression VisitExpression([NotNull] NespGrammarParser.ExpressionContext context)
@@ -200,6 +136,7 @@ namespace Nesp
         public override Expression VisitId([NotNull] NespGrammarParser.IdContext context)
         {
             var id = context.children[0].GetText();
+
             if (members.TryGetValue(id, out var candidates))
             {
                 var fi = candidates[0] as FieldInfo;

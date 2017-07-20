@@ -45,6 +45,18 @@ namespace Nesp
             this.type = type;
         }
 
+        public async Task AddExtensionAsync(INespExtension extension)
+        {
+            var newMembers =
+                await extension.GetMembersAsync()
+                .ConfigureAwait(false);
+
+            lock (parser)
+            {
+                parser.AddMembers(newMembers);
+            }
+        }
+
         public Expression<Func<object>> ParseExpression(string expression)
         {
             var inputStream = new AntlrInputStream(expression);
@@ -57,9 +69,9 @@ namespace Nesp
                 : (IParseTree)grammarParser.expression();
 
             Expression expr;
-            lock (this.parser)
+            lock (parser)
             {
-                expr = this.parser.Visit(context);
+                expr = parser.Visit(context);
             }
 
             var valueType = typeof(object);

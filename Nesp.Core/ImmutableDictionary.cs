@@ -18,34 +18,70 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Nesp
 {
     internal struct ImmutableDictionary<TKey, TValue>
     {
+        private readonly IReadOnlyDictionary<TKey, TValue> original;
         private Dictionary<TKey, TValue> inner;
-        private bool isOrigin;
 
-        public ImmutableDictionary(Dictionary<TKey, TValue> original)
+        public ImmutableDictionary(IReadOnlyDictionary<TKey, TValue> original)
         {
-            inner = original;
-            isOrigin = true;
+            this.original = original;
+            this.inner = null;
         }
 
-        public void Add(TKey key, TValue value)
+        private void Unique()
         {
-            if (isOrigin == true)
+            if (inner != null)
             {
-                inner = new Dictionary<TKey, TValue>(inner);
-                isOrigin = false;
+                return;
             }
 
+            var dict = original as IDictionary<TKey, TValue>;
+            if (dict != null)
+            {
+                inner = new Dictionary<TKey, TValue>(dict);
+            }
+            else if (original != null)
+            {
+                inner = original.ToDictionary(entry => entry.Key, entry => entry.Value);
+            }
+            else
+            {
+                inner = new Dictionary<TKey, TValue>();
+            }
+        }
+
+        public void AddValue(TKey key, TValue value)
+        {
+            this.Unique();
             inner.Add(key, value);
+        }
+
+        public void SetValue(TKey key, TValue value)
+        {
+            this.Unique();
+            inner[key] = value;
         }
 
         public bool TryGetValue(TKey key, out TValue value)
         {
-            return inner.TryGetValue(key, out value);
+            if (inner != null)
+            {
+                return inner.TryGetValue(key, out value);
+            }
+            else if (original != null)
+            {
+                return original.TryGetValue(key, out value);
+            }
+            else
+            {
+                value = default(TValue);
+                return false;
+            }
         }
     }
 

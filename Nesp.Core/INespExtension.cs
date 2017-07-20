@@ -17,25 +17,14 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Resources;
+using System.Collections.Generic;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
-[assembly: AssemblyTitle("Nesp.Core")]
-[assembly: AssemblyDescription("Nesp - A Lisp-like lightweight functional language on .NET")]
-[assembly: AssemblyCompany("Kouji Matsui")]
-[assembly: AssemblyProduct("Nesp")]
-[assembly: AssemblyCopyright("Copyright (c) 2017 Kouji Matsui (@kekyo2)")]
-[assembly: AssemblyTrademark("Nesp")]
-
-#if DEBUG
-[assembly: AssemblyConfiguration("DEBUG")]
-#else
-[assembly: AssemblyConfiguration("RELEASE")]
-#endif
-
-[assembly: AssemblyVersion("0.5.1.0")]
-[assembly: AssemblyFileVersion("0.5.1.0")]
-
-[assembly: InternalsVisibleTo("Nesp.Core.Tests")]
+namespace Nesp
+{
+    public interface INespExtension
+    {
+        Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync();
+    }
+}

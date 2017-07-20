@@ -47,13 +47,26 @@ namespace Nesp
         {
             Console.WriteLine("This is Nesp interpreter.");
             Console.WriteLine("Copyright (c) 2017 Kouji Matsui (@kekyo2)");
+            Console.Write("Loading ...");
 
             var engine = new NespEngine(NespExpressionType.Repl);
+            await engine.AddExtensionAsync(NespDefaultExtension.Instance);
+            Console.WriteLine(" Done.");
 
             while (true)
             {
                 Console.Write("> ");
                 var replLine = Console.ReadLine();
+
+                if (string.IsNullOrWhiteSpace(replLine))
+                {
+                    Console.WriteLine("Try type: '* 123 456'");
+                    Console.WriteLine("Try type: 'datetime.Now'");
+                    Console.WriteLine("Try type: 'int.Parse \"12345\"'");
+                    Console.WriteLine("Try type: 'System.Guid.NewGuid'");
+                    continue;
+                }
+
                 var func = await engine.CompileExpressionAsync(replLine);
                 var result = func();
                 Console.WriteLine(Format(result));

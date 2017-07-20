@@ -37,6 +37,7 @@ namespace Nesp
             var grammarParser = new NespGrammarParser(commonTokenStream);
 
             var parser = new NespParser();
+            parser.AddMembers(NespDefaultExtension.CreateMembers());
             return parser.Visit(grammarParser.list());
         }
 
@@ -194,6 +195,18 @@ namespace Nesp
         }
 
         [Test]
+        public void MethodIdTest()
+        {
+            var expr = ParseAndVisit("System.Guid.NewGuid");
+            var methodCallExpr = (MethodCallExpression)expr;
+            var mi = methodCallExpr.Method;
+            Assert.IsNull(methodCallExpr.Object);
+            Assert.AreEqual(typeof(Guid), mi.DeclaringType);
+            Assert.AreEqual(typeof(Guid), mi.ReturnType);
+            Assert.AreEqual("NewGuid", mi.Name);
+        }
+
+        [Test]
         public void ReservedIdTest()
         {
             var expr = ParseAndVisit("int.MinValue");
@@ -214,6 +227,16 @@ namespace Nesp
         }
 
         [Test]
+        public void CompileEnumIdTest()
+        {
+            var expr = ParseAndVisit("System.DateTimeKind.Local");
+            var lambda = Expression.Lambda<Func<DateTimeKind>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var compiled = lambda.Compile();
+            var value = compiled();
+            Assert.AreEqual(DateTimeKind.Local, value);
+        }
+
+        [Test]
         public void CompilePropertyIdTest()
         {
             var expr = ParseAndVisit("System.IntPtr.Size");
@@ -221,6 +244,16 @@ namespace Nesp
             var compiled = lambda.Compile();
             var size = compiled();
             Assert.AreEqual(IntPtr.Size, size);
+        }
+
+        [Test]
+        public void CompileMethodIdTest()
+        {
+            var expr = ParseAndVisit("System.Guid.NewGuid");
+            var lambda = Expression.Lambda<Func<Guid>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var compiled = lambda.Compile();
+            var value = compiled();
+            Assert.IsFalse(value.Equals(Guid.Empty));
         }
         #endregion
     }
