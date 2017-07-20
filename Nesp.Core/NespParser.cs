@@ -44,11 +44,11 @@ namespace Nesp
                 if (members.TryGetValue(entry.Key, out var mis))
                 {
                     // Extension can override members (Insert before last members).
-                    members.SetValue(entry.Key, entry.Value.Concat(mis).ToArray());
+                    members.SetValue(entry.Key, entry.Value.Concat(mis).Distinct().ToArray());
                 }
                 else
                 {
-                    members.AddValue(entry.Key, entry.Value);
+                    members.AddValue(entry.Key, entry.Value.Distinct().ToArray());
                 }
             }
         }

@@ -46,7 +46,7 @@ namespace Nesp
                 return "\"" + value + "\"";
             }
             var type = value.GetType();
-            if (NespDefaultExtension.ReservedTypeNames.TryGetValue(type, out var typeName) == false)
+            if (NespStandardExtension.ReservedTypeNames.TryGetValue(type, out var typeName) == false)
             {
                 typeName = type.FullName;
             }
@@ -64,8 +64,10 @@ namespace Nesp
             var memberBinder = new MemberBinder();
             var engine = new NespEngine(NespExpressionType.Repl, memberBinder);
 
-            await engine.AddExtensionAsync(NespDefaultExtension.Instance);
-            await engine.AddExtensionAsync(NespReplExtension.Instance);
+            await engine.AddExtensionAsync(NespBaseExtension.Instance);
+            await Task.WhenAll(
+                engine.AddExtensionAsync(NespStandardExtension.Instance),
+                engine.AddExtensionAsync(NespReplExtension.Instance));
 
             Console.WriteLine(" Done.");
 

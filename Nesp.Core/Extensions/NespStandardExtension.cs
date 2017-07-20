@@ -25,10 +25,10 @@ using System.Threading.Tasks;
 
 namespace Nesp.Extensions
 {
-    public sealed class NespDefaultExtension : INespExtension
+    public sealed class NespStandardExtension : INespExtension
     {
         public static readonly IReadOnlyDictionary<Type, string> ReservedTypeNames =
-            new Dictionary<Type, String>
+            new Dictionary<Type, string>
             {
                 { typeof(object), "object" },
                 { typeof(byte), "byte" },
@@ -52,33 +52,28 @@ namespace Nesp.Extensions
                 { typeof(Type), "type" },
             };
 
-        public static readonly INespExtension Instance = new NespDefaultExtension();
+        public static readonly INespExtension Instance = new NespStandardExtension();
 
         private IReadOnlyDictionary<string, MemberInfo[]> cached;
 
-        private NespDefaultExtension()
+        private NespStandardExtension()
         {
         }
 
         internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
         {
             var extractor = new MemberExtractor(
-                new[] { typeof(object), typeof(Uri), typeof(Enumerable) }
+                new[] { typeof(object) }
                 .Select(type => type.GetTypeInfo().Assembly));
 
-            var reservedMembers =
-                from entry in extractor.MembersByName
-                from member in entry.Value
-                let typeName = ReservedTypeNames.GetValue(member.DeclaringType)
-                where typeName != null
-                select new KeyValuePair<string, MemberInfo[]>(
-                    typeName + "." + member.Name,
-                    new[] { member });
-
             return
-                (from entry in extractor.MembersByName.Concat(reservedMembers)
-                 group entry.Value by entry.Key)
-                .ToDictionary(g => g.Key, g => g.SelectMany(mis => mis).Distinct().ToArray());
+                (from entry in extractor.MembersByName
+                 from member in entry.Value
+                 let typeName = ReservedTypeNames.GetValue(member.DeclaringType)
+                 where typeName != null
+                 let fullName = typeName + "." + member.Name
+                 group member by fullName)
+                .ToDictionary(g => g.Key, g => g.Distinct().ToArray());
         }
 
         public Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync()

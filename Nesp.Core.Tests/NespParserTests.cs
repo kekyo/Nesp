@@ -47,7 +47,7 @@ namespace Nesp
             var grammarParser = new NespGrammarParser(commonTokenStream);
 
             var parser = new NespParser(new MemberBinder());
-            parser.AddMembers(NespDefaultExtension.CreateMembers());
+            parser.AddMembers(NespBaseExtension.CreateMembers());
             return parser.Visit(grammarParser.list());
         }
 
