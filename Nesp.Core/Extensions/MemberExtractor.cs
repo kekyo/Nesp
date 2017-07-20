@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -26,9 +27,18 @@ namespace Nesp.Extensions
     internal sealed class MemberExtractor
     {
         public MemberExtractor(IEnumerable<Assembly> assemblies)
+            : this(assemblies.SelectMany(assembly => assembly.DefinedTypes))
         {
-            var members = assemblies
-                .SelectMany(assembly => assembly.DefinedTypes)
+        }
+
+        public MemberExtractor(IEnumerable<Type> types)
+            : this(types.Select(type => type.GetTypeInfo()))
+        {
+        }
+
+        public MemberExtractor(IEnumerable<TypeInfo> types)
+        {
+            var members = types
                 .Where(type => (type.IsValueType || type.IsClass) && type.IsPublic)
                 .SelectMany(type => type.DeclaredMembers)
                 .ToArray();

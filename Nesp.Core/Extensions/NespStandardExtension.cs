@@ -62,16 +62,12 @@ namespace Nesp.Extensions
 
         internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
         {
-            var extractor = new MemberExtractor(
-                new[] { typeof(object) }
-                .Select(type => type.GetTypeInfo().Assembly));
+            var extractor = new MemberExtractor(ReservedTypeNames.Keys);
 
             return
                 (from entry in extractor.MembersByName
                  from member in entry.Value
-                 let typeName = ReservedTypeNames.GetValue(member.DeclaringType)
-                 where typeName != null
-                 let fullName = typeName + "." + member.Name
+                 let fullName = ReservedTypeNames[member.DeclaringType] + "." + member.Name
                  group member by fullName)
                 .ToDictionary(g => g.Key, g => g.Distinct().ToArray());
         }

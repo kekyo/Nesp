@@ -84,14 +84,4 @@ namespace Nesp
             }
         }
     }
-
-    internal static class DictionaryExtensions
-    {
-        public static TValue GetValue<TKey, TValue>(this IReadOnlyDictionary<TKey, TValue> dict, TKey key)
-            where TValue : class
-        {
-            dict.TryGetValue(key, out var value);
-            return value;
-        }
-    }
 }

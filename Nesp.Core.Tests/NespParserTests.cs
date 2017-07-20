@@ -22,8 +22,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Antlr4.Runtime;
-using Nesp.Extensions;
 using NUnit.Framework;
+
+using Nesp.Extensions;
 
 namespace Nesp
 {
@@ -48,6 +49,7 @@ namespace Nesp
 
             var parser = new NespParser(new MemberBinder());
             parser.AddMembers(NespBaseExtension.CreateMembers());
+            parser.AddMembers(NespStandardExtension.CreateMembers());
             return parser.Visit(grammarParser.list());
         }
 
