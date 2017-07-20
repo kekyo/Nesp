@@ -18,7 +18,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -40,6 +39,10 @@ namespace Nesp
                 .Where(type => (type.IsValueType || type.IsClass) && type.IsPublic)
                 .SelectMany(type => type.DeclaredMembers)
                 .ToArray();
+            var fields =
+                from fi in members.OfType<FieldInfo>()
+                where fi.IsPublic && fi.IsStatic    // Include enums
+                select (MemberInfo)fi;
             var properties =
                 (from pi in members.OfType<PropertyInfo>()
                  let getter = pi.GetMethod
@@ -49,12 +52,12 @@ namespace Nesp
             var methods =
                 from mi in members.OfType<MethodInfo>()
                 where mi.IsPublic && mi.IsStatic && !properties.ContainsKey(mi)
-                select new KeyValuePair<MethodInfo, MemberInfo>(mi, mi);
+                select (MemberInfo)mi;
 
             var dict =
-                (from entry in properties.Concat(methods)
-                 let fullName = entry.Value.DeclaringType.FullName + "." + entry.Value.Name
-                 group entry.Value by fullName)
+                (from member in properties.Values.Concat(methods).Concat(fields)
+                 let fullName = member.DeclaringType.FullName + "." + member.Name
+                 group member by fullName)
                 .ToDictionary(g => g.Key, g => g.ToArray());
 
             initialMembers = new ImmutableDictionary<string, MemberInfo[]>(dict);
@@ -163,6 +166,20 @@ namespace Nesp
             var id = context.children[0].GetText();
             if (members.TryGetValue(id, out var candidates))
             {
+                var fi = candidates[0] as FieldInfo;
+                if (fi != null)
+                {
+                    if (fi.IsLiteral || fi.IsInitOnly)
+                    {
+                        var value = fi.GetValue(null);
+                        return Expression.Constant(value);
+                    }
+                    else
+                    {
+                        return Expression.Field(null, fi);
+                    }
+                }
+
                 var pi = candidates[0] as PropertyInfo;
                 if (pi != null)
                 {

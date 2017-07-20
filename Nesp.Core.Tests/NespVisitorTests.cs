@@ -166,29 +166,54 @@ namespace Nesp
 
         #region Id
         [Test]
+        public void FieldIdTest()
+        {
+            var expr = ParseAndVisit("System.DBNull.Value");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(DBNull.Value, constExpr.Value);
+        }
+
+        [Test]
+        public void EnumIdTest()
+        {
+            var expr = ParseAndVisit("System.DateTimeKind.Local");
+            var constExpr = (ConstantExpression)expr;
+            Assert.AreEqual(DateTimeKind.Local, constExpr.Value);
+        }
+
+        [Test]
         public void PropertyIdTest()
         {
-            var expr = ParseAndVisit("System.DateTime.Now");
+            var expr = ParseAndVisit("System.IntPtr.Size");
             var memberExpr = (MemberExpression)expr;
-            var memberInfo = (PropertyInfo)memberExpr.Member;
+            var pi = (PropertyInfo)memberExpr.Member;
             Assert.IsNull(memberExpr.Expression);
-            Assert.AreEqual("System.DateTime", memberInfo.DeclaringType.FullName);
-            Assert.AreEqual("Now", memberInfo.Name);
+            Assert.AreEqual(typeof(IntPtr), pi.DeclaringType);
+            Assert.AreEqual(typeof(int), pi.PropertyType);
+            Assert.AreEqual("Size", pi.Name);
         }
         #endregion
 
-
-
-
+        #region Compilation
+        [Test]
+        public void CompileFieldIdTest()
+        {
+            var expr = ParseAndVisit("System.DBNull.Value");
+            var lambda = Expression.Lambda<Func<DBNull>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var compiled = lambda.Compile();
+            var value = compiled();
+            Assert.AreEqual(DBNull.Value, value);
+        }
 
         [Test]
         public void CompilePropertyIdTest()
         {
-            var expr = ParseAndVisit("System.DateTime.Now");
-            var lambda = Expression.Lambda<Func<DateTime>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var expr = ParseAndVisit("System.IntPtr.Size");
+            var lambda = Expression.Lambda<Func<int>>(expr, false, Enumerable.Empty<ParameterExpression>());
             var compiled = lambda.Compile();
-            var now = compiled();
+            var size = compiled();
+            Assert.AreEqual(IntPtr.Size, size);
         }
-
+        #endregion
     }
 }
