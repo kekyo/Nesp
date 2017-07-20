@@ -22,6 +22,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using Antlr4.Runtime;
+using Nesp.Extensions;
 using NUnit.Framework;
 
 namespace Nesp

@@ -42,10 +42,11 @@
     <Antlr4 Include="NespGrammar.g4" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\MemberExtractor.cs" />
     <Compile Include="ImmutableDictionary.cs" />
     <Compile Include="INespExtension.cs" />
-    <Compile Include="NespReplExtension.cs" />
-    <Compile Include="NespDefaultExtension.cs" />
+    <Compile Include="Extensions\NespReplExtension.cs" />
+    <Compile Include="Extensions\NespDefaultExtension.cs" />
     <Compile Include="NespEngine.cs" />
     <Compile Include="INespMemberBinder.cs" />
     <Compile Include="NespParser.cs" />

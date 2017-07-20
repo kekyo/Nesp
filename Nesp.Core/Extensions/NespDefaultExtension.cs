@@ -23,7 +23,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
-namespace Nesp
+namespace Nesp.Extensions
 {
     public sealed class NespDefaultExtension : INespExtension
     {
@@ -62,49 +62,23 @@ namespace Nesp
 
         internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
         {
-            var assemblies = new[] { typeof(object), typeof(Uri), typeof(Enumerable) }
-                .Select(type => type.GetTypeInfo().Assembly);
-            var members = assemblies
-                .SelectMany(assembly => assembly.DefinedTypes)
-                .Where(type => (type.IsValueType || type.IsClass) && type.IsPublic)
-                .SelectMany(type => type.DeclaredMembers)
-                .ToArray();
-            var fields =
-                from fi in members.OfType<FieldInfo>()
-                where fi.IsPublic && fi.IsStatic    // Include enums
-                select (MemberInfo)fi;
-            var properties =
-                (from pi in members.OfType<PropertyInfo>()
-                    let getter = pi.GetMethod
-                    where pi.CanRead && (getter != null) && getter.IsPublic && getter.IsStatic
-                    select new { mi = getter, pi })
-                .ToDictionary(entry => entry.mi, entry => (MemberInfo)entry.pi);
-            var methods =
-                from mi in members.OfType<MethodInfo>()
-                where mi.IsPublic && mi.IsStatic && !properties.ContainsKey(mi)
-                select (MemberInfo)mi;
+            var extractor = new MemberExtractor(
+                new[] { typeof(object), typeof(Uri), typeof(Enumerable) }
+                .Select(type => type.GetTypeInfo().Assembly));
 
-            var membersByName =
-                from member in properties.Values.Concat(methods).Concat(fields)
-                select new
-                {
-                    FullName = member.DeclaringType.FullName + "." + member.Name,
-                    Member = member
-                };
             var reservedMembers =
-                from member in properties.Values.Concat(methods).Concat(fields)
+                from entry in extractor.MembersByName
+                from member in entry.Value
                 let typeName = ReservedTypeNames.GetValue(member.DeclaringType)
                 where typeName != null
-                select new
-                {
-                    FullName = typeName + "." + member.Name,
-                    Member = member
-                };
+                select new KeyValuePair<string, MemberInfo[]>(
+                    typeName + "." + member.Name,
+                    new[] { member });
 
             return
-                (from entry in membersByName.Concat(reservedMembers)
-                    group entry.Member by entry.FullName)
-                .ToDictionary(g => g.Key, g => g.ToArray());
+                (from entry in extractor.MembersByName.Concat(reservedMembers)
+                 group entry.Value by entry.Key)
+                .ToDictionary(g => g.Key, g => g.SelectMany(mis => mis).Distinct().ToArray());
         }
 
         public Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync()
