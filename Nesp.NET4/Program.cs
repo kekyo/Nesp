@@ -64,6 +64,7 @@ namespace Nesp
             var engine = new NespEngine(NespExpressionType.Repl, memberBinder);
 
             await engine.AddExtensionAsync(NespDefaultExtension.Instance);
+            await engine.AddExtensionAsync(NespReplExtension.Instance);
 
             Console.WriteLine(" Done.");
 
@@ -83,6 +84,11 @@ namespace Nesp
 
                 var func = await engine.CompileExpressionAsync(replLine);
                 var result = func();
+                if (result == NespReplExit.Value)
+                {
+                    break;
+                }
+
                 Console.WriteLine(Format(result));
             }
 

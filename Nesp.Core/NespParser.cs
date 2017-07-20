@@ -72,10 +72,10 @@ namespace Nesp
 
                 if (members.TryGetValue(id0, out var candidates))
                 {
-                    var matchForMethod = candidates
+                    var candidatesForMethod = candidates
                         .OfType<MethodInfo>()
                         .ToArray();
-                    if (matchForMethod.Length >= 1)
+                    if (candidatesForMethod.Length >= 1)
                     {
                         var argExprs = context.children
                             .Skip(1)
@@ -86,7 +86,7 @@ namespace Nesp
                             .Select(argExpr => argExpr.Type)
                             .ToArray();
 
-                        var mi = binder.SelectMethod(matchForMethod, types);
+                        var mi = binder.SelectMethod(candidatesForMethod, types);
                         if (mi != null)
                         {
                             var argTypes = mi.GetParameters()
@@ -200,17 +200,12 @@ namespace Nesp
                     }
                 }
 
+                // TODO: indexer
                 var pi = candidates[0] as PropertyInfo;
                 if (pi != null)
                 {
                     return Expression.Property(null, pi);
                 }
-
-                //var mi = candidates[0] as MethodInfo;
-                //if (mi != null)
-                //{
-                //    return Expression.Call(null, mi);
-                //}
             }
 
             throw new ArgumentException("Id not found: " + id);
