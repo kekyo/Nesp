@@ -18,13 +18,20 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Nesp
 {
+    internal sealed class MemberBinder : INespMemberBinder
+    {
+        public MethodInfo SelectMethod(MethodInfo[] candidates, Type[] types)
+        {
+            return Type.DefaultBinder.SelectMethod(
+                BindingFlags.Public | BindingFlags.Static, candidates, types, null) as MethodInfo;
+        }
+    }
+
     public static class Program
     {
         private static string Format(object value)
@@ -46,20 +53,18 @@ namespace Nesp
             return $"{value} : {value.GetType().Name}";
         }
 
-        private static MethodInfo Binder(MethodInfo[] match, Type[] types)
-        {
-            return Type.DefaultBinder.SelectMethod(
-                BindingFlags.Public | BindingFlags.Static, match, types, null) as MethodInfo;
-        }
-
         private static async Task<int> MainAsync(string[] args)
         {
             Console.WriteLine("This is Nesp interpreter.");
             Console.WriteLine("Copyright (c) 2017 Kouji Matsui (@kekyo2)");
+
             Console.Write("Loading ...");
 
-            var engine = new NespEngine(NespExpressionType.Repl, Binder);
+            var memberBinder = new MemberBinder();
+            var engine = new NespEngine(NespExpressionType.Repl, memberBinder);
+
             await engine.AddExtensionAsync(NespDefaultExtension.Instance);
+
             Console.WriteLine(" Done.");
 
             while (true)

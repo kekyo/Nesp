@@ -46,6 +46,7 @@
     <Compile Include="INespExtension.cs" />
     <Compile Include="NespDefaultExtension.cs" />
     <Compile Include="NespEngine.cs" />
+    <Compile Include="INespMemberBinder.cs" />
     <Compile Include="NespParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

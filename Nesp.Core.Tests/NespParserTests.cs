@@ -29,10 +29,13 @@ namespace Nesp
     [TestFixture]
     public class NespParserTests
     {
-        private static MethodInfo Binder(MethodInfo[] match, Type[] types)
+        private sealed class MemberBinder : INespMemberBinder
         {
-            return Type.DefaultBinder.SelectMethod(
-                BindingFlags.Public | BindingFlags.Static, match, types, null) as MethodInfo;
+            public MethodInfo SelectMethod(MethodInfo[] candidates, Type[] types)
+            {
+                return Type.DefaultBinder.SelectMethod(
+                    BindingFlags.Public | BindingFlags.Static, candidates, types, null) as MethodInfo;
+            }
         }
 
         private Expression ParseAndVisit(string replLine)
@@ -42,7 +45,7 @@ namespace Nesp
             var commonTokenStream = new CommonTokenStream(lexer);
             var grammarParser = new NespGrammarParser(commonTokenStream);
 
-            var parser = new NespParser(Binder);
+            var parser = new NespParser(new MemberBinder());
             parser.AddMembers(NespDefaultExtension.CreateMembers());
             return parser.Visit(grammarParser.list());
         }

@@ -29,10 +29,10 @@ namespace Nesp
 {
     public sealed class NespParser : NespGrammarBaseVisitor<Expression>
     {
-        private readonly Func<MethodInfo[], Type[], MethodInfo> binder;
+        private readonly INespMemberBinder binder;
         private ImmutableDictionary<string, MemberInfo[]> members;
 
-        public NespParser(Func<MethodInfo[], Type[], MethodInfo> binder)
+        public NespParser(INespMemberBinder binder)
         {
             this.binder = binder;
         }
@@ -72,10 +72,10 @@ namespace Nesp
 
                 if (members.TryGetValue(id0, out var candidates))
                 {
-                    var match = candidates
+                    var matchForMethod = candidates
                         .OfType<MethodInfo>()
                         .ToArray();
-                    if (match.Length >= 1)
+                    if (matchForMethod.Length >= 1)
                     {
                         var argExprs = context.children
                             .Skip(1)
@@ -86,7 +86,7 @@ namespace Nesp
                             .Select(argExpr => argExpr.Type)
                             .ToArray();
 
-                        var mi = binder(match, types);
+                        var mi = binder.SelectMethod(matchForMethod, types);
                         if (mi != null)
                         {
                             var argTypes = mi.GetParameters()

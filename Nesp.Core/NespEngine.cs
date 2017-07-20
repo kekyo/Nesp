@@ -21,7 +21,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
@@ -41,7 +40,7 @@ namespace Nesp
             new Dictionary<string, Func<object>>();
         private readonly NespExpressionType type;
 
-        public NespEngine(NespExpressionType type, Func<MethodInfo[], Type[], MethodInfo> binder)
+        public NespEngine(NespExpressionType type, INespMemberBinder binder)
         {
             this.type = type;
             this.parser = new NespParser(binder);
