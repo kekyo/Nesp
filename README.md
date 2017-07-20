@@ -34,7 +34,9 @@
 
 ## Samples
 
-* Basic tips: Nesp REPL mode not required brackets (...).
+* Basic tips:
+  * Nesp REPL mode not required brackets (...).
+  * Nesp's expressions are totally lazy evaluation (except literals).
 
 ### Literals
 

@@ -60,15 +60,25 @@ namespace Nesp.Extensions
         {
         }
 
+        private static string GetTypeFullName(Type type)
+        {
+            ReservedTypeNames.TryGetValue(type, out var name);
+            return name;
+        }
+
         internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
         {
-            var extractor = new MemberExtractor(ReservedTypeNames.Keys);
+            var extractor = new MemberExtractor(
+                ReservedTypeNames.Keys.Concat(new [] { typeof(Operators) }));
 
             return
                 (from entry in extractor.MembersByName
                  from member in entry.Value
-                 let fullName = ReservedTypeNames[member.DeclaringType] + "." + member.Name
-                 group member by fullName)
+                 let typeFullName = GetTypeFullName(member.DeclaringType)
+                 let name = (typeFullName != null)
+                    ? typeFullName + "." + member.Name
+                    : entry.Key
+                 group member by name)
                 .ToDictionary(g => g.Key, g => g.Distinct().ToArray());
         }
 

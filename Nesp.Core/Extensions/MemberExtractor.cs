@@ -26,8 +26,18 @@ namespace Nesp.Extensions
 {
     internal sealed class MemberExtractor
     {
+        private static readonly Dictionary<string, string> operatorNames =
+            new Dictionary<string, string>
+            {
+                { "op_Addition", "+" },
+                { "op_Subtraction", "-" },
+                { "op_Multiply", "*" },
+                { "op_Division", "/" },
+                { "op_Modulus", "%" },
+            };
+
         public MemberExtractor(IEnumerable<Assembly> assemblies)
-            : this(assemblies.SelectMany(assembly => assembly.DefinedTypes))
+            : this(assemblies.SelectMany(assembly => assembly.DefinedTypes).Where(type => type.IsPublic))
         {
         }
 
@@ -39,7 +49,7 @@ namespace Nesp.Extensions
         public MemberExtractor(IEnumerable<TypeInfo> types)
         {
             var members = types
-                .Where(type => (type.IsValueType || type.IsClass) && type.IsPublic)
+                .Where(type => (type.IsValueType || type.IsClass))
                 .SelectMany(type => type.DeclaredMembers)
                 .ToArray();
             this.Fields =
@@ -66,9 +76,24 @@ namespace Nesp.Extensions
                     ((MemberInfo[]) this.Properties)
                     .Concat(this.Fields)
                     .Concat(this.Methods)
-                 let fullName = member.DeclaringType.FullName + "." + member.Name
-                 group member by fullName)
+                 let name = GetMemberName(member)
+                 group member by name)
                 .ToDictionary(g => g.Key, g => g.Distinct().ToArray());
+        }
+
+        private static string GetMemberName(MemberInfo member)
+        {
+            var memberBind = member.GetCustomAttribute<MemberBindAttribute>();
+            if (memberBind != null)
+            {
+                return memberBind.MemberName;
+            }
+            if (operatorNames.TryGetValue(member.Name, out var name))
+            {
+                return name;
+            }
+
+            return member.DeclaringType.FullName + "." + member.Name;
         }
 
         public readonly FieldInfo[] Fields;

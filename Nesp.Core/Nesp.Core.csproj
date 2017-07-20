@@ -44,6 +44,8 @@
   <ItemGroup>
     <Compile Include="Extensions\MemberExtractor.cs" />
     <Compile Include="Extensions\NespStandardExtension.cs" />
+    <Compile Include="Extensions\MemberBindAttribute.cs" />
+    <Compile Include="Extensions\Operators.cs" />
     <Compile Include="ImmutableDictionary.cs" />
     <Compile Include="INespExtension.cs" />
     <Compile Include="Extensions\NespReplExtension.cs" />
