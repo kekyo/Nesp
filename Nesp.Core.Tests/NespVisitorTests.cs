@@ -18,7 +18,9 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using Antlr4.Runtime;
 using NUnit.Framework;
 
@@ -161,5 +163,32 @@ namespace Nesp
             Assert.AreEqual("abc\vdef", constExpr.Value);
         }
         #endregion
+
+        #region Id
+        [Test]
+        public void PropertyIdTest()
+        {
+            var expr = ParseAndVisit("System.DateTime.Now");
+            var memberExpr = (MemberExpression)expr;
+            var memberInfo = (PropertyInfo)memberExpr.Member;
+            Assert.IsNull(memberExpr.Expression);
+            Assert.AreEqual("System.DateTime", memberInfo.DeclaringType.FullName);
+            Assert.AreEqual("Now", memberInfo.Name);
+        }
+        #endregion
+
+
+
+
+
+        [Test]
+        public void CompilePropertyIdTest()
+        {
+            var expr = ParseAndVisit("System.DateTime.Now");
+            var lambda = Expression.Lambda<Func<DateTime>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var compiled = lambda.Compile();
+            var now = compiled();
+        }
+
     }
 }

@@ -18,7 +18,10 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Text;
 using Antlr4.Runtime.Misc;
 
@@ -26,25 +29,63 @@ namespace Nesp
 {
     public sealed class NespVisitor : NespBaseVisitor<Expression>
     {
-        //public override Expression VisitExpression([NotNull] NespParser.ExpressionContext context)
-        //{
-        //    return VisitChildren(context);
-        //}
+        private static readonly ImmutableDictionary<string, MemberInfo[]> initialMembers;
 
-        //public override Expression VisitList([NotNull] NespParser.ListContext context)
-        //{
-        //    return VisitChildren(context);
-        //}
+        static NespVisitor()
+        {
+            var assemblies = new[] {typeof(object), typeof(Uri), typeof(Enumerable)}
+                .Select(type => type.GetTypeInfo().Assembly);
+            var members = assemblies
+                .SelectMany(assembly => assembly.DefinedTypes)
+                .Where(type => (type.IsValueType || type.IsClass) && type.IsPublic)
+                .SelectMany(type => type.DeclaredMembers)
+                .ToArray();
+            var properties =
+                (from pi in members.OfType<PropertyInfo>()
+                 let getter = pi.GetMethod
+                 where pi.CanRead && (getter != null) && getter.IsPublic && getter.IsStatic
+                 select new {mi = getter, pi})
+                .ToDictionary(entry => entry.mi, entry => (MemberInfo)entry.pi);
+            var methods =
+                from mi in members.OfType<MethodInfo>()
+                where mi.IsPublic && mi.IsStatic && !properties.ContainsKey(mi)
+                select new KeyValuePair<MethodInfo, MemberInfo>(mi, mi);
 
-        //public override Expression VisitToken([NotNull] NespParser.TokenContext context)
-        //{
-        //    return VisitChildren(context);
-        //}
+            var dict =
+                (from entry in properties.Concat(methods)
+                 let fullName = entry.Value.DeclaringType.FullName + "." + entry.Value.Name
+                 group entry.Value by fullName)
+                .ToDictionary(g => g.Key, g => g.ToArray());
+
+            initialMembers = new ImmutableDictionary<string, MemberInfo[]>(dict);
+        }
+
+        private readonly ImmutableDictionary<string, MemberInfo[]> members = initialMembers;
+
+        public NespVisitor()
+        {
+        }
+
+        public override Expression VisitExpression([NotNull] NespParser.ExpressionContext context)
+        {
+            return VisitChildren(context);
+        }
+
+        public override Expression VisitList([NotNull] NespParser.ListContext context)
+        {
+            return VisitChildren(context);
+        }
+
+        public override Expression VisitToken([NotNull] NespParser.TokenContext context)
+        {
+            return VisitChildren(context);
+        }
 
         public override Expression VisitString([NotNull] NespParser.StringContext context)
         {
             var text = context.children[0].GetText();
             text = text.Substring(1, text.Length - 2);
+
             var sb = new StringBuilder();
             var index = 0;
             while (index < text.Length)
@@ -91,24 +132,25 @@ namespace Nesp
 
         public override Expression VisitNumeric([NotNull] NespParser.NumericContext context)
         {
-            var text = context.children[0].GetText();
-            if (byte.TryParse(text, out var byteValue))
+            var numericText = context.children[0].GetText();
+
+            if (byte.TryParse(numericText, out var byteValue))
             {
                 return Expression.Constant(byteValue);
             }
-            if (short.TryParse(text, out var shortValue))
+            if (short.TryParse(numericText, out var shortValue))
             {
                 return Expression.Constant(shortValue);
             }
-            if (int.TryParse(text, out var intValue))
+            if (int.TryParse(numericText, out var intValue))
             {
                 return Expression.Constant(intValue);
             }
-            if (long.TryParse(text, out var longValue))
+            if (long.TryParse(numericText, out var longValue))
             {
                 return Expression.Constant(longValue);
             }
-            if (double.TryParse(text, out var doubleValue))
+            if (double.TryParse(numericText, out var doubleValue))
             {
                 return Expression.Constant(doubleValue);
             }
@@ -118,7 +160,23 @@ namespace Nesp
 
         public override Expression VisitId([NotNull] NespParser.IdContext context)
         {
-            return VisitChildren(context);
+            var id = context.children[0].GetText();
+            if (members.TryGetValue(id, out var candidates))
+            {
+                var pi = candidates[0] as PropertyInfo;
+                if (pi != null)
+                {
+                    return Expression.Property(null, pi);
+                }
+
+                var mi = candidates[0] as MethodInfo;
+                if (mi != null)
+                {
+                    return Expression.Call(null, mi);
+                }
+            }
+
+            throw new ArgumentException("Id not found: " + id);
         }
     }
 }
