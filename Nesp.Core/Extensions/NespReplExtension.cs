@@ -39,6 +39,24 @@ namespace Nesp.Extensions
         }
     }
 
+    public sealed class NespReplCls
+    {
+        public static NespReplCls Instance = new NespReplCls();
+
+        private NespReplCls()
+        {
+        }
+    }
+
+    public sealed class NespReplHelp
+    {
+        public static NespReplHelp Instance = new NespReplHelp();
+
+        private NespReplHelp()
+        {
+        }
+    }
+
     public sealed class NespReplExtension : INespExtension
     {
         public static readonly INespExtension Instance = new NespReplExtension();
@@ -47,6 +65,7 @@ namespace Nesp.Extensions
         {
         }
 
+        #region Operators
         private static object Exit0()
         {
             return new NespReplExit(0);
@@ -57,16 +76,31 @@ namespace Nesp.Extensions
             return new NespReplExit(exitCode);
         }
 
+        private static object Cls()
+        {
+            return NespReplCls.Instance;
+        }
+
+        private static object Help()
+        {
+            return NespReplHelp.Instance;
+        }
+        #endregion
+
         public Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync()
         {
             Func<object> exit0Func = Exit0;
             Func<int, object> exitFunc = Exit;
+            Func<object> clsFunc = Cls;
+            Func<object> helpFunc = Help;
 
             return Task.FromResult(
                 (IReadOnlyDictionary<string, MemberInfo[]>)
                 new Dictionary<string, MemberInfo[]>
                 {
-                    { "exit", new[] { exit0Func.GetMethodInfo(), exitFunc.GetMethodInfo() } }
+                    { "exit", new[] { exit0Func.GetMethodInfo(), exitFunc.GetMethodInfo() } },
+                    { "cls", new[] { clsFunc.GetMethodInfo() } },
+                    { "help", new[] { helpFunc.GetMethodInfo() } },
                 });
         }
     }

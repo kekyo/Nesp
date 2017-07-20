@@ -63,6 +63,29 @@ namespace Nesp
             return (expr.Type != targetType) ? Expression.Convert(expr, targetType) : expr;
         }
 
+        private Expression SelectMethod(MethodInfo[] candidates, Expression[] argExprs)
+        {
+            if (candidates.Length >= 1)
+            {
+                var types = argExprs
+                    .Select(argExpr => argExpr.Type)
+                    .ToArray();
+
+                var mi = binder.SelectMethod(candidates, types);
+                if (mi != null)
+                {
+                    var argTypes = mi.GetParameters()
+                        .Select(pi => pi.ParameterType)
+                        .ToArray();
+                    return Expression.Call(
+                        null, mi, argExprs
+                            .Select((argExpr, index) => NormalizeType(argExpr, argTypes[index])));
+                }
+            }
+
+            return null;
+        }
+
         public override Expression VisitList([NotNull] NespGrammarParser.ListContext context)
         {
             var childContext0 = context.children[0] as NespGrammarParser.IdContext;
@@ -82,19 +105,10 @@ namespace Nesp
                             .Select(this.Visit)
                             .ToArray();
 
-                        var types = argExprs
-                            .Select(argExpr => argExpr.Type)
-                            .ToArray();
-
-                        var mi = binder.SelectMethod(candidatesForMethod, types);
-                        if (mi != null)
+                        var expr = SelectMethod(candidatesForMethod, argExprs);
+                        if (expr != null)
                         {
-                            var argTypes = mi.GetParameters()
-                                .Select(pi => pi.ParameterType)
-                                .ToArray();
-                            return Expression.Call(
-                                null, mi, argExprs
-                                .Select((argExpr, index) => NormalizeType(argExpr, argTypes[index])));
+                            return expr;
                         }
                     }
                 }
@@ -205,6 +219,21 @@ namespace Nesp
                 if (pi != null)
                 {
                     return Expression.Property(null, pi);
+                }
+
+                // We can use only no arguments method in this place.
+                // ex: 'string.Format "ABC{0}DEF{1}GHI" 123 System.Guid.NewGuid'
+                //     NewGuid method is no arguments so legal style and support below.
+                var candidatesForMethod = candidates
+                    .OfType<MethodInfo>()
+                    .ToArray();
+                if (candidatesForMethod.Length >= 1)
+                {
+                    var expr = SelectMethod(candidatesForMethod, new Expression[0]);
+                    if (expr != null)
+                    {
+                        return expr;
+                    }
                 }
             }
 

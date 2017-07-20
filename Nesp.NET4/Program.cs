@@ -78,10 +78,7 @@ namespace Nesp
 
                 if (string.IsNullOrWhiteSpace(replLine))
                 {
-                    Console.WriteLine("Try type: '* 123 456'");
-                    Console.WriteLine("Try type: 'datetime.Now'");
-                    Console.WriteLine("Try type: 'int.Parse \"12345\"'");
-                    Console.WriteLine("Try type: 'System.Guid.NewGuid'");
+                    Console.WriteLine("Type 'help' to show help.");
                     continue;
                 }
 
@@ -91,6 +88,23 @@ namespace Nesp
                 if (exit != null)
                 {
                     return exit.ExitCode;
+                }
+                if (result == NespReplCls.Instance)
+                {
+                    Console.Clear();
+                    continue;
+                }
+                if (result == NespReplHelp.Instance)
+                {
+                    Console.WriteLine("'cls' : Clear console");
+                    Console.WriteLine("'help' : Show help");
+                    Console.WriteLine("'exit [<exitCode>]' : Exit REPL shell");
+                    Console.WriteLine();
+                    Console.WriteLine("Try type: '* 123 456'");
+                    Console.WriteLine("Try type: 'datetime.Now'");
+                    Console.WriteLine("Try type: 'int.Parse \"12345\"'");
+                    Console.WriteLine("Try type: 'System.Guid.NewGuid'");
+                    continue;
                 }
 
                 Console.WriteLine(Format(result));
