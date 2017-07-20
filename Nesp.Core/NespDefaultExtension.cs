@@ -27,17 +27,8 @@ namespace Nesp
 {
     public sealed class NespDefaultExtension : INespExtension
     {
-        public static readonly INespExtension Instance = new NespDefaultExtension();
-
-        private IReadOnlyDictionary<string, MemberInfo[]> cached;
-
-        private NespDefaultExtension()
-        {
-        }
-
-        internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
-        {
-            var reservedTypeNames = new Dictionary<Type, String>
+        public static readonly IReadOnlyDictionary<Type, string> ReservedTypeNames =
+            new Dictionary<Type, String>
             {
                 { typeof(object), "object" },
                 { typeof(byte), "byte" },
@@ -61,6 +52,16 @@ namespace Nesp
                 { typeof(Type), "type" },
             };
 
+        public static readonly INespExtension Instance = new NespDefaultExtension();
+
+        private IReadOnlyDictionary<string, MemberInfo[]> cached;
+
+        private NespDefaultExtension()
+        {
+        }
+
+        internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
+        {
             var assemblies = new[] { typeof(object), typeof(Uri), typeof(Enumerable) }
                 .Select(type => type.GetTypeInfo().Assembly);
             var members = assemblies
@@ -92,7 +93,7 @@ namespace Nesp
                 };
             var reservedMembers =
                 from member in properties.Values.Concat(methods).Concat(fields)
-                let typeName = reservedTypeNames.GetValue(member.DeclaringType)
+                let typeName = ReservedTypeNames.GetValue(member.DeclaringType)
                 where typeName != null
                 select new
                 {

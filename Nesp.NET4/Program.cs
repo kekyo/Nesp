@@ -45,12 +45,12 @@ namespace Nesp
                 return "\"" + value + "\"";
             }
             var type = value.GetType();
-            if (type.IsPrimitive)
+            if (NespDefaultExtension.ReservedTypeNames.TryGetValue(type, out var typeName) == false)
             {
-                return value.ToString();
+                typeName = type.FullName;
             }
 
-            return $"{value} : {value.GetType().Name}";
+            return $"{value} : {typeName}";
         }
 
         private static async Task<int> MainAsync(string[] args)
