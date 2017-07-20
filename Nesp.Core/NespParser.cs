@@ -29,7 +29,13 @@ namespace Nesp
 {
     public sealed class NespParser : NespGrammarBaseVisitor<Expression>
     {
+        private readonly Func<MethodInfo[], Type[], MethodInfo> binder;
         private ImmutableDictionary<string, MemberInfo[]> members;
+
+        public NespParser(Func<MethodInfo[], Type[], MethodInfo> binder)
+        {
+            this.binder = binder;
+        }
 
         public void AddMembers(IEnumerable<KeyValuePair<string, MemberInfo[]>> newMembers)
         {
@@ -37,7 +43,8 @@ namespace Nesp
             {
                 if (members.TryGetValue(entry.Key, out var mis))
                 {
-                    members.SetValue(entry.Key, mis.Concat(entry.Value).ToArray());
+                    // Extension can override members (Insert before last members).
+                    members.SetValue(entry.Key, entry.Value.Concat(mis).ToArray());
                 }
                 else
                 {
@@ -51,8 +58,48 @@ namespace Nesp
             return VisitChildren(context);
         }
 
+        private static Expression NormalizeType(Expression expr, Type targetType)
+        {
+            return (expr.Type != targetType) ? Expression.Convert(expr, targetType) : expr;
+        }
+
         public override Expression VisitList([NotNull] NespGrammarParser.ListContext context)
         {
+            var childContext0 = context.children[0] as NespGrammarParser.IdContext;
+            if (childContext0 != null)
+            {
+                var id0 = childContext0.children[0].GetText();
+
+                if (members.TryGetValue(id0, out var candidates))
+                {
+                    var match = candidates
+                        .OfType<MethodInfo>()
+                        .ToArray();
+                    if (match.Length >= 1)
+                    {
+                        var argExprs = context.children
+                            .Skip(1)
+                            .Select(this.Visit)
+                            .ToArray();
+
+                        var types = argExprs
+                            .Select(argExpr => argExpr.Type)
+                            .ToArray();
+
+                        var mi = binder(match, types);
+                        if (mi != null)
+                        {
+                            var argTypes = mi.GetParameters()
+                                .Select(pi => pi.ParameterType)
+                                .ToArray();
+                            return Expression.Call(
+                                null, mi, argExprs
+                                .Select((argExpr, index) => NormalizeType(argExpr, argTypes[index])));
+                        }
+                    }
+                }
+            }
+
             return VisitChildren(context);
         }
 
@@ -159,11 +206,11 @@ namespace Nesp
                     return Expression.Property(null, pi);
                 }
 
-                var mi = candidates[0] as MethodInfo;
-                if (mi != null)
-                {
-                    return Expression.Call(null, mi);
-                }
+                //var mi = candidates[0] as MethodInfo;
+                //if (mi != null)
+                //{
+                //    return Expression.Call(null, mi);
+                //}
             }
 
             throw new ArgumentException("Id not found: " + id);

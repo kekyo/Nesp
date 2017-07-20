@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
@@ -35,14 +36,15 @@ namespace Nesp
 
     public sealed class NespEngine
     {
-        private readonly NespParser parser = new NespParser();
+        private readonly NespParser parser;
         private readonly Dictionary<string, Func<object>> cachedFuncs =
             new Dictionary<string, Func<object>>();
         private readonly NespExpressionType type;
 
-        public NespEngine(NespExpressionType type)
+        public NespEngine(NespExpressionType type, Func<MethodInfo[], Type[], MethodInfo> binder)
         {
             this.type = type;
+            this.parser = new NespParser(binder);
         }
 
         public async Task AddExtensionAsync(INespExtension extension)

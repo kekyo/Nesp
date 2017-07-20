@@ -29,6 +29,12 @@ namespace Nesp
     [TestFixture]
     public class NespParserTests
     {
+        private static MethodInfo Binder(MethodInfo[] match, Type[] types)
+        {
+            return Type.DefaultBinder.SelectMethod(
+                BindingFlags.Public | BindingFlags.Static, match, types, null) as MethodInfo;
+        }
+
         private Expression ParseAndVisit(string replLine)
         {
             var inputStream = new AntlrInputStream(replLine);
@@ -36,7 +42,7 @@ namespace Nesp
             var commonTokenStream = new CommonTokenStream(lexer);
             var grammarParser = new NespGrammarParser(commonTokenStream);
 
-            var parser = new NespParser();
+            var parser = new NespParser(Binder);
             parser.AddMembers(NespDefaultExtension.CreateMembers());
             return parser.Visit(grammarParser.list());
         }
@@ -204,6 +210,29 @@ namespace Nesp
             Assert.AreEqual(typeof(Guid), mi.DeclaringType);
             Assert.AreEqual(typeof(Guid), mi.ReturnType);
             Assert.AreEqual("NewGuid", mi.Name);
+        }
+
+        [Test]
+        public void MethodWithArgsIdTest()
+        {
+            var expr = ParseAndVisit("System.String.Format \"ABC{0}DEF\" 123");
+            var methodCallExpr = (MethodCallExpression)expr;
+            var mi = methodCallExpr.Method;
+            Assert.IsNull(methodCallExpr.Object);
+            Assert.AreEqual(typeof(string), mi.DeclaringType);
+            Assert.AreEqual(typeof(string), mi.ReturnType);
+            Assert.IsTrue(
+                new[] { typeof(string), typeof(object) }
+                .SequenceEqual(mi.GetParameters().Select(pi => pi.ParameterType)));
+            Assert.IsTrue(
+                new[] { typeof(string), typeof(object) }
+                    .SequenceEqual(methodCallExpr.Arguments.Select(arg => arg.Type)));
+            Assert.IsTrue(
+                new object[] { "ABC{0}DEF", (byte)123 }
+                .SequenceEqual(new[] {
+                    ((ConstantExpression)methodCallExpr.Arguments[0]).Value,
+                    ((ConstantExpression)((UnaryExpression)methodCallExpr.Arguments[1]).Operand).Value }));
+            Assert.AreEqual("Format", mi.Name);
         }
 
         [Test]
