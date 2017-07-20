@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -25,15 +26,16 @@ namespace Nesp
 {
     public sealed class NespReplExit
     {
-        public static NespReplExit Value = new NespReplExit();
-
-        private NespReplExit()
+        internal NespReplExit(int exitCode)
         {
+            this.ExitCode = exitCode;
         }
+
+        public int ExitCode { get; }
 
         public override string ToString()
         {
-            return "exit";
+            return $"exit {this.ExitCode}";
         }
     }
 
@@ -45,13 +47,26 @@ namespace Nesp
         {
         }
 
+        private static object Exit0()
+        {
+            return new NespReplExit(0);
+        }
+
+        private static object Exit(int exitCode)
+        {
+            return new NespReplExit(exitCode);
+        }
+
         public Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync()
         {
+            Func<object> exit0Func = Exit0;
+            Func<int, object> exitFunc = Exit;
+
             return Task.FromResult(
                 (IReadOnlyDictionary<string, MemberInfo[]>)
                 new Dictionary<string, MemberInfo[]>
                 {
-                    { "exit", new[] { typeof(NespReplExit).GetRuntimeField("Value") } }
+                    { "exit", new[] { exit0Func.GetMethodInfo(), exitFunc.GetMethodInfo() } }
                 });
         }
     }

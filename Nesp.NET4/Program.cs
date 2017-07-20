@@ -84,15 +84,14 @@ namespace Nesp
 
                 var func = await engine.CompileExpressionAsync(replLine);
                 var result = func();
-                if (result == NespReplExit.Value)
+                var exit = result as NespReplExit;
+                if (exit != null)
                 {
-                    break;
+                    return exit.ExitCode;
                 }
 
                 Console.WriteLine(Format(result));
             }
-
-            return 0;
         }
 
         public static int Main(string[] args)
