@@ -69,7 +69,7 @@ namespace Nesp.Extensions
         internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
         {
             var extractor = new MemberExtractor(
-                ReservedTypeNames.Keys.Concat(new [] { typeof(Operators) }));
+                ReservedTypeNames.Keys.Concat(new [] { typeof(NespStandardOperators) }));
 
             return
                 (from entry in extractor.MembersByName

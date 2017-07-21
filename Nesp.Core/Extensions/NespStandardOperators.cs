@@ -17,24 +17,52 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Collections.Generic;
-using System.Reflection;
-using System.Threading.Tasks;
-
 namespace Nesp.Extensions
 {
-    public sealed class NespReplExtension : INespExtension
+    internal static class NespStandardOperators
     {
-        public static readonly INespExtension Instance = new NespReplExtension();
+        // TODO: Replace native expressions.
 
-        private NespReplExtension()
+        [MemberBind("+")]
+        public static byte Add(byte a, byte b)
         {
+            return (byte)(a + b);
         }
 
-        public Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync()
+        [MemberBind("+")]
+        public static short Add(short a, short b)
         {
-            var extractor = new MemberExtractor(typeof(NespReplOperators));
-            return Task.FromResult(extractor.MembersByName);
+            return (short)(a + b);
+        }
+
+        [MemberBind("+")]
+        public static int Add(int a, int b)
+        {
+            return a + b;
+        }
+
+        [MemberBind("+")]
+        public static long Add(long a, long b)
+        {
+            return a + b;
+        }
+
+        [MemberBind("+")]
+        public static string Add(string a, string b)
+        {
+            return a + b;
+        }
+
+        [MemberBind("+")]
+        public static string Add(string a, char b)
+        {
+            return a + b;
+        }
+
+        [MemberBind("+")]
+        public static string Add(char a, char b)
+        {
+            return a.ToString() + b;
         }
     }
 }

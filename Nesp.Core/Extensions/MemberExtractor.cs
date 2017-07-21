@@ -24,16 +24,47 @@ using System.Reflection;
 
 namespace Nesp.Extensions
 {
-    internal sealed class MemberExtractor
+    public sealed class MemberExtractor
     {
         private static readonly Dictionary<string, string> operatorNames =
             new Dictionary<string, string>
             {
+                // For C#
                 { "op_Addition", "+" },
                 { "op_Subtraction", "-" },
                 { "op_Multiply", "*" },
                 { "op_Division", "/" },
                 { "op_Modulus", "%" },
+                { "op_Equality", "==" },
+                { "op_Inequality", "!=" },
+                { "op_GreaterThan", ">" },
+                { "op_GreaterThanOrEqual", ">=" },
+                { "op_LessThan", "<" },
+                { "op_LessThanOrEqual", "<=" },
+                { "op_Increment", "++" },
+                { "op_Decrement", "--" },
+                { "op_BitwiseOr", "|" },
+                { "op_BitwiseAnd", "&" },
+                { "op_ExclusiveOr", "^" },
+                { "op_OnesComplement", "~" },
+                { "op_LogicalNot", "!" },
+                { "op_LeftShift", "<<" },
+                { "op_RightShift", ">>" },
+
+                // For F#
+                { "op_Nil", "[]" },
+                { "op_Cons", "::" },
+                { "op_Append", "@" },
+                { "op_Concatenate", "^" },
+                { "op_UnaryPlus", "~+" },
+                { "op_UnaryNegation", "~-" },
+                { "op_Dynamic", "?" },
+                { "op_PipeLeft", "<|" },
+                { "op_PipeRight", "|>" },
+                { "op_Dereference", "!" },
+                { "op_ComposeLeft", "<<" },
+                { "op_ComposeRight", ">>" },
+                { "op_Range", ".." },
             };
 
         public MemberExtractor(IEnumerable<Assembly> assemblies)
@@ -42,6 +73,11 @@ namespace Nesp.Extensions
         }
 
         public MemberExtractor(IEnumerable<Type> types)
+            : this(types.Select(type => type.GetTypeInfo()))
+        {
+        }
+
+        public MemberExtractor(params Type[] types)
             : this(types.Select(type => type.GetTypeInfo()))
         {
         }

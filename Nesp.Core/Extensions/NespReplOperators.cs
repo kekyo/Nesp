@@ -19,50 +19,63 @@
 
 namespace Nesp.Extensions
 {
-    internal static class Operators
+    public sealed class NespReplExit
     {
-        // TODO: Replace native expressions.
-
-        [MemberBind("+")]
-        public static byte Add(byte a, byte b)
+        internal NespReplExit(int exitCode)
         {
-            return (byte)(a + b);
+            this.ExitCode = exitCode;
         }
 
-        [MemberBind("+")]
-        public static short Add(short a, short b)
+        public int ExitCode { get; }
+
+        public override string ToString()
         {
-            return (short)(a + b);
+            return $"exit {this.ExitCode}";
+        }
+    }
+
+    public sealed class NespReplCls
+    {
+        public static NespReplCls Instance = new NespReplCls();
+
+        private NespReplCls()
+        {
+        }
+    }
+
+    public sealed class NespReplHelp
+    {
+        public static NespReplHelp Instance = new NespReplHelp();
+
+        private NespReplHelp()
+        {
+        }
+    }
+
+    internal static class NespReplOperators
+    {
+        [MemberBind("exit")]
+        public static object Exit()
+        {
+            return new NespReplExit(0);
         }
 
-        [MemberBind("+")]
-        public static int Add(int a, int b)
+        [MemberBind("exit")]
+        public static object Exit(int exitCode)
         {
-            return a + b;
+            return new NespReplExit(exitCode);
         }
 
-        [MemberBind("+")]
-        public static long Add(long a, long b)
+        [MemberBind("cls")]
+        public static object Cls()
         {
-            return a + b;
+            return NespReplCls.Instance;
         }
 
-        [MemberBind("+")]
-        public static string Add(string a, string b)
+        [MemberBind("help")]
+        public static object Help()
         {
-            return a + b;
-        }
-
-        [MemberBind("+")]
-        public static string Add(string a, char b)
-        {
-            return a + b;
-        }
-
-        [MemberBind("+")]
-        public static string Add(char a, char b)
-        {
-            return a.ToString() + b;
+            return NespReplHelp.Instance;
         }
     }
 }

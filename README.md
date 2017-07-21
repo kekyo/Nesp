@@ -36,7 +36,7 @@
 
 * Basic tips:
   * Nesp REPL mode not required brackets (...).
-  * Nesp's expressions are totally lazy evaluation (except literals).
+  * Nesp's expressions are lazy evaluation (except literals).
 
 ### Literals
 

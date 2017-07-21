@@ -43,9 +43,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions\MemberExtractor.cs" />
+    <Compile Include="Extensions\NespReplOperators.cs" />
     <Compile Include="Extensions\NespStandardExtension.cs" />
     <Compile Include="Extensions\MemberBindAttribute.cs" />
-    <Compile Include="Extensions\Operators.cs" />
+    <Compile Include="Extensions\NespStandardOperators.cs" />
     <Compile Include="ImmutableDictionary.cs" />
     <Compile Include="INespExtension.cs" />
     <Compile Include="Extensions\NespReplExtension.cs" />
@@ -70,6 +71,27 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.props'))" />
     <Error Condition="!Exists('..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.targets'))" />
+    <Error Condition="!Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.13\build\ILRepack.Lib.MSBuild.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ILRepack.Lib.MSBuild.Task.2.0.13\build\ILRepack.Lib.MSBuild.Task.targets'))" />
   </Target>
   <Import Project="..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.targets" Condition="Exists('..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.targets')" />
+  <Import Project="..\packages\ILRepack.Lib.MSBuild.Task.2.0.13\build\ILRepack.Lib.MSBuild.Task.targets" Condition="Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.13\build\ILRepack.Lib.MSBuild.Task.targets')" />
+  <!-- ILRepack -->
+  <!--
+  <Target Name="AfterBuild">
+    <ItemGroup>
+      <InputAssemblies Include="$(OutputPath)\$(AssemblyName).Before.dll" />
+      <InputAssemblies Include="$(OutputPath)\Antlr4.Runtime.dll" />
+    </ItemGroup>
+    <Move SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFiles="$(OutputPath)\$(AssemblyName).Before.dll" />
+    <ILRepack 
+      DebugInfo="true"
+      Parallel="true"
+      Internalize="true"
+      InputAssemblies="@(InputAssemblies)"
+      TargetKind="Dll"
+      OutputFile="$(OutputPath)\$(AssemblyName).dll"
+    />
+  </Target>
+  -->
+  <!-- /ILRepack -->
 </Project>
