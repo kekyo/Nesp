@@ -6,7 +6,7 @@
 
 * Nesp is a Lisp-like lightweight functional language on .NET
 * Nesp is:
-  * Very lightweight language syntax like Lisp's S-expression.
+  * Very lightweight language syntax likely Lisp's S-expression.
   * Applicable .NET library.
   * Expandable tokens.
   * Designed for easy embedding and useful on REPL.

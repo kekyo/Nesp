@@ -23,46 +23,212 @@ namespace Nesp.Extensions
     {
         // TODO: Replace native expressions.
 
+        #region Addition
         [MemberBind("+")]
-        public static byte Add(byte a, byte b)
+        public static byte Addition(byte a, byte b)
         {
             return (byte)(a + b);
         }
 
         [MemberBind("+")]
-        public static short Add(short a, short b)
+        public static short Addition(short a, short b)
         {
             return (short)(a + b);
         }
 
         [MemberBind("+")]
-        public static int Add(int a, int b)
+        public static int Addition(int a, int b)
         {
             return a + b;
         }
 
         [MemberBind("+")]
-        public static long Add(long a, long b)
+        public static long Addition(long a, long b)
         {
             return a + b;
         }
 
         [MemberBind("+")]
-        public static string Add(string a, string b)
+        public static float Addition(float a, float b)
         {
             return a + b;
         }
 
         [MemberBind("+")]
-        public static string Add(string a, char b)
+        public static double Addition(double a, double b)
         {
             return a + b;
         }
 
         [MemberBind("+")]
-        public static string Add(char a, char b)
+        public static string Addition(string a, string b)
+        {
+            return a + b;
+        }
+
+        [MemberBind("+")]
+        public static string Addition(string a, char b)
+        {
+            return a + b;
+        }
+
+        [MemberBind("+")]
+        public static string Addition(char a, char b)
         {
             return a.ToString() + b;
         }
+        #endregion
+
+        #region Subtraction
+        [MemberBind("-")]
+        public static byte Subtraction(byte a, byte b)
+        {
+            return (byte)(a - b);
+        }
+
+        [MemberBind("-")]
+        public static short Subtraction(short a, short b)
+        {
+            return (short)(a - b);
+        }
+
+        [MemberBind("-")]
+        public static int Subtraction(int a, int b)
+        {
+            return a - b;
+        }
+
+        [MemberBind("-")]
+        public static long Subtraction(long a, long b)
+        {
+            return a - b;
+        }
+
+        [MemberBind("-")]
+        public static float Subtraction(float a, float b)
+        {
+            return a - b;
+        }
+
+        [MemberBind("-")]
+        public static double Subtraction(double a, double b)
+        {
+            return a - b;
+        }
+        #endregion
+
+        #region Multiply
+        [MemberBind("*")]
+        public static byte Multiply(byte a, byte b)
+        {
+            return (byte)(a * b);
+        }
+
+        [MemberBind("*")]
+        public static short Multiply(short a, short b)
+        {
+            return (short)(a * b);
+        }
+
+        [MemberBind("*")]
+        public static int Multiply(int a, int b)
+        {
+            return a * b;
+        }
+
+        [MemberBind("*")]
+        public static long Multiply(long a, long b)
+        {
+            return a * b;
+        }
+
+        [MemberBind("*")]
+        public static float Multiply(float a, float b)
+        {
+            return a * b;
+        }
+
+        [MemberBind("*")]
+        public static double Multiply(double a, double b)
+        {
+            return a * b;
+        }
+        #endregion
+
+        #region Division
+        [MemberBind("/")]
+        public static byte Division(byte a, byte b)
+        {
+            return (byte)(a / b);
+        }
+
+        [MemberBind("/")]
+        public static short Division(short a, short b)
+        {
+            return (short)(a / b);
+        }
+
+        [MemberBind("/")]
+        public static int Division(int a, int b)
+        {
+            return a / b;
+        }
+
+        [MemberBind("/")]
+        public static long Division(long a, long b)
+        {
+            return a / b;
+        }
+
+        [MemberBind("/")]
+        public static float Division(float a, float b)
+        {
+            return a / b;
+        }
+
+        [MemberBind("/")]
+        public static double Division(double a, double b)
+        {
+            return a / b;
+        }
+        #endregion
+
+        #region Modulus
+        [MemberBind("%")]
+        public static byte Modulus(byte a, byte b)
+        {
+            return (byte)(a / b);
+        }
+
+        [MemberBind("%")]
+        public static short Modulus(short a, short b)
+        {
+            return (short)(a / b);
+        }
+
+        [MemberBind("%")]
+        public static int Modulus(int a, int b)
+        {
+            return a / b;
+        }
+
+        [MemberBind("%")]
+        public static long Modulus(long a, long b)
+        {
+            return a / b;
+        }
+
+        [MemberBind("%")]
+        public static float Modulus(float a, float b)
+        {
+            return a / b;
+        }
+
+        [MemberBind("%")]
+        public static double Modulus(double a, double b)
+        {
+            return a / b;
+        }
+        #endregion
     }
 }

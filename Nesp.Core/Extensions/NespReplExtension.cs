@@ -33,8 +33,11 @@ namespace Nesp.Extensions
 
         public Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync()
         {
-            var extractor = new MemberExtractor(typeof(NespReplOperators));
-            return Task.FromResult(extractor.MembersByName);
+            return Task.Run(() =>
+            {
+                var extractor = new MemberExtractor(typeof(NespReplOperators));
+                return extractor.MembersByName;
+            });
         }
     }
 }
