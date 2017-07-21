@@ -17,6 +17,8 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
+
 namespace Nesp.Extensions
 {
     internal static class NespStandardOperators
@@ -228,6 +230,20 @@ namespace Nesp.Extensions
         public static double Modulus(double a, double b)
         {
             return a / b;
+        }
+        #endregion
+
+        #region New
+        [MemberBind("new")]
+        public static object New(Type type)
+        {
+            return Activator.CreateInstance(type);
+        }
+
+        [MemberBind("new")]
+        public static object New(Type type, params object[] args)
+        {
+            return Activator.CreateInstance(type, args);
         }
         #endregion
     }
