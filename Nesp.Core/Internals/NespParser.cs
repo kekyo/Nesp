@@ -23,10 +23,22 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+using Antlr4.Runtime;
 using Antlr4.Runtime.Misc;
+using Antlr4.Runtime.Tree;
 
 namespace Nesp.Internals
 {
+    internal static class NespParserUtilities
+    {
+        private static readonly IList<IParseTree> empty = new IParseTree[0];
+
+        public static IList<IParseTree> GetChildren(this ParserRuleContext context)
+        {
+            return context.children ?? empty;
+        }
+    }
+
     internal sealed class NespParser : NespGrammarBaseVisitor<Expression>
     {
         private readonly INespMemberBinder binder;
@@ -55,7 +67,7 @@ namespace Nesp.Internals
 
         public override Expression VisitExpression([NotNull] NespGrammarParser.ExpressionContext context)
         {
-            var listContext = (NespGrammarParser.ListContext)context.children[1];
+            var listContext = (NespGrammarParser.ListContext)context.GetChildren()[1];
             return this.Visit(listContext);
         }
 
@@ -97,11 +109,11 @@ namespace Nesp.Internals
             }
 
             // First child is id?
-            var childContext0 = context.children[0] as NespGrammarParser.IdContext;
+            var childContext0 = context.GetChildren()[0] as NespGrammarParser.IdContext;
             if (childContext0 != null)
             {
                 // Lookup id from known dict.
-                var id0 = childContext0.children[0].GetText();
+                var id0 = childContext0.GetChildren()[0].GetText();
                 if (members.TryGetValue(id0, out var candidates))
                 {
                     var candidatesForMethod = candidates
@@ -109,7 +121,7 @@ namespace Nesp.Internals
                         .ToArray();
                     if (candidatesForMethod.Length >= 1)
                     {
-                        var argExprs = context.children
+                        var argExprs = context.GetChildren()
                             .Skip(1)
                             .Select(this.Visit)
                             .ToArray();
@@ -121,23 +133,75 @@ namespace Nesp.Internals
                         }
                     }
                 }
+
+                //////////////////////////////////////
+                // TODO: HACK: Resolve let operator
+                //   MEMO: Convert totally Expression-based infrastructure from MemberInfo.
+
+                if (id0 == "let")
+                {
+                    // TODO: Static binding (Count == 3)
+                    if (context.children.Count == 4)
+                    {
+                        var childContext1 = context.GetChildren()[1] as NespGrammarParser.IdContext;
+                        var childContext2 = context.GetChildren()[2] as NespGrammarParser.ExpressionContext;
+                        var childContext3 = context.GetChildren()[3] as NespGrammarParser.ExpressionContext;
+                        if ((childContext1 != null) && (childContext2 != null) && (childContext3 != null))
+                        {
+                            var name = childContext1.GetChildren()[0].GetText();
+                            // name must not contain period
+                            if (name.Contains("."))
+                            {
+                                throw new ArgumentException("Can't bind name contains period: " + name);
+                            }
+
+                            var argIds = ((NespGrammarParser.ListContext)childContext2.GetChildren()[1])
+                                .GetChildren()
+                                .Select(arg =>
+                                {
+                                    var argContext = arg as NespGrammarParser.IdContext;
+                                    if (argContext != null)
+                                    {
+                                        var argName = argContext.GetChildren()[0].GetText();
+                                        // TODO: Apply generic types
+                                        return Expression.Parameter(typeof(object), argName);
+                                    }
+                                    else
+                                    {
+                                        return null;
+                                    }
+                                })
+                                .ToArray();
+
+                            // args must contain argument ids.
+                            if ((argIds.Length == 0) || argIds.Any(arg => arg == null))
+                            {
+                                throw new ArgumentException("Can't function arguments contains only id: " + name);
+                            }
+
+                            var bodyContext = (NespGrammarParser.ListContext)childContext3.GetChildren()[1];
+                            var bodyExpr = this.Visit(bodyContext);
+
+                        }
+                    }
+                }
             }
 
             // Become literal?
-            if (context.children.Count == 1)
+            if (context.GetChildren().Count == 1)
             {
-                return this.Visit(context.children[0]);
+                return this.Visit(context.GetChildren()[0]);
             }
 
             // TODO: Calculate minimum assignable type.
             return Expression.NewArrayInit(
-                typeof(object), context.children.Select(childContext =>
+                typeof(object), context.GetChildren().Select(childContext =>
                     NormalizeType(this.Visit(childContext), typeof(object))));
         }
 
         public override Expression VisitString([NotNull] NespGrammarParser.StringContext context)
         {
-            var text = context.children[0].GetText();
+            var text = context.GetChildren()[0].GetText();
             text = text.Substring(1, text.Length - 2);
 
             var sb = new StringBuilder();
@@ -186,7 +250,7 @@ namespace Nesp.Internals
 
         public override Expression VisitNumeric([NotNull] NespGrammarParser.NumericContext context)
         {
-            var numericText = context.children[0].GetText();
+            var numericText = context.GetChildren()[0].GetText();
 
             if (byte.TryParse(numericText, out var byteValue))
             {
@@ -214,7 +278,7 @@ namespace Nesp.Internals
 
         public override Expression VisitId([NotNull] NespGrammarParser.IdContext context)
         {
-            var id = context.children[0].GetText();
+            var id = context.GetChildren()[0].GetText();
             if (members.TryGetValue(id, out var candidates))
             {
                 // id is Type
@@ -267,3 +331,4 @@ namespace Nesp.Internals
         }
     }
 }
+
