@@ -251,6 +251,50 @@ namespace Nesp
         }
         #endregion
 
+        #region List
+        [Test]
+        public void NoValuesListTest()
+        {
+            var expr = ParseAndVisit("");
+            var constExpr = (ConstantExpression)expr;
+            Assert.IsNull(constExpr.Value);
+        }
+
+        [Test]
+        public void ListWithValuesTest()
+        {
+            var expr = ParseAndVisit("123 456 789");
+            var newArrayExpr = (NewArrayExpression)expr;
+            Assert.AreEqual(typeof(object[]), newArrayExpr.Type);
+            Assert.IsTrue(
+                new object[] { (byte)123, (short)456, (short)789 }
+                    .SequenceEqual(newArrayExpr.Expressions.Select(iexpr => 
+                        ((ConstantExpression)((UnaryExpression)iexpr).Operand).Value)));
+        }
+        #endregion
+
+        #region Expression
+        [Test]
+        public void NoValuesExpressionTest()
+        {
+            var expr = ParseAndVisit("()");
+            var constExpr = (ConstantExpression)expr;
+            Assert.IsNull(constExpr.Value);
+        }
+
+        [Test]
+        public void ExpressionWithValuesTest()
+        {
+            var expr = ParseAndVisit("(123 456 789)");
+            var newArrayExpr = (NewArrayExpression)expr;
+            Assert.AreEqual(typeof(object[]), newArrayExpr.Type);
+            Assert.IsTrue(
+                new object[] { (byte)123, (short)456, (short)789 }
+                    .SequenceEqual(newArrayExpr.Expressions.Select(iexpr =>
+                        ((ConstantExpression)((UnaryExpression)iexpr).Operand).Value)));
+        }
+        #endregion
+
         #region Compilation
         [Test]
         public void CompileFieldIdTest()

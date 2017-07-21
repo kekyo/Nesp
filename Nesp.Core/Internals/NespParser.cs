@@ -55,7 +55,8 @@ namespace Nesp.Internals
 
         public override Expression VisitExpression([NotNull] NespGrammarParser.ExpressionContext context)
         {
-            return VisitChildren(context);
+            var listContext = (NespGrammarParser.ListContext)context.children[1];
+            return this.Visit(listContext);
         }
 
         private static Expression NormalizeType(Expression expr, Type targetType)
@@ -71,6 +72,7 @@ namespace Nesp.Internals
                     .Select(argExpr => argExpr.Type)
                     .ToArray();
 
+                // TODO: DefaultBinder.SelectMethod can't resolve variable arguments (params).
                 var mi = binder.SelectMethod(candidates, types);
                 if (mi != null)
                 {
@@ -88,11 +90,18 @@ namespace Nesp.Internals
 
         public override Expression VisitList([NotNull] NespGrammarParser.ListContext context)
         {
+            // Empty.
+            if (context.children == null)
+            {
+                return Expression.Constant(null);
+            }
+
+            // First child is id?
             var childContext0 = context.children[0] as NespGrammarParser.IdContext;
             if (childContext0 != null)
             {
+                // Lookup id from known dict.
                 var id0 = childContext0.children[0].GetText();
-
                 if (members.TryGetValue(id0, out var candidates))
                 {
                     var candidatesForMethod = candidates
@@ -114,7 +123,16 @@ namespace Nesp.Internals
                 }
             }
 
-            return VisitChildren(context);
+            // Become literal?
+            if (context.children.Count == 1)
+            {
+                return this.Visit(context.children[0]);
+            }
+
+            // TODO: Calculate minimum assignable type.
+            return Expression.NewArrayInit(
+                typeof(object), context.children.Select(childContext =>
+                    NormalizeType(this.Visit(childContext), typeof(object))));
         }
 
         public override Expression VisitString([NotNull] NespGrammarParser.StringContext context)
@@ -197,10 +215,17 @@ namespace Nesp.Internals
         public override Expression VisitId([NotNull] NespGrammarParser.IdContext context)
         {
             var id = context.children[0].GetText();
-
             if (members.TryGetValue(id, out var candidates))
             {
-                var fi = candidates[0] as FieldInfo;
+                // id is Type
+                var type = candidates.OfType<Type>().FirstOrDefault();
+                if (type != null)
+                {
+                    return Expression.Constant(type);
+                }
+
+                // id is FieldInfo
+                var fi = candidates.OfType<FieldInfo>().FirstOrDefault();
                 if (fi != null)
                 {
                     if (fi.IsLiteral || fi.IsInitOnly)
@@ -214,16 +239,17 @@ namespace Nesp.Internals
                     }
                 }
 
+                // id is PropertyInfo
                 // TODO: indexer
-                var pi = candidates[0] as PropertyInfo;
+                var pi = candidates.OfType<PropertyInfo>().FirstOrDefault();
                 if (pi != null)
                 {
                     return Expression.Property(null, pi);
                 }
 
-                // We can use only no arguments method in this place.
+                // We can use only no arguments function in this place.
                 // ex: 'string.Format "ABC{0}DEF{1}GHI" 123 System.Guid.NewGuid'
-                //     NewGuid method is no arguments so legal style and support below.
+                //     NewGuid function is no arguments so legal style and support below.
                 var candidatesForMethod = candidates
                     .OfType<MethodInfo>()
                     .ToArray();

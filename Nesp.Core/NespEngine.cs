@@ -18,9 +18,11 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
@@ -47,6 +49,20 @@ namespace Nesp
         {
             this.type = type;
             this.parser = new NespParser(binder);
+        }
+
+        public static string GetReadableTypeName(Type type)
+        {
+            return NespStandardExtension.ReservedTypeNames.TryGetValue(type, out var typeName)
+                ? typeName
+                : NespReflectionUtilities.GetReadableTypeName(
+                    type, GetReadableTypeName);
+        }
+
+        public static string FormatReadableString(object value)
+        {
+            return NespReflectionUtilities.FormatReadableString(
+                value, GetReadableTypeName);
         }
 
         public async Task AddExtensionAsync(INespExtension extension)

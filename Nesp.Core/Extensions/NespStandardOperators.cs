@@ -276,6 +276,7 @@ namespace Nesp.Extensions
             return Activator.CreateInstance(type);
         }
 
+        // TODO: Support variable arguments.
         [MemberBind("new")]
         public static object New(Type type, params object[] args)
         {

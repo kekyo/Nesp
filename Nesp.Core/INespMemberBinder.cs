@@ -46,6 +46,7 @@ namespace Nesp
         /// <param name="candidates">Target methods</param>
         /// <param name="argTypes">Matching argument types</param>
         /// <returns>Selected method</returns>
+        // TODO: DefaultBinder.SelectMethod can't resolve variable arguments (params).
         MethodInfo SelectMethod(MethodInfo[] candidates, Type[] argTypes);
     }
 }

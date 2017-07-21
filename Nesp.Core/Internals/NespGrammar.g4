@@ -20,7 +20,7 @@
 grammar NespGrammar;
 
 expression : BRACKETLEFT WHITESPACE? list WHITESPACE? BRACKETRIGHT ;
-list : (expression | string | numeric | id) (WHITESPACE? (expression | string | numeric | id))* ;
+list : (expression | string | numeric | id)? (WHITESPACE? (expression | string | numeric | id))* ;
 string : STRING ;
 numeric : NUMERIC ;
 id : ID ;

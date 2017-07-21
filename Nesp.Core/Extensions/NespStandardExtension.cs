@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Nesp.Internals;
 
 namespace Nesp.Extensions
 {
@@ -60,10 +61,27 @@ namespace Nesp.Extensions
         {
         }
 
-        private static string GetTypeFullName(Type type)
+        private static string GetName(MemberInfo member, string fallbackName)
         {
-            ReservedTypeNames.TryGetValue(type, out var name);
-            return name;
+            var type = member.AsType();
+            if (type != null)
+            {
+                return ReservedTypeNames.TryGetValue(type, out var typeName)
+                    ? typeName
+                    : fallbackName;
+            }
+            else
+            {
+                type = member.DeclaringType;
+                if (ReservedTypeNames.TryGetValue(type, out var typeName))
+                {
+                    return typeName + "." + member.Name;
+                }
+                else
+                {
+                    return fallbackName;
+                }
+            }
         }
 
         internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
@@ -74,10 +92,7 @@ namespace Nesp.Extensions
             return
                 (from entry in extractor.MembersByName
                  from member in entry.Value
-                 let typeFullName = GetTypeFullName(member.DeclaringType)
-                 let name = (typeFullName != null)
-                    ? typeFullName + "." + member.Name
-                    : entry.Key
+                 let name = GetName(member, entry.Key)
                  group member by name)
                 .ToDictionary(g => g.Key, g => g.Distinct().ToArray());
         }

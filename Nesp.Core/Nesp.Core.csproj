@@ -53,6 +53,7 @@
     <Compile Include="Extensions\INespExtension.cs" />
     <Compile Include="Extensions\NespReplExtension.cs" />
     <Compile Include="Extensions\NespBaseExtension.cs" />
+    <Compile Include="Internals\NespReflectionUtilities.cs" />
     <Compile Include="NespEngine.cs" />
     <Compile Include="INespMemberBinder.cs" />
     <Compile Include="Internals\NespParser.cs" />

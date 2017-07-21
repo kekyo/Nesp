@@ -21,7 +21,12 @@ using System;
 
 namespace Nesp.Extensions
 {
-    [AttributeUsage(AttributeTargets.Method | AttributeTargets.Field | AttributeTargets.Property)]
+    [AttributeUsage(
+        AttributeTargets.Class |
+        AttributeTargets.Struct |
+        AttributeTargets.Method |
+        AttributeTargets.Field |
+        AttributeTargets.Property)]
     public sealed class MemberBindAttribute : Attribute
     {
         public MemberBindAttribute(string memberName)

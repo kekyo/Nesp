@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Nesp.Internals;
 
 namespace Nesp.Extensions
 {
@@ -84,8 +85,12 @@ namespace Nesp.Extensions
 
         public MemberExtractor(IEnumerable<TypeInfo> types)
         {
+            this.Types = types
+                .Where(type => type.IsValueType || type.IsClass)
+                .Select(type => type.AsType())
+                .ToArray();
             var members = types
-                .Where(type => (type.IsValueType || type.IsClass))
+                .Where(type => type.IsValueType || type.IsClass)
                 .SelectMany(type => type.DeclaredMembers)
                 .ToArray();
             this.Fields =
@@ -107,14 +112,22 @@ namespace Nesp.Extensions
                  select mi)
                 .ToArray();
 
+            // PCL stupid:
+            //   System.Type not inherit from System.Reflection.MemberInfo on PCL.
             this.MembersByName =
                 (from member in
-                    ((MemberInfo[]) this.Properties)
+                    this.Types.Cast<MemberInfo>()
+                    .Concat(this.Properties)
                     .Concat(this.Fields)
                     .Concat(this.Methods)
                  let name = GetMemberName(member)
                  group member by name)
                 .ToDictionary(g => g.Key, g => g.Distinct().ToArray());
+        }
+
+        private static string GetReadableTypeName(Type type)
+        {
+            return NespReflectionUtilities.GetReadableTypeName(type, GetReadableTypeName);
         }
 
         private static string GetMemberName(MemberInfo member)
@@ -129,9 +142,16 @@ namespace Nesp.Extensions
                 return name;
             }
 
+            var type = member.AsType();
+            if (type != null)
+            {
+                return GetReadableTypeName(type);
+            }
+
             return member.DeclaringType.FullName + "." + member.Name;
         }
 
+        public readonly Type[] Types;
         public readonly FieldInfo[] Fields;
         public readonly PropertyInfo[] Properties;
         public readonly MethodInfo[] Methods;

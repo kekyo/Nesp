@@ -35,25 +35,6 @@ namespace Nesp
 
     public static class Program
     {
-        private static string Format(object value)
-        {
-            if (value == null)
-            {
-                return "(null)";
-            }
-            if (value is string)
-            {
-                return "\"" + value + "\" : string";
-            }
-            var type = value.GetType();
-            if (NespStandardExtension.ReservedTypeNames.TryGetValue(type, out var typeName) == false)
-            {
-                typeName = type.FullName;
-            }
-
-            return $"{value} : {typeName}";
-        }
-
         private static async Task<int> MainAsync(string[] args)
         {
             Console.WriteLine("This is Nesp interpreter.");
@@ -87,6 +68,7 @@ namespace Nesp
                 var exit = result as NespReplExit;
                 if (exit != null)
                 {
+                    Console.WriteLine("Nesp REPL exited: " + exit.ExitCode);
                     return exit.ExitCode;
                 }
                 if (result == NespReplCls.Instance)
@@ -100,6 +82,7 @@ namespace Nesp
                     Console.WriteLine("'help' : Show help");
                     Console.WriteLine("'exit [<exitCode>]' : Exit REPL shell");
                     Console.WriteLine();
+                    Console.WriteLine("Try type: '123 456 789.012'");
                     Console.WriteLine("Try type: '* 123 456'");
                     Console.WriteLine("Try type: 'datetime.Now'");
                     Console.WriteLine("Try type: 'int.Parse \"12345\"'");
@@ -107,7 +90,7 @@ namespace Nesp
                     continue;
                 }
 
-                Console.WriteLine(Format(result));
+                Console.WriteLine(NespEngine.FormatReadableString(result));
             }
         }
 
