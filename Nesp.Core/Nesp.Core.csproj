@@ -45,15 +45,19 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions\MemberExtractor.cs" />
+    <Compile Include="Extensions\NespExtensionBase.cs" />
     <Compile Include="Extensions\NespReplOperators.cs" />
+    <Compile Include="Extensions\NespStandardMemberProducer.cs" />
     <Compile Include="Extensions\NespStandardExtension.cs" />
     <Compile Include="Extensions\MemberBindAttribute.cs" />
     <Compile Include="Extensions\NespStandardOperators.cs" />
-    <Compile Include="Internals\ImmutableDictionary.cs" />
+    <Compile Include="Internals\CandidateInfo.cs" />
+    <Compile Include="Internals\CandidatesDictionary.cs" />
     <Compile Include="Extensions\INespExtension.cs" />
     <Compile Include="Extensions\NespReplExtension.cs" />
     <Compile Include="Extensions\NespBaseExtension.cs" />
     <Compile Include="Internals\NespReflectionUtilities.cs" />
+    <Compile Include="Unit.cs" />
     <Compile Include="NespEngine.cs" />
     <Compile Include="INespMemberBinder.cs" />
     <Compile Include="Internals\NespParser.cs" />

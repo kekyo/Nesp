@@ -18,11 +18,9 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Reflection;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
@@ -67,13 +65,13 @@ namespace Nesp
 
         public async Task AddExtensionAsync(INespExtension extension)
         {
-            var newMembers =
-                await extension.GetMembersAsync()
+            var members =
+                await extension.GetMemberProducerAsync()
                 .ConfigureAwait(false);
 
             lock (parser)
             {
-                parser.AddMembers(newMembers);
+                parser.AddMembers(members);
             }
         }
 

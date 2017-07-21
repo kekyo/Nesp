@@ -21,22 +21,19 @@ using System.Threading.Tasks;
 
 namespace Nesp.Extensions
 {
-    public sealed class NespReplExtension : NespExtensionBase
+    public abstract class NespExtensionBase : INespExtension
     {
-        public static readonly INespExtension Instance = new NespReplExtension();
+        private IMemberProducer cached;
 
-        private NespReplExtension()
+        protected NespExtensionBase()
         {
         }
 
-        internal static IMemberProducer CreateMemberProducer()
-        {
-            return new MemberExtractor(typeof(NespReplOperators));
-        }
+        protected abstract Task<IMemberProducer> CreateMemberProducerAsync();
 
-        protected override Task<IMemberProducer> CreateMemberProducerAsync()
+        public async Task<IMemberProducer> GetMemberProducerAsync()
         {
-            return Task.Run(() => CreateMemberProducer());
+            return cached ?? (cached = await this.CreateMemberProducerAsync());
         }
     }
 }

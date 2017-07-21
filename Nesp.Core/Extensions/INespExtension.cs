@@ -17,14 +17,12 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Collections.Generic;
-using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Nesp.Extensions
 {
     public interface INespExtension
     {
-        Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync();
+        Task<IMemberProducer> GetMemberProducerAsync();
     }
 }

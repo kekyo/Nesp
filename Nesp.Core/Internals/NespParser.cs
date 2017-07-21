@@ -24,48 +24,78 @@ using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using Antlr4.Runtime;
-using Antlr4.Runtime.Misc;
 using Antlr4.Runtime.Tree;
+
+using Nesp.Extensions;
 
 namespace Nesp.Internals
 {
     internal static class NespParserUtilities
     {
+        public static readonly ConstantExpression UnitExpression =
+            Expression.Constant(Unit.Value);
+
         private static readonly IList<IParseTree> empty = new IParseTree[0];
 
         public static IList<IParseTree> GetChildren(this ParserRuleContext context)
         {
             return context.children ?? empty;
         }
+
+        public static string GetInnerText(this ParserRuleContext context)
+        {
+            return context.children[0]?.GetText();
+        }
     }
 
     internal sealed class NespParser : NespGrammarBaseVisitor<Expression>
     {
         private readonly INespMemberBinder binder;
-        private ImmutableDictionary<string, MemberInfo[]> members;
+        private readonly Stack<CandidateInfo> candidateInfos = new Stack<CandidateInfo>();
 
         public NespParser(INespMemberBinder binder)
         {
             this.binder = binder;
+            this.candidateInfos.Push(new CandidateInfo());
         }
 
-        public void AddMembers(IEnumerable<KeyValuePair<string, MemberInfo[]>> newMembers)
+        public void AddMembers(IMemberProducer members)
         {
-            foreach (var entry in newMembers)
+            var current = candidateInfos.Peek();
+
+            foreach (var entry in members.TypesByName)
             {
-                if (members.TryGetValue(entry.Key, out var mis))
-                {
-                    // Extension can override members (Insert before last members).
-                    members.SetValue(entry.Key, entry.Value.Concat(mis).Distinct().ToArray());
-                }
-                else
-                {
-                    members.AddValue(entry.Key, entry.Value.Distinct().ToArray());
-                }
+                current.Types.AddCandidates(
+                    entry.Key,
+                    entry.Value.Select(Expression.Constant).ToArray());
+            }
+
+            foreach (var entry in members.FieldsByName)
+            {
+                current.Fields.AddCandidates(
+                    entry.Key,
+                    entry.Value.Select(fi =>
+                        (fi.IsLiteral || fi.IsInitOnly)
+                            ? (Expression)Expression.Constant(fi.GetValue(null))
+                            : (Expression)Expression.Field(null, fi)).ToArray());
+            }
+
+            foreach (var entry in members.PropertiesByName)
+            {
+                current.Properties.AddCandidates(
+                    entry.Key,
+                    entry.Value.Select(pi => Expression.Property(null, pi)).ToArray());
+            }
+
+            foreach (var entry in members.MethodsByName)
+            {
+                current.Methods.AddCandidates(
+                    entry.Key,
+                    entry.Value.ToArray());
             }
         }
 
-        public override Expression VisitExpression([NotNull] NespGrammarParser.ExpressionContext context)
+        public override Expression VisitExpression(NespGrammarParser.ExpressionContext context)
         {
             var listContext = (NespGrammarParser.ListContext)context.GetChildren()[1];
             return this.Visit(listContext);
@@ -76,7 +106,7 @@ namespace Nesp.Internals
             return (expr.Type != targetType) ? Expression.Convert(expr, targetType) : expr;
         }
 
-        private Expression SelectMethod(MethodInfo[] candidates, Expression[] argExprs)
+        private MethodCallExpression SelectMethod(MethodInfo[] candidates, Expression[] argExprs)
         {
             if (candidates.Length >= 1)
             {
@@ -100,37 +130,33 @@ namespace Nesp.Internals
             return null;
         }
 
-        public override Expression VisitList([NotNull] NespGrammarParser.ListContext context)
+        public override Expression VisitList(NespGrammarParser.ListContext context)
         {
             // Empty.
             if (context.children == null)
             {
-                return Expression.Constant(null);
+                return NespParserUtilities.UnitExpression;
             }
 
             // First child is id?
-            var childContext0 = context.GetChildren()[0] as NespGrammarParser.IdContext;
+            var children = context.GetChildren();
+            var childContext0 = children[0] as NespGrammarParser.IdContext;
             if (childContext0 != null)
             {
                 // Lookup id from known dict.
-                var id0 = childContext0.GetChildren()[0].GetText();
-                if (members.TryGetValue(id0, out var candidates))
+                var current = candidateInfos.Peek();
+                var id0 = childContext0.GetInnerText();
+                if (current.Methods.TryGetCandidates(id0, out var candidates))
                 {
-                    var candidatesForMethod = candidates
-                        .OfType<MethodInfo>()
+                    var argExprs = children
+                        .Skip(1)
+                        .Select(this.Visit)
                         .ToArray();
-                    if (candidatesForMethod.Length >= 1)
-                    {
-                        var argExprs = context.GetChildren()
-                            .Skip(1)
-                            .Select(this.Visit)
-                            .ToArray();
 
-                        var expr = SelectMethod(candidatesForMethod, argExprs);
-                        if (expr != null)
-                        {
-                            return expr;
-                        }
+                    var expr = this.SelectMethod(candidates, argExprs);
+                    if (expr != null)
+                    {
+                        return expr;
                     }
                 }
 
@@ -141,28 +167,28 @@ namespace Nesp.Internals
                 if (id0 == "let")
                 {
                     // TODO: Static binding (Count == 3)
-                    if (context.children.Count == 4)
+                    if (children.Count == 4)
                     {
-                        var childContext1 = context.GetChildren()[1] as NespGrammarParser.IdContext;
-                        var childContext2 = context.GetChildren()[2] as NespGrammarParser.ExpressionContext;
-                        var childContext3 = context.GetChildren()[3] as NespGrammarParser.ExpressionContext;
+                        var childContext1 = children[1] as NespGrammarParser.IdContext;
+                        var childContext2 = children[2] as NespGrammarParser.ExpressionContext;
+                        var childContext3 = children[3] as NespGrammarParser.ExpressionContext;
                         if ((childContext1 != null) && (childContext2 != null) && (childContext3 != null))
                         {
-                            var name = childContext1.GetChildren()[0].GetText();
+                            var name = childContext1.GetInnerText();
                             // name must not contain period
                             if (name.Contains("."))
                             {
                                 throw new ArgumentException("Can't bind name contains period: " + name);
                             }
 
-                            var argIds = ((NespGrammarParser.ListContext)childContext2.GetChildren()[1])
+                            var argExprs = ((NespGrammarParser.ListContext)childContext2.GetChildren()[1])
                                 .GetChildren()
                                 .Select(arg =>
                                 {
                                     var argContext = arg as NespGrammarParser.IdContext;
                                     if (argContext != null)
                                     {
-                                        var argName = argContext.GetChildren()[0].GetText();
+                                        var argName = argContext.GetInnerText();
                                         // TODO: Apply generic types
                                         return Expression.Parameter(typeof(object), argName);
                                     }
@@ -174,23 +200,32 @@ namespace Nesp.Internals
                                 .ToArray();
 
                             // args must contain argument ids.
-                            if ((argIds.Length == 0) || argIds.Any(arg => arg == null))
+                            if ((argExprs.Length == 0) || argExprs.Any(arg => arg == null))
                             {
                                 throw new ArgumentException("Can't function arguments contains only id: " + name);
+                            }
+
+                            current = current.Clone();
+                            candidateInfos.Push(current);
+
+                            foreach (var argExpr in argExprs)
+                            {
+                                current.Locals.AddCandidate(argExpr.Name, argExpr);
                             }
 
                             var bodyContext = (NespGrammarParser.ListContext)childContext3.GetChildren()[1];
                             var bodyExpr = this.Visit(bodyContext);
 
+                            candidateInfos.Pop();
                         }
                     }
                 }
             }
 
             // Become literal?
-            if (context.GetChildren().Count == 1)
+            if (children.Count == 1)
             {
-                return this.Visit(context.GetChildren()[0]);
+                return this.Visit(children[0]);
             }
 
             // TODO: Calculate minimum assignable type.
@@ -199,9 +234,9 @@ namespace Nesp.Internals
                     NormalizeType(this.Visit(childContext), typeof(object))));
         }
 
-        public override Expression VisitString([NotNull] NespGrammarParser.StringContext context)
+        public override Expression VisitString(NespGrammarParser.StringContext context)
         {
-            var text = context.GetChildren()[0].GetText();
+            var text = context.GetInnerText();
             text = text.Substring(1, text.Length - 2);
 
             var sb = new StringBuilder();
@@ -248,9 +283,9 @@ namespace Nesp.Internals
             return Expression.Constant(sb.ToString());
         }
 
-        public override Expression VisitNumeric([NotNull] NespGrammarParser.NumericContext context)
+        public override Expression VisitNumeric(NespGrammarParser.NumericContext context)
         {
-            var numericText = context.GetChildren()[0].GetText();
+            var numericText = context.GetInnerText();
 
             if (byte.TryParse(numericText, out var byteValue))
             {
@@ -276,59 +311,46 @@ namespace Nesp.Internals
             throw new OverflowException();
         }
 
-        public override Expression VisitId([NotNull] NespGrammarParser.IdContext context)
+        public override Expression VisitId(NespGrammarParser.IdContext context)
         {
-            var id = context.GetChildren()[0].GetText();
-            if (members.TryGetValue(id, out var candidates))
+            var current = candidateInfos.Peek();
+
+            var id = context.GetInnerText();
+            if (current.Locals.TryGetCandidates(id, out var localCandidates))
             {
-                // id is Type
-                var type = candidates.OfType<Type>().FirstOrDefault();
-                if (type != null)
-                {
-                    return Expression.Constant(type);
-                }
+                return localCandidates[0];
+            }
 
-                // id is FieldInfo
-                var fi = candidates.OfType<FieldInfo>().FirstOrDefault();
-                if (fi != null)
-                {
-                    if (fi.IsLiteral || fi.IsInitOnly)
-                    {
-                        var value = fi.GetValue(null);
-                        return Expression.Constant(value);
-                    }
-                    else
-                    {
-                        return Expression.Field(null, fi);
-                    }
-                }
+            if (current.Fields.TryGetCandidates(id, out var fieldCandidates))
+            {
+                return fieldCandidates[0];
+            }
 
-                // id is PropertyInfo
-                // TODO: indexer
-                var pi = candidates.OfType<PropertyInfo>().FirstOrDefault();
-                if (pi != null)
-                {
-                    return Expression.Property(null, pi);
-                }
+            if (current.Properties.TryGetCandidates(id, out var propertyCandidates))
+            {
+                return propertyCandidates[0];
+            }
 
-                // We can use only no arguments function in this place.
-                // ex: 'string.Format "ABC{0}DEF{1}GHI" 123 System.Guid.NewGuid'
-                //     NewGuid function is no arguments so legal style and support below.
-                var candidatesForMethod = candidates
-                    .OfType<MethodInfo>()
-                    .ToArray();
-                if (candidatesForMethod.Length >= 1)
+            // TODO: indexer
+
+            // We can use only no arguments function in this place.
+            // ex: 'string.Format "ABC{0}DEF{1}GHI" 123 System.Guid.NewGuid'
+            //     NewGuid function is no arguments so legal style and support below.
+            if (current.Methods.TryGetCandidates(id, out var methodCandidates))
+            {
+                var expr = this.SelectMethod(methodCandidates, new Expression[0]);
+                if (expr != null)
                 {
-                    var expr = SelectMethod(candidatesForMethod, new Expression[0]);
-                    if (expr != null)
-                    {
-                        return expr;
-                    }
+                    return expr;
                 }
+            }
+
+            if (current.Types.TryGetCandidates(id, out var typeCandidates))
+            {
+                return typeCandidates[0];
             }
 
             throw new ArgumentException("Id not found: " + id);
         }
     }
 }
-

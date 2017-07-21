@@ -18,43 +18,32 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Nesp.Extensions
 {
-    public sealed class NespBaseExtension : INespExtension
+    public sealed class NespBaseExtension : NespExtensionBase
     {
         public static readonly INespExtension Instance = new NespBaseExtension();
-
-        private IReadOnlyDictionary<string, MemberInfo[]> cached;
 
         private NespBaseExtension()
         {
         }
 
-        internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
+        internal static IMemberProducer CreateMemberProducer()
         {
-            var extractor = new MemberExtractor(
-                new[] { typeof(object), typeof(Uri), typeof(Enumerable) }
-                .Select(type => type.GetTypeInfo().Assembly));
-            return extractor.MembersByName;
+            return new MemberExtractor(
+                new[] {typeof(object), typeof(Uri), typeof(Enumerable)}
+                .SelectMany(type => type.GetTypeInfo().Assembly.DefinedTypes)
+                .Where(typeInfo => typeInfo.IsPublic)
+                .Concat(new[] { typeof(Unit).GetTypeInfo() }));
         }
 
-        public Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync()
+        protected override Task<IMemberProducer> CreateMemberProducerAsync()
         {
-            if (cached != null)
-            {
-                return Task.FromResult(cached);
-            }
-
-            return Task.Run(() =>
-            {
-                cached = CreateMembers();
-                return cached;
-            });
+            return Task.Run(() => CreateMemberProducer());
         }
     }
 }

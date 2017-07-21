@@ -25,7 +25,15 @@ using Nesp.Internals;
 
 namespace Nesp.Extensions
 {
-    public sealed class MemberExtractor
+    public interface IMemberProducer
+    {
+        IReadOnlyDictionary<string, Type[]> TypesByName { get; }
+        IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
+        IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
+        IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }
+    }
+
+    public sealed class MemberExtractor : IMemberProducer
     {
         private static readonly Dictionary<string, string> operatorNames =
             new Dictionary<string, string>
@@ -69,65 +77,82 @@ namespace Nesp.Extensions
             };
 
         public MemberExtractor(IEnumerable<Assembly> assemblies)
-            : this(assemblies.SelectMany(assembly => assembly.DefinedTypes).Where(type => type.IsPublic))
-        {
-        }
-
-        public MemberExtractor(IEnumerable<Type> types)
-            : this(types.Select(type => type.GetTypeInfo()))
+            : this(assemblies.SelectMany(assembly => assembly.DefinedTypes).Where(typeInfo => typeInfo.IsPublic))
         {
         }
 
         public MemberExtractor(params Type[] types)
-            : this(types.Select(type => type.GetTypeInfo()))
+            : this((IEnumerable<Type>)types)
         {
         }
 
-        public MemberExtractor(IEnumerable<TypeInfo> types)
+        public MemberExtractor(IEnumerable<Type> types)
+            : this(types.Select(typeInfo => typeInfo.GetTypeInfo()))
         {
-            this.Types = types
+        }
+
+        public MemberExtractor(IEnumerable<TypeInfo> typeInfos)
+        {
+            var classOrValueTypeInfos = typeInfos
                 .Where(type => type.IsValueType || type.IsClass)
-                .Select(type => type.AsType())
                 .ToArray();
-            var members = types
-                .Where(type => type.IsValueType || type.IsClass)
-                .SelectMany(type => type.DeclaredMembers)
-                .ToArray();
-            this.Fields =
-                (from fi in members.OfType<FieldInfo>()
+
+            this.TypesByName =
+                (from typeInfo in classOrValueTypeInfos
+                 let typeName = GetTypeName(typeInfo)
+                 group typeInfo by typeName)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Distinct().Select(typeInfo => typeInfo.AsType()).ToArray());
+
+            this.FieldsByName =
+                (from typeInfo in classOrValueTypeInfos
+                 from fi in typeInfo.DeclaredFields
                  where fi.IsPublic && fi.IsStatic    // Include enums
-                 select fi)
-                .ToArray();
+                 let fullName = GetMemberName(fi)
+                 group fi by fullName)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Distinct().ToArray());
+
             var properties =
-                (from pi in members.OfType<PropertyInfo>()
+                (from typeInfo in classOrValueTypeInfos
+                 from pi in typeInfo.DeclaredProperties
                  let getter = pi.GetMethod
                  where pi.CanRead && (getter != null) && getter.IsPublic && getter.IsStatic
                  select new { mi = getter, pi })
                 .ToDictionary(entry => entry.mi, entry => entry.pi);
-            this.Properties =
-                properties.Values.ToArray();
-            this.Methods =
-                (from mi in members.OfType<MethodInfo>()
-                 where mi.IsPublic && mi.IsStatic && !properties.ContainsKey(mi)
-                 select mi)
-                .ToArray();
 
-            // PCL stupid:
-            //   System.Type not inherit from System.Reflection.MemberInfo on PCL.
-            this.MembersByName =
-                (from member in
-                    this.Types.Cast<MemberInfo>()
-                    .Concat(this.Properties)
-                    .Concat(this.Fields)
-                    .Concat(this.Methods)
-                 let name = GetMemberName(member)
-                 group member by name)
-                .ToDictionary(g => g.Key, g => g.Distinct().ToArray());
+            this.PropertiesByName =
+                (from entry in properties
+                 let fullName = GetMemberName(entry.Value)
+                 group entry.Value by fullName)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Distinct().ToArray());
+
+            this.MethodsByName =
+                (from typeInfo in classOrValueTypeInfos
+                 from mi in typeInfo.DeclaredMethods
+                 where mi.IsPublic && mi.IsStatic && !properties.ContainsKey(mi)
+                 let fullName = GetMemberName(mi)
+                 group mi by fullName)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.Distinct().ToArray());
         }
 
         private static string GetReadableTypeName(Type type)
         {
             return NespReflectionUtilities.GetReadableTypeName(type, GetReadableTypeName);
+        }
+
+        private static string GetTypeName(TypeInfo typeInfo)
+        {
+            var memberBind = typeInfo.GetCustomAttribute<MemberBindAttribute>();
+            return (memberBind != null)
+                ? memberBind.MemberName
+                : GetReadableTypeName(typeInfo.AsType());
         }
 
         private static string GetMemberName(MemberInfo member)
@@ -151,10 +176,9 @@ namespace Nesp.Extensions
             return member.DeclaringType.FullName + "." + member.Name;
         }
 
-        public readonly Type[] Types;
-        public readonly FieldInfo[] Fields;
-        public readonly PropertyInfo[] Properties;
-        public readonly MethodInfo[] Methods;
-        public readonly IReadOnlyDictionary<string, MemberInfo[]> MembersByName;
+        public IReadOnlyDictionary<string, Type[]> TypesByName { get; }
+        public IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
+        public IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
+        public IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }
     }
 }

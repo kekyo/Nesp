@@ -20,13 +20,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
-using Nesp.Internals;
 
 namespace Nesp.Extensions
 {
-    public sealed class NespStandardExtension : INespExtension
+    public sealed class NespStandardExtension : NespExtensionBase
     {
         public static readonly IReadOnlyDictionary<Type, string> ReservedTypeNames =
             new Dictionary<Type, string>
@@ -55,60 +53,20 @@ namespace Nesp.Extensions
 
         public static readonly INespExtension Instance = new NespStandardExtension();
 
-        private IReadOnlyDictionary<string, MemberInfo[]> cached;
-
         private NespStandardExtension()
         {
         }
 
-        private static string GetName(MemberInfo member, string fallbackName)
-        {
-            var type = member.AsType();
-            if (type != null)
-            {
-                return ReservedTypeNames.TryGetValue(type, out var typeName)
-                    ? typeName
-                    : fallbackName;
-            }
-            else
-            {
-                type = member.DeclaringType;
-                if (ReservedTypeNames.TryGetValue(type, out var typeName))
-                {
-                    return typeName + "." + member.Name;
-                }
-                else
-                {
-                    return fallbackName;
-                }
-            }
-        }
-
-        internal static IReadOnlyDictionary<string, MemberInfo[]> CreateMembers()
+        internal static IMemberProducer CreateMemberProducer()
         {
             var extractor = new MemberExtractor(
-                ReservedTypeNames.Keys.Concat(new [] { typeof(NespStandardOperators) }));
-
-            return
-                (from entry in extractor.MembersByName
-                 from member in entry.Value
-                 let name = GetName(member, entry.Key)
-                 group member by name)
-                .ToDictionary(g => g.Key, g => g.Distinct().ToArray());
+                ReservedTypeNames.Keys.Concat(new[] { typeof(NespStandardOperators) }));
+            return new NespStandardMemberProducer(extractor);
         }
 
-        public Task<IReadOnlyDictionary<string, MemberInfo[]>> GetMembersAsync()
+        protected override Task<IMemberProducer> CreateMemberProducerAsync()
         {
-            if (cached != null)
-            {
-                return Task.FromResult(cached);
-            }
-
-            return Task.Run(() =>
-            {
-                cached = CreateMembers();
-                return cached;
-            });
+            return Task.Run(() => CreateMemberProducer());
         }
     }
 }

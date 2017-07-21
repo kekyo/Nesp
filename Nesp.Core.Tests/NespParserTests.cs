@@ -49,8 +49,8 @@ namespace Nesp
             var grammarParser = new NespGrammarParser(commonTokenStream);
 
             var parser = new NespParser(new MemberBinder());
-            parser.AddMembers(NespBaseExtension.CreateMembers());
-            parser.AddMembers(NespStandardExtension.CreateMembers());
+            parser.AddMembers(NespBaseExtension.CreateMemberProducer());
+            parser.AddMembers(NespStandardExtension.CreateMemberProducer());
             return parser.Visit(grammarParser.list());
         }
 
@@ -257,7 +257,7 @@ namespace Nesp
         {
             var expr = ParseAndVisit("");
             var constExpr = (ConstantExpression)expr;
-            Assert.IsNull(constExpr.Value);
+            Assert.AreEqual(Unit.Value, constExpr.Value);
         }
 
         [Test]
@@ -279,7 +279,7 @@ namespace Nesp
         {
             var expr = ParseAndVisit("()");
             var constExpr = (ConstantExpression)expr;
-            Assert.IsNull(constExpr.Value);
+            Assert.AreEqual(Unit.Value, constExpr.Value);
         }
 
         [Test]

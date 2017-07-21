@@ -17,26 +17,49 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Threading.Tasks;
+using System;
+using Nesp.Extensions;
 
-namespace Nesp.Extensions
+namespace Nesp
 {
-    public sealed class NespReplExtension : NespExtensionBase
+    [MemberBind("unit")]
+    public struct Unit : IEquatable<Unit>
     {
-        public static readonly INespExtension Instance = new NespReplExtension();
+        public static readonly object Value = new Unit();
 
-        private NespReplExtension()
+        public bool Equals(Unit unit)
         {
+            return true;
         }
 
-        internal static IMemberProducer CreateMemberProducer()
+        bool IEquatable<Unit>.Equals(Unit unit)
         {
-            return new MemberExtractor(typeof(NespReplOperators));
+            return true;
         }
 
-        protected override Task<IMemberProducer> CreateMemberProducerAsync()
+        public override bool Equals(object obj)
         {
-            return Task.Run(() => CreateMemberProducer());
+            return obj is Unit;
+        }
+
+        public override int GetHashCode()
+        {
+            return 0;
+        }
+
+        public override string ToString()
+        {
+            return "unit";
+        }
+
+        public static bool operator ==(Unit lhs, Unit rhs)
+        {
+            return true;
+        }
+
+        public static bool operator !=(Unit lhs, Unit rhs)
+        {
+            return false;
         }
     }
 }
