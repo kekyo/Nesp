@@ -25,6 +25,9 @@ using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 
+using Nesp.Extensions;
+using Nesp.Internals;
+
 namespace Nesp
 {
     public enum NespExpressionType
@@ -66,8 +69,8 @@ namespace Nesp
             var grammarParser = new NespGrammarParser(commonTokenStream);
 
             var context = (type == NespExpressionType.Repl)
-                ? (IParseTree)grammarParser.list()
-                : (IParseTree)grammarParser.expression();
+                ? (IParseTree)grammarParser.list()          // Take from list
+                : (IParseTree)grammarParser.expression();   // Take from expression
 
             Expression expr;
             lock (parser)

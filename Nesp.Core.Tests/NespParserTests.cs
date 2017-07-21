@@ -25,6 +25,7 @@ using Antlr4.Runtime;
 using NUnit.Framework;
 
 using Nesp.Extensions;
+using Nesp.Internals;
 
 namespace Nesp
 {

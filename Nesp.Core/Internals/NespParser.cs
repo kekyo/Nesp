@@ -25,9 +25,9 @@ using System.Reflection;
 using System.Text;
 using Antlr4.Runtime.Misc;
 
-namespace Nesp
+namespace Nesp.Internals
 {
-    public sealed class NespParser : NespGrammarBaseVisitor<Expression>
+    internal sealed class NespParser : NespGrammarBaseVisitor<Expression>
     {
         private readonly INespMemberBinder binder;
         private ImmutableDictionary<string, MemberInfo[]> members;

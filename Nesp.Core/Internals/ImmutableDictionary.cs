@@ -20,7 +20,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Nesp
+namespace Nesp.Internals
 {
     internal struct ImmutableDictionary<TKey, TValue>
     {

@@ -39,7 +39,9 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- A reference to the entire .NET Framework is automatically included -->
-    <Antlr4 Include="NespGrammar.g4" />
+    <Antlr4 Include="Internals\NespGrammar.g4">
+      <CustomToolNamespace>Nesp.Internals</CustomToolNamespace>
+    </Antlr4>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Extensions\MemberExtractor.cs" />
@@ -47,13 +49,13 @@
     <Compile Include="Extensions\NespStandardExtension.cs" />
     <Compile Include="Extensions\MemberBindAttribute.cs" />
     <Compile Include="Extensions\NespStandardOperators.cs" />
-    <Compile Include="ImmutableDictionary.cs" />
-    <Compile Include="INespExtension.cs" />
+    <Compile Include="Internals\ImmutableDictionary.cs" />
+    <Compile Include="Extensions\INespExtension.cs" />
     <Compile Include="Extensions\NespReplExtension.cs" />
     <Compile Include="Extensions\NespBaseExtension.cs" />
     <Compile Include="NespEngine.cs" />
     <Compile Include="INespMemberBinder.cs" />
-    <Compile Include="NespParser.cs" />
+    <Compile Include="Internals\NespParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

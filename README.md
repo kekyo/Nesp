@@ -41,6 +41,11 @@
 ### Literals
 
 ```
+> 123
+123 : byte
+```
+
+```
 > 12345
 12345 : short
 ```
@@ -51,8 +56,23 @@
 ```
 
 ```
+> 1234567890123456
+1234567890123456 : long
+```
+
+```
+> 123.456
+123.456 : float
+```
+
+```
+> 123.45678901234567
+123.45678901234567 : double
+```
+
+```
 > "abcdef"
-"abcdef"
+"abcdef" : string
 ```
 
 ### Property reference
@@ -78,7 +98,7 @@ bb11b743-f5fe-4d68-bbe3-22e05606b3a5 : guid
 
 ```
 > System.String.Format "ABC{0}DEF{1}GHI" 123 456.789
-"ABC123DEF456.789GHI"
+"ABC123DEF456.789GHI" : string
 ```
 
 ### Nested call argument
@@ -88,7 +108,18 @@ bb11b743-f5fe-4d68-bbe3-22e05606b3a5 : guid
 
 ```
 > string.Format "___{0}___" System.Guid.NewGuid
-"___7ded117e-c873-48cf-a00b-75c57b8aa317___"
+"___7ded117e-c873-48cf-a00b-75c57b8aa317___" : string
+```
+
+### Define
+
+* TODO:
+
+```
+> define "strrev" str (new string (System.Linq.Enumerable.Reverse str))
+sqr : Func<string, string>
+> strrev "abcdef"
+"fedcba" : string
 ```
 
 ## License

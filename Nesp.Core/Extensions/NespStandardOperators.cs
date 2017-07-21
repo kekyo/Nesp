@@ -246,5 +246,13 @@ namespace Nesp.Extensions
             return Activator.CreateInstance(type, args);
         }
         #endregion
+
+        #region Define
+        //[MemberBind("define")]
+        //public static object Define(string name, )
+        //{
+        //    return Activator.CreateInstance(type);
+        //}
+        #endregion
     }
 }
