@@ -114,11 +114,13 @@ bb11b743-f5fe-4d68-bbe3-22e05606b3a5 : guid
 
 ### Bind function
 
+TODO:
+
 ```
-> let strrev (str) (new string (System.Linq.Enumerable.Reverse str))
-strrev : string -> string
-> strrev "abcdef"
-"fedcba" : string
+> let intParse (str) (int.Parse str)
+intParse : string -> string
+> intParse "12345"
+12345 : int
 ```
 
 ## License

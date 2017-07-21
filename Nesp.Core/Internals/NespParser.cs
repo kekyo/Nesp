@@ -22,32 +22,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Text;
-using Antlr4.Runtime;
-using Antlr4.Runtime.Tree;
 
 using Nesp.Extensions;
 
 namespace Nesp.Internals
 {
-    internal static class NespParserUtilities
-    {
-        public static readonly ConstantExpression UnitExpression =
-            Expression.Constant(Unit.Value);
-
-        private static readonly IList<IParseTree> empty = new IParseTree[0];
-
-        public static IList<IParseTree> GetChildren(this ParserRuleContext context)
-        {
-            return context.children ?? empty;
-        }
-
-        public static string GetInnerText(this ParserRuleContext context)
-        {
-            return context.children[0]?.GetText();
-        }
-    }
-
     internal sealed class NespParser : NespGrammarBaseVisitor<Expression>
     {
         private readonly INespMemberBinder binder;
@@ -135,7 +114,7 @@ namespace Nesp.Internals
             // Empty.
             if (context.children == null)
             {
-                return NespParserUtilities.UnitExpression;
+                return NespUtilities.UnitExpression;
             }
 
             // First child is id?
@@ -146,13 +125,14 @@ namespace Nesp.Internals
                 // Lookup id from known dict.
                 var current = candidateInfos.Peek();
                 var id0 = childContext0.GetInnerText();
-                if (current.Methods.TryGetCandidates(id0, out var candidates))
+
+                var candidates = current.Methods[id0];
+                if (candidates.Length >= 1)
                 {
                     var argExprs = children
                         .Skip(1)
                         .Select(this.Visit)
                         .ToArray();
-
                     var expr = this.SelectMethod(candidates, argExprs);
                     if (expr != null)
                     {
@@ -237,50 +217,9 @@ namespace Nesp.Internals
         public override Expression VisitString(NespGrammarParser.StringContext context)
         {
             var text = context.GetInnerText();
-            text = text.Substring(1, text.Length - 2);
-
-            var sb = new StringBuilder();
-            var index = 0;
-            while (index < text.Length)
-            {
-                var ch = text[index];
-                if (ch == '\\')
-                {
-                    index++;
-                    ch = text[index];
-                    switch (ch)
-                    {
-                        case 'b':
-                            sb.Append('\b');
-                            break;
-                        case 'f':
-                            sb.Append('\f');
-                            break;
-                        case 't':
-                            sb.Append('\t');
-                            break;
-                        case 'r':
-                            sb.Append('\r');
-                            break;
-                        case 'n':
-                            sb.Append('\n');
-                            break;
-                        case 'v':
-                            sb.Append('\v');
-                            break;
-                        default:
-                            sb.Append(ch);
-                            break;
-                    }
-                }
-                else
-                {
-                    sb.Append(ch);
-                }
-                index++;
-            }
-
-            return Expression.Constant(sb.ToString());
+            var unquoted = text.Substring(1, text.Length - 2);
+            var unescaped = unquoted.InterpretEscapes();
+            return Expression.Constant(unescaped);
         }
 
         public override Expression VisitNumeric(NespGrammarParser.NumericContext context)
@@ -316,38 +255,40 @@ namespace Nesp.Internals
             var current = candidateInfos.Peek();
 
             var id = context.GetInnerText();
-            if (current.Locals.TryGetCandidates(id, out var localCandidates))
+            var localCandidate = current.Locals[id].FirstOrDefault();
+            if (localCandidate != null)
             {
-                return localCandidates[0];
+                return localCandidate;
             }
 
-            if (current.Fields.TryGetCandidates(id, out var fieldCandidates))
+            var fieldCandidate = current.Fields[id].FirstOrDefault();
+            if (fieldCandidate != null)
             {
-                return fieldCandidates[0];
+                return fieldCandidate;
             }
 
-            if (current.Properties.TryGetCandidates(id, out var propertyCandidates))
+            var propertiesCandidate = current.Properties[id].FirstOrDefault();
+            if (propertiesCandidate != null)
             {
-                return propertyCandidates[0];
+                return propertiesCandidate;
             }
 
             // TODO: indexer
 
             // We can use only no arguments function in this place.
             // ex: 'string.Format "ABC{0}DEF{1}GHI" 123 System.Guid.NewGuid'
-            //     NewGuid function is no arguments so legal style and support below.
-            if (current.Methods.TryGetCandidates(id, out var methodCandidates))
+            //     NewGuid function is no arguments so it's legal style and support below.
+            var methodCandidates = current.Methods[id];
+            var expr = this.SelectMethod(methodCandidates, new Expression[0]);
+            if (expr != null)
             {
-                var expr = this.SelectMethod(methodCandidates, new Expression[0]);
-                if (expr != null)
-                {
-                    return expr;
-                }
+                return expr;
             }
 
-            if (current.Types.TryGetCandidates(id, out var typeCandidates))
+            var typeCandidate = current.Types[id].FirstOrDefault();
+            if (typeCandidate != null)
             {
-                return typeCandidates[0];
+                return typeCandidate;
             }
 
             throw new ArgumentException("Id not found: " + id);

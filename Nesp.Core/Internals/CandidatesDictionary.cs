@@ -102,20 +102,26 @@ namespace Nesp.Internals
             }
         }
 
-        public bool TryGetCandidates(string key, out T[] candidates)
+        public T[] this[string key]
         {
-            if (inner != null)
+            get
             {
-                return inner.TryGetValue(key, out candidates);
-            }
-            else if (original != null)
-            {
-                return original.TryGetValue(key, out candidates);
-            }
-            else
-            {
-                candidates = empty;
-                return false;
+                if (inner != null)
+                {
+                    return inner.TryGetValue(key, out var candidates)
+                        ? candidates
+                        : empty;
+                }
+                else if (original != null)
+                {
+                    return original.TryGetValue(key, out var candidates)
+                        ? candidates
+                        : empty;
+                }
+                else
+                {
+                    return empty;
+                }
             }
         }
     }

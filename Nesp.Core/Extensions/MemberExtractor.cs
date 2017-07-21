@@ -21,61 +21,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+
 using Nesp.Internals;
 
 namespace Nesp.Extensions
 {
-    public interface IMemberProducer
-    {
-        IReadOnlyDictionary<string, Type[]> TypesByName { get; }
-        IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
-        IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
-        IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }
-    }
-
     public sealed class MemberExtractor : IMemberProducer
     {
-        private static readonly Dictionary<string, string> operatorNames =
-            new Dictionary<string, string>
-            {
-                // For C#
-                { "op_Addition", "+" },
-                { "op_Subtraction", "-" },
-                { "op_Multiply", "*" },
-                { "op_Division", "/" },
-                { "op_Modulus", "%" },
-                { "op_Equality", "==" },
-                { "op_Inequality", "!=" },
-                { "op_GreaterThan", ">" },
-                { "op_GreaterThanOrEqual", ">=" },
-                { "op_LessThan", "<" },
-                { "op_LessThanOrEqual", "<=" },
-                { "op_Increment", "++" },
-                { "op_Decrement", "--" },
-                { "op_BitwiseOr", "|" },
-                { "op_BitwiseAnd", "&" },
-                { "op_ExclusiveOr", "^" },
-                { "op_OnesComplement", "~" },
-                { "op_LogicalNot", "!" },
-                { "op_LeftShift", "<<" },
-                { "op_RightShift", ">>" },
-
-                // For F#
-                { "op_Nil", "[]" },
-                { "op_Cons", "::" },
-                { "op_Append", "@" },
-                { "op_Concatenate", "^" },
-                { "op_UnaryPlus", "~+" },
-                { "op_UnaryNegation", "~-" },
-                { "op_Dynamic", "?" },
-                { "op_PipeLeft", "<|" },
-                { "op_PipeRight", "|>" },
-                { "op_Dereference", "!" },
-                { "op_ComposeLeft", "<<" },
-                { "op_ComposeRight", ">>" },
-                { "op_Range", ".." },
-            };
-
         public MemberExtractor(IEnumerable<Assembly> assemblies)
             : this(assemblies.SelectMany(assembly => assembly.DefinedTypes).Where(typeInfo => typeInfo.IsPublic))
         {
@@ -144,7 +96,7 @@ namespace Nesp.Extensions
 
         private static string GetReadableTypeName(Type type)
         {
-            return NespReflectionUtilities.GetReadableTypeName(type, GetReadableTypeName);
+            return NespUtilities.GetReadableTypeName(type, GetReadableTypeName);
         }
 
         private static string GetTypeName(TypeInfo typeInfo)
@@ -162,15 +114,9 @@ namespace Nesp.Extensions
             {
                 return memberBind.MemberName;
             }
-            if (operatorNames.TryGetValue(member.Name, out var name))
+            if (NespUtilities.OperatorMethodNames.TryGetValue(member.Name, out var name))
             {
                 return name;
-            }
-
-            var type = member.AsType();
-            if (type != null)
-            {
-                return GetReadableTypeName(type);
             }
 
             return member.DeclaringType.FullName + "." + member.Name;

@@ -44,6 +44,7 @@
     </Antlr4>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions\IMemberProducer.cs" />
     <Compile Include="Extensions\MemberExtractor.cs" />
     <Compile Include="Extensions\NespExtensionBase.cs" />
     <Compile Include="Extensions\NespReplOperators.cs" />
@@ -56,7 +57,7 @@
     <Compile Include="Extensions\INespExtension.cs" />
     <Compile Include="Extensions\NespReplExtension.cs" />
     <Compile Include="Extensions\NespBaseExtension.cs" />
-    <Compile Include="Internals\NespReflectionUtilities.cs" />
+    <Compile Include="Internals\NespUtilities.cs" />
     <Compile Include="Unit.cs" />
     <Compile Include="NespEngine.cs" />
     <Compile Include="INespMemberBinder.cs" />

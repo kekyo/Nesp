@@ -53,13 +53,13 @@ namespace Nesp
         {
             return NespStandardExtension.ReservedTypeNames.TryGetValue(type, out var typeName)
                 ? typeName
-                : NespReflectionUtilities.GetReadableTypeName(
+                : NespUtilities.GetReadableTypeName(
                     type, GetReadableTypeName);
         }
 
         public static string FormatReadableString(object value)
         {
-            return NespReflectionUtilities.FormatReadableString(
+            return NespUtilities.FormatReadableString(
                 value, GetReadableTypeName);
         }
 

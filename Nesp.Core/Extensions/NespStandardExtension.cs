@@ -42,6 +42,7 @@ namespace Nesp.Extensions
                 { typeof(double), "double" },
                 { typeof(decimal), "decimal" },
                 { typeof(bool), "bool" },
+                { typeof(char), "char" },
                 { typeof(string), "string" },
                 { typeof(DateTime), "datetime" },
                 { typeof(TimeSpan), "timespan" },
