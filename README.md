@@ -7,6 +7,8 @@
 * Nesp is a Lisp-like lightweight functional language on .NET
 * Nesp is:
   * Very lightweight language syntax likely Lisp's S-expression.
+    * A different topic is Nesp don't have "quote" expression.
+    * Nesp expressions are lazy evaluation except literals.
   * Applicable .NET library.
   * Expandable tokens.
   * Designed for easy embedding and useful on REPL.
@@ -36,7 +38,6 @@
 
 * Basic tips:
   * Nesp REPL mode not required brackets (...).
-  * Nesp's expressions are lazy evaluation (except literals).
 
 ### Literals
 
@@ -82,14 +83,14 @@
 7/21/2017 12:04:43 AM : datetime
 ```
 
-### No arguments function
+### Function invoke with no arguments
 
 ```
 > guid.NewGuid
 bb11b743-f5fe-4d68-bbe3-22e05606b3a5 : guid
 ```
 
-### Any arguments function
+### Function invoke with arguments
 
 ```
 > int.Parse "12345"
@@ -101,17 +102,17 @@ bb11b743-f5fe-4d68-bbe3-22e05606b3a5 : guid
 "ABC123DEF456.789GHI" : string
 ```
 
-### Nested call argument
+### Function invoke with nested invoking function expressions
 
-* If argument is nested call function and no argument, you are not required brackets.
-  * This sample contains Guid.NewGuid(), but this function required no arguments.
+* If argument is nested invoking function and it has no arguments, you aren't required brackets.
+  * This sample invokes Guid.NewGuid(), but NewGuid has no arguments:
 
 ```
 > string.Format "___{0}___" System.Guid.NewGuid
 "___7ded117e-c873-48cf-a00b-75c57b8aa317___" : string
 ```
 
-### Define
+### Define function
 
 * TODO:
 

@@ -233,6 +233,42 @@ namespace Nesp.Extensions
         }
         #endregion
 
+        #region Equality
+        [MemberBind("==")]
+        public static bool Equality(object a, object b)
+        {
+            if (a != null)
+            {
+                return a.Equals(b);
+            }
+            else if (b != null)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+        [MemberBind("!=")]
+        public static bool Inequality(object a, object b)
+        {
+            if (a != null)
+            {
+                return a.Equals(b);
+            }
+            else if (b != null)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+        #endregion
+
         #region New
         [MemberBind("new")]
         public static object New(Type type)

@@ -43,7 +43,7 @@ namespace Nesp
             }
             if (value is string)
             {
-                return "\"" + value + "\"";
+                return "\"" + value + "\" : string";
             }
             var type = value.GetType();
             if (NespStandardExtension.ReservedTypeNames.TryGetValue(type, out var typeName) == false)
