@@ -78,19 +78,48 @@ namespace Nesp.Internals
         private static readonly IList<IParseTree> empty =
             new IParseTree[0];
 
+        private static readonly Type voidType = typeof(void);
+        private static readonly Type unitType = typeof(Unit);
+        private static readonly Type delegateType = typeof(Delegate);
+        private static readonly TypeInfo delegateTypeInfo = delegateType.GetTypeInfo();
+
         public static string GetReadableTypeName(Type type, Func<Type, string> getTypeName)
         {
             // getTypeName is recursive call target (combinator)
 
+            // Void (Unit)
+            if (type == voidType)
+            {
+                return getTypeName(unitType);
+            }
+
+            // Array
             if (type.IsArray)
             {
                 var elementType = type.GetElementType();
                 return $"{getTypeName(elementType)}[{new string(Enumerable.Range(0, type.GetArrayRank() - 1).Select(index => ',').ToArray())}]";
             }
 
+            // Delegate
+            // TODO: Curryable print is Func<> only
+            var typeInfo = type.GetTypeInfo();
+            if ((typeInfo.IsAbstract == false) && delegateTypeInfo.IsAssignableFrom(typeInfo))
+            {
+                var invokeMethod = typeInfo.GetDeclaredMethod("Invoke");
+                var parameters = invokeMethod.GetParameters();
+                var parameterTypes = string.Join(" -> ", parameters.Select(parameter => getTypeName(parameter.ParameterType)));
+                parameterTypes = (parameterTypes.Length >= 1) ? parameterTypes : getTypeName(unitType);
+                return $"{string.Join(" -> ", parameterTypes)} -> {getTypeName(invokeMethod.ReturnType)}";
+            }
+
+            // Generic parameter
+            if (typeInfo.IsGenericParameter)
+            {
+                return type.Name;
+            }
+
             // TODO: Generic type
             // TODO: Inner type
-            // TODO: Delegate type (Format with arrow operator)
             return $"{type.Namespace}.{type.Name}";
         }
 

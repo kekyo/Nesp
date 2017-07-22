@@ -196,7 +196,12 @@ namespace Nesp.Internals
                             var bodyContext = (NespGrammarParser.ListContext)childContext3.GetChildren()[1];
                             var bodyExpr = this.Visit(bodyContext);
 
+                            // TODO: Support tailcall recursion
+                            var lambdaExpr = Expression.Lambda(bodyExpr, false, argExprs);
+
                             candidateInfos.Pop();
+
+                            return lambdaExpr;
                         }
                     }
                 }
