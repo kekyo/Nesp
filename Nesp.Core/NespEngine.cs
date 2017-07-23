@@ -20,13 +20,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 
 using Nesp.Extensions;
 using Nesp.Internals;
+using Nesp.Internals.Expressions;
 
 namespace Nesp
 {
@@ -75,7 +75,7 @@ namespace Nesp
             }
         }
 
-        public Expression<Func<object>> ParseExpression(string expression)
+        private LambdaExpression<Func<object>> ParseExpression(string expression)
         {
             var inputStream = new AntlrInputStream(expression);
             var lexer = new NespGrammarLexer(inputStream);
@@ -93,12 +93,12 @@ namespace Nesp
             }
 
             var valueType = typeof(object);
-            var strictExpr = (expr.Type == valueType)
+            var strictExpr = (expr.CandidateType == valueType)
                 ? expr
                 : Expression.Convert(expr, valueType);
 
             return Expression.Lambda<Func<object>>(
-                strictExpr, false, Enumerable.Empty<ParameterExpression>());
+                strictExpr, "", Enumerable.Empty<ParameterExpression>());
         }
 
         public async Task<Func<object>> CompileExpressionAsync(string expression)

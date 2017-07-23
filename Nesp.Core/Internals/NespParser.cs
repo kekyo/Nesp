@@ -20,10 +20,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 
 using Nesp.Extensions;
+using Nesp.Internals.Expressions;
 
 namespace Nesp.Internals
 {
@@ -82,7 +82,7 @@ namespace Nesp.Internals
 
         private static Expression NormalizeType(Expression expr, Type targetType)
         {
-            return (expr.Type != targetType) ? Expression.Convert(expr, targetType) : expr;
+            return (expr.CandidateType != targetType) ? Expression.Convert(expr, targetType) : expr;
         }
 
         private MethodCallExpression SelectMethod(MethodInfo[] candidates, Expression[] argExprs)
@@ -90,7 +90,7 @@ namespace Nesp.Internals
             if (candidates.Length >= 1)
             {
                 var types = argExprs
-                    .Select(argExpr => argExpr.Type)
+                    .Select(argExpr => argExpr.CandidateType)
                     .ToArray();
 
                 // TODO: DefaultBinder.SelectMethod can't resolve variable arguments (params).
@@ -190,8 +190,7 @@ namespace Nesp.Internals
                             var bodyContext = (NespGrammarParser.ListContext)childContext3.GetChildren()[1];
                             var bodyExpr = this.Visit(bodyContext);
 
-                            // TODO: Support tailcall recursion
-                            var lambdaExpr = Expression.Lambda(bodyExpr, name, false, argExprs);
+                            var lambdaExpr = Expression.Lambda(bodyExpr, name, argExprs);
 
                             candidateInfos.Pop();
 

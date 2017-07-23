@@ -19,13 +19,13 @@
 
 using System;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Antlr4.Runtime;
 using NUnit.Framework;
 
 using Nesp.Extensions;
 using Nesp.Internals;
+using Nesp.Internals.Expressions;
 
 namespace Nesp
 {
@@ -199,9 +199,9 @@ namespace Nesp
         public void PropertyIdTest()
         {
             var expr = ParseAndVisit("System.IntPtr.Size");
-            var memberExpr = (MemberExpression)expr;
-            var pi = (PropertyInfo)memberExpr.Member;
-            Assert.IsNull(memberExpr.Expression);
+            var propertyExpr = (PropertyExpression)expr;
+            var pi = propertyExpr.Property;
+            Assert.IsNull(propertyExpr.Instance);
             Assert.AreEqual(typeof(IntPtr), pi.DeclaringType);
             Assert.AreEqual(typeof(int), pi.PropertyType);
             Assert.AreEqual("Size", pi.Name);
@@ -213,7 +213,7 @@ namespace Nesp
             var expr = ParseAndVisit("System.Guid.NewGuid");
             var methodCallExpr = (MethodCallExpression)expr;
             var mi = methodCallExpr.Method;
-            Assert.IsNull(methodCallExpr.Object);
+            Assert.IsNull(methodCallExpr.Instance);
             Assert.AreEqual(typeof(Guid), mi.DeclaringType);
             Assert.AreEqual(typeof(Guid), mi.ReturnType);
             Assert.AreEqual("NewGuid", mi.Name);
@@ -225,7 +225,7 @@ namespace Nesp
             var expr = ParseAndVisit("System.String.Format \"ABC{0}DEF\" 123");
             var methodCallExpr = (MethodCallExpression)expr;
             var mi = methodCallExpr.Method;
-            Assert.IsNull(methodCallExpr.Object);
+            Assert.IsNull(methodCallExpr.Instance);
             Assert.AreEqual(typeof(string), mi.DeclaringType);
             Assert.AreEqual(typeof(string), mi.ReturnType);
             Assert.IsTrue(
@@ -233,12 +233,12 @@ namespace Nesp
                 .SequenceEqual(mi.GetParameters().Select(pi => pi.ParameterType)));
             Assert.IsTrue(
                 new[] { typeof(string), typeof(object) }
-                    .SequenceEqual(methodCallExpr.Arguments.Select(arg => arg.Type)));
+                    .SequenceEqual(methodCallExpr.Arguments.Select(arg => arg.CandidateType)));
             Assert.IsTrue(
                 new object[] { "ABC{0}DEF", (byte)123 }
                 .SequenceEqual(new[] {
-                    ((ConstantExpression)methodCallExpr.Arguments[0]).Value,
-                    ((ConstantExpression)((UnaryExpression)methodCallExpr.Arguments[1]).Operand).Value }));
+                    ((ConstantExpression)methodCallExpr.Arguments.ElementAt(0)).Value,
+                    ((ConstantExpression)((ConvertExpression)methodCallExpr.Arguments.ElementAt(1)).Operand).Value }));
             Assert.AreEqual("Format", mi.Name);
         }
 
@@ -265,11 +265,11 @@ namespace Nesp
         {
             var expr = ParseAndVisit("123 456 789");
             var newArrayExpr = (NewArrayExpression)expr;
-            Assert.AreEqual(typeof(object[]), newArrayExpr.Type);
+            Assert.AreEqual(typeof(object[]), newArrayExpr.CandidateType);
             Assert.IsTrue(
                 new object[] { (byte)123, (short)456, (short)789 }
-                    .SequenceEqual(newArrayExpr.Expressions.Select(iexpr => 
-                        ((ConstantExpression)((UnaryExpression)iexpr).Operand).Value)));
+                    .SequenceEqual(newArrayExpr.InitialValues.Select(iexpr => 
+                        ((ConstantExpression)((ConvertExpression)iexpr).Operand).Value)));
         }
         #endregion
 
@@ -287,11 +287,11 @@ namespace Nesp
         {
             var expr = ParseAndVisit("(123 456 789)");
             var newArrayExpr = (NewArrayExpression)expr;
-            Assert.AreEqual(typeof(object[]), newArrayExpr.Type);
+            Assert.AreEqual(typeof(object[]), newArrayExpr.CandidateType);
             Assert.IsTrue(
                 new object[] { (byte)123, (short)456, (short)789 }
-                    .SequenceEqual(newArrayExpr.Expressions.Select(iexpr =>
-                        ((ConstantExpression)((UnaryExpression)iexpr).Operand).Value)));
+                    .SequenceEqual(newArrayExpr.InitialValues.Select(iexpr =>
+                        ((ConstantExpression)((ConvertExpression)iexpr).Operand).Value)));
         }
         #endregion
 
@@ -300,9 +300,10 @@ namespace Nesp
         public void CompileFieldIdTest()
         {
             var expr = ParseAndVisit("System.DBNull.Value");
-            var lambda = Expression.Lambda<Func<DBNull>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var lambda = Expression.Lambda<Func<DBNull>>(expr, "CompileFieldId", Enumerable.Empty<ParameterExpression>());
             var compiled = lambda.Compile();
             var value = compiled();
+            Assert.AreEqual("CompileFieldId", compiled.Method.Name);
             Assert.AreEqual(DBNull.Value, value);
         }
 
@@ -310,9 +311,10 @@ namespace Nesp
         public void CompileEnumIdTest()
         {
             var expr = ParseAndVisit("System.DateTimeKind.Local");
-            var lambda = Expression.Lambda<Func<DateTimeKind>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var lambda = Expression.Lambda<Func<DateTimeKind>>(expr, "CompileEnumId", Enumerable.Empty<ParameterExpression>());
             var compiled = lambda.Compile();
             var value = compiled();
+            Assert.AreEqual("CompileEnumId", compiled.Method.Name);
             Assert.AreEqual(DateTimeKind.Local, value);
         }
 
@@ -320,9 +322,10 @@ namespace Nesp
         public void CompilePropertyIdTest()
         {
             var expr = ParseAndVisit("System.IntPtr.Size");
-            var lambda = Expression.Lambda<Func<int>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var lambda = Expression.Lambda<Func<int>>(expr, "CompilePropertyId", Enumerable.Empty<ParameterExpression>());
             var compiled = lambda.Compile();
             var size = compiled();
+            Assert.AreEqual("CompilePropertyId", compiled.Method.Name);
             Assert.AreEqual(IntPtr.Size, size);
         }
 
@@ -330,9 +333,10 @@ namespace Nesp
         public void CompileMethodIdTest()
         {
             var expr = ParseAndVisit("System.Guid.NewGuid");
-            var lambda = Expression.Lambda<Func<Guid>>(expr, false, Enumerable.Empty<ParameterExpression>());
+            var lambda = Expression.Lambda<Func<Guid>>(expr, "CompileMethodId", Enumerable.Empty<ParameterExpression>());
             var compiled = lambda.Compile();
             var value = compiled();
+            Assert.AreEqual("CompileMethodId", compiled.Method.Name);
             Assert.IsFalse(value.Equals(Guid.Empty));
         }
         #endregion

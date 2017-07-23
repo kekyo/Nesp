@@ -57,6 +57,7 @@
     <Compile Include="Extensions\INespExtension.cs" />
     <Compile Include="Extensions\NespReplExtension.cs" />
     <Compile Include="Extensions\NespBaseExtension.cs" />
+    <Compile Include="Internals\Expressions\Expression.cs" />
     <Compile Include="Internals\NespUtilities.cs" />
     <Compile Include="Unit.cs" />
     <Compile Include="NespEngine.cs" />

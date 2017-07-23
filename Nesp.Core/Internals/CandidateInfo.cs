@@ -17,8 +17,8 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Linq.Expressions;
 using System.Reflection;
+using Nesp.Internals.Expressions;
 
 namespace Nesp.Internals
 {
@@ -26,14 +26,14 @@ namespace Nesp.Internals
     {
         public readonly CandidatesDictionary<ConstantExpression> Types;
         public readonly CandidatesDictionary<Expression> Fields;
-        public readonly CandidatesDictionary<MemberExpression> Properties;
+        public readonly CandidatesDictionary<PropertyExpression> Properties;
         public readonly CandidatesDictionary<MethodInfo> Methods;
         public readonly CandidatesDictionary<Expression> Locals;
 
         public CandidateInfo() : this(
             new CandidatesDictionary<ConstantExpression>(),
             new CandidatesDictionary<Expression>(),
-            new CandidatesDictionary<MemberExpression>(),
+            new CandidatesDictionary<PropertyExpression>(),
             new CandidatesDictionary<MethodInfo>(),
             new CandidatesDictionary<Expression>())
         {
@@ -42,7 +42,7 @@ namespace Nesp.Internals
         private CandidateInfo(
             CandidatesDictionary<ConstantExpression> types,
             CandidatesDictionary<Expression> fields,
-            CandidatesDictionary<MemberExpression> properties,
+            CandidatesDictionary<PropertyExpression> properties,
             CandidatesDictionary<MethodInfo> methods,
             CandidatesDictionary<Expression> locals)
         {
