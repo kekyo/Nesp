@@ -143,6 +143,12 @@ namespace Nesp.Internals
                     .Cast<object>()
                     .Select(InternalFormatReadableString));
             }
+
+            var dlg = value as Delegate;
+            if (dlg != null)
+            {
+                return dlg.GetMethodInfo().Name;
+            }
             else
             {
                 return value.ToString();

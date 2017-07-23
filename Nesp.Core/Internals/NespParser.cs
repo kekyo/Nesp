@@ -179,12 +179,6 @@ namespace Nesp.Internals
                                 })
                                 .ToArray();
 
-                            // args must contain argument ids.
-                            if ((argExprs.Length == 0) || argExprs.Any(arg => arg == null))
-                            {
-                                throw new ArgumentException("Can't function arguments contains only id: " + name);
-                            }
-
                             current = current.Clone();
                             candidateInfos.Push(current);
 
@@ -197,7 +191,7 @@ namespace Nesp.Internals
                             var bodyExpr = this.Visit(bodyContext);
 
                             // TODO: Support tailcall recursion
-                            var lambdaExpr = Expression.Lambda(bodyExpr, false, argExprs);
+                            var lambdaExpr = Expression.Lambda(bodyExpr, name, false, argExprs);
 
                             candidateInfos.Pop();
 
@@ -252,7 +246,7 @@ namespace Nesp.Internals
                 return Expression.Constant(doubleValue);
             }
 
-            throw new OverflowException();
+            throw new OverflowException("Cannot parse numeric value: " + numericText);
         }
 
         public override Expression VisitId(NespGrammarParser.IdContext context)
