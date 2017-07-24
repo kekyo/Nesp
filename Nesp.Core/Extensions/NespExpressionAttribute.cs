@@ -22,7 +22,7 @@ using System;
 namespace Nesp.Extensions
 {
     [AttributeUsage(AttributeTargets.Method)]
-    public sealed class NespExpressionAttribute : Attribute
+    public sealed class NespExpressionAttribute : NespExtensionAttribute
     {
         public NespExpressionAttribute()
         {

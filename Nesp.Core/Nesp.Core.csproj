@@ -49,6 +49,7 @@
     <Compile Include="Expressions\NespParameterExpression.cs" />
     <Compile Include="Expressions\NespLambdaExpression.cs" />
     <Compile Include="Extensions\INespMemberProducer.cs" />
+    <Compile Include="Extensions\NespExtensionAttribute.cs" />
     <Compile Include="Extensions\NespMemberExtractor.cs" />
     <Compile Include="Extensions\NespExtensionBase.cs" />
     <Compile Include="Extensions\NespExpressionAttribute.cs" />

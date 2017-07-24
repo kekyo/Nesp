@@ -34,10 +34,9 @@ namespace Nesp.Expressions
             this.Name = name;
         }
 
-        public Type AnnotateType { get; }
-
         public override Type CandidateType => candidateType ?? typeof(object);
 
+        public Type AnnotateType { get; }
         public string Name { get; }
 
         public void InflateType(Type type)

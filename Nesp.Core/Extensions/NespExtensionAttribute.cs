@@ -21,19 +21,10 @@ using System;
 
 namespace Nesp.Extensions
 {
-    [AttributeUsage(
-        AttributeTargets.Class |
-        AttributeTargets.Struct |
-        AttributeTargets.Method |
-        AttributeTargets.Field |
-        AttributeTargets.Property)]
-    public sealed class NespIdentityAttribute : NespExtensionAttribute
+    public abstract class NespExtensionAttribute : Attribute
     {
-        public NespIdentityAttribute(string name)
+        internal NespExtensionAttribute()
         {
-            this.Name = name;
         }
-
-        public string Name { get; }
     }
 }

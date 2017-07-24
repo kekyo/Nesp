@@ -102,7 +102,7 @@ namespace Nesp.Internals
             }
 
             // Delegate
-            // TODO: Curryable print is Func<> only
+            // TODO: Curryable print is Func<> and Action<> only
             var typeInfo = type.GetTypeInfo();
             if ((typeInfo.IsAbstract == false) && delegateTypeInfo.IsAssignableFrom(typeInfo))
             {

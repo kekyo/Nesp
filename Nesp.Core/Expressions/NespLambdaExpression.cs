@@ -24,7 +24,7 @@ using System.Linq.Expressions;
 
 namespace Nesp.Expressions
 {
-    public class NespLambdaExpression : NespExpression
+    public sealed class NespLambdaExpression : NespExpression
     {
         internal NespLambdaExpression(
             NespExpression expression,
