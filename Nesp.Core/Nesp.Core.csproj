@@ -44,6 +44,10 @@
     </Antlr4>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Expressions\NespConstantExpression.cs" />
+    <Compile Include="Expressions\NespApplyFunctionExpression.cs" />
+    <Compile Include="Expressions\NespParameterExpression.cs" />
+    <Compile Include="Expressions\NespLambdaExpression.cs" />
     <Compile Include="Extensions\IMemberProducer.cs" />
     <Compile Include="Extensions\MemberExtractor.cs" />
     <Compile Include="Extensions\NespExtensionBase.cs" />
@@ -57,7 +61,7 @@
     <Compile Include="Extensions\INespExtension.cs" />
     <Compile Include="Extensions\NespReplExtension.cs" />
     <Compile Include="Extensions\NespBaseExtension.cs" />
-    <Compile Include="Internals\Expressions\Expression.cs" />
+    <Compile Include="Expressions\NespExpression.cs" />
     <Compile Include="Internals\NespUtilities.cs" />
     <Compile Include="Unit.cs" />
     <Compile Include="NespEngine.cs" />

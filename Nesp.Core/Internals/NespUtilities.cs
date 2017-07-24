@@ -26,7 +26,7 @@ using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 
-using Nesp.Internals.Expressions;
+using Nesp.Expressions;
 
 namespace Nesp.Internals
 {
@@ -73,8 +73,8 @@ namespace Nesp.Internals
                 { "op_Range", ".." },
             };
 
-        public static readonly ConstantExpression UnitExpression =
-            Expression.Constant(Unit.Value);
+        public static readonly NespConstantExpression UnitExpression =
+            NespExpression.Constant(Unit.Value);
 
         private static readonly IList<IParseTree> empty =
             new IParseTree[0];

@@ -25,14 +25,14 @@ using NUnit.Framework;
 
 using Nesp.Extensions;
 using Nesp.Internals;
-using Nesp.Internals.Expressions;
+using Nesp.Expressions;
 
 namespace Nesp
 {
     [TestFixture]
     public class NespParserTests
     {
-        private sealed class MemberBinder : INespMemberBinder
+        private sealed class MethodBinder : INespMemberBinder
         {
             public MethodInfo SelectMethod(MethodInfo[] candidates, Type[] types)
             {
@@ -41,14 +41,14 @@ namespace Nesp
             }
         }
 
-        private Expression ParseAndVisit(string replLine)
+        private NespExpression ParseAndVisit(string replLine)
         {
             var inputStream = new AntlrInputStream(replLine);
             var lexer = new NespGrammarLexer(inputStream);
             var commonTokenStream = new CommonTokenStream(lexer);
             var grammarParser = new NespGrammarParser(commonTokenStream);
 
-            var parser = new NespParser(new MemberBinder());
+            var parser = new NespParser(new MethodBinder());
             parser.AddMembers(NespBaseExtension.CreateMemberProducer());
             parser.AddMembers(NespStandardExtension.CreateMemberProducer());
             return parser.Visit(grammarParser.list());
@@ -59,7 +59,7 @@ namespace Nesp
         public void ByteConstantTest()
         {
             var expr = ParseAndVisit("123");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual((byte)123, constExpr.Value);
         }
 
@@ -67,7 +67,7 @@ namespace Nesp
         public void Int16ConstantTest()
         {
             var expr = ParseAndVisit("12345");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual((short)12345, constExpr.Value);
         }
 
@@ -75,7 +75,7 @@ namespace Nesp
         public void Int32ConstantTest()
         {
             var expr = ParseAndVisit("1234567");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(1234567, constExpr.Value);
         }
 
@@ -83,7 +83,7 @@ namespace Nesp
         public void Int64ConstantTest()
         {
             var expr = ParseAndVisit("12345678901234");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(12345678901234L, constExpr.Value);
         }
 
@@ -91,7 +91,7 @@ namespace Nesp
         public void DoubleConstantTest()
         {
             var expr = ParseAndVisit("123.45678901234567");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(123.45678901234567, constExpr.Value);
         }
 
@@ -99,7 +99,7 @@ namespace Nesp
         public void PlusValueConstantTest()
         {
             var expr = ParseAndVisit("+123456");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(123456, constExpr.Value);
         }
 
@@ -107,7 +107,7 @@ namespace Nesp
         public void MinusValueConstantTest()
         {
             var expr = ParseAndVisit("-123456");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(-123456, constExpr.Value);
         }
         #endregion
@@ -117,7 +117,7 @@ namespace Nesp
         public void StringConstantTest()
         {
             var expr = ParseAndVisit("\"abcdef\"");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual("abcdef", constExpr.Value);
         }
 
@@ -125,7 +125,7 @@ namespace Nesp
         public void EscapedCharStringConstantTest()
         {
             var expr = ParseAndVisit("\"abc\\\"def\"");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual("abc\"def", constExpr.Value);
         }
 
@@ -133,7 +133,7 @@ namespace Nesp
         public void EscapedBStringConstantTest()
         {
             var expr = ParseAndVisit("\"abc\\bdef\"");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual("abc\bdef", constExpr.Value);
         }
 
@@ -141,7 +141,7 @@ namespace Nesp
         public void EscapedFStringConstantTest()
         {
             var expr = ParseAndVisit("\"abc\\fdef\"");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual("abc\fdef", constExpr.Value);
         }
 
@@ -149,7 +149,7 @@ namespace Nesp
         public void EscapedTStringConstantTest()
         {
             var expr = ParseAndVisit("\"abc\\tdef\"");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual("abc\tdef", constExpr.Value);
         }
 
@@ -157,7 +157,7 @@ namespace Nesp
         public void EscapedRStringConstantTest()
         {
             var expr = ParseAndVisit("\"abc\\rdef\"");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual("abc\rdef", constExpr.Value);
         }
 
@@ -165,7 +165,7 @@ namespace Nesp
         public void EscapedNStringConstantTest()
         {
             var expr = ParseAndVisit("\"abc\\ndef\"");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual("abc\ndef", constExpr.Value);
         }
 
@@ -173,7 +173,7 @@ namespace Nesp
         public void EscapedVStringConstantTest()
         {
             var expr = ParseAndVisit("\"abc\\vdef\"");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual("abc\vdef", constExpr.Value);
         }
         #endregion
@@ -183,7 +183,7 @@ namespace Nesp
         public void FieldIdTest()
         {
             var expr = ParseAndVisit("System.DBNull.Value");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(DBNull.Value, constExpr.Value);
         }
 
@@ -191,7 +191,7 @@ namespace Nesp
         public void EnumIdTest()
         {
             var expr = ParseAndVisit("System.DateTimeKind.Local");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(DateTimeKind.Local, constExpr.Value);
         }
 
@@ -199,7 +199,7 @@ namespace Nesp
         public void PropertyIdTest()
         {
             var expr = ParseAndVisit("System.IntPtr.Size");
-            var propertyExpr = (PropertyExpression)expr;
+            var propertyExpr = (NespPropertyExpression)expr;
             var pi = propertyExpr.Property;
             Assert.IsNull(propertyExpr.Instance);
             Assert.AreEqual(typeof(IntPtr), pi.DeclaringType);
@@ -208,24 +208,24 @@ namespace Nesp
         }
 
         [Test]
-        public void MethodIdTest()
+        public void FunctionIdTest()
         {
             var expr = ParseAndVisit("System.Guid.NewGuid");
-            var methodCallExpr = (MethodCallExpression)expr;
-            var mi = methodCallExpr.Method;
-            Assert.IsNull(methodCallExpr.Instance);
+            var FunctionCallExpr = (NespApplyFunctionExpression)expr;
+            var mi = FunctionCallExpr.Function;
+            Assert.IsNull(FunctionCallExpr.Instance);
             Assert.AreEqual(typeof(Guid), mi.DeclaringType);
             Assert.AreEqual(typeof(Guid), mi.ReturnType);
             Assert.AreEqual("NewGuid", mi.Name);
         }
 
         [Test]
-        public void MethodWithArgsIdTest()
+        public void FunctionWithArgsIdTest()
         {
             var expr = ParseAndVisit("System.String.Format \"ABC{0}DEF\" 123");
-            var methodCallExpr = (MethodCallExpression)expr;
-            var mi = methodCallExpr.Method;
-            Assert.IsNull(methodCallExpr.Instance);
+            var FunctionCallExpr = (NespApplyFunctionExpression)expr;
+            var mi = FunctionCallExpr.Function;
+            Assert.IsNull(FunctionCallExpr.Instance);
             Assert.AreEqual(typeof(string), mi.DeclaringType);
             Assert.AreEqual(typeof(string), mi.ReturnType);
             Assert.IsTrue(
@@ -233,12 +233,12 @@ namespace Nesp
                 .SequenceEqual(mi.GetParameters().Select(pi => pi.ParameterType)));
             Assert.IsTrue(
                 new[] { typeof(string), typeof(object) }
-                    .SequenceEqual(methodCallExpr.Arguments.Select(arg => arg.CandidateType)));
+                    .SequenceEqual(FunctionCallExpr.Arguments.Select(arg => arg.CandidateType)));
             Assert.IsTrue(
                 new object[] { "ABC{0}DEF", (byte)123 }
                 .SequenceEqual(new[] {
-                    ((ConstantExpression)methodCallExpr.Arguments.ElementAt(0)).Value,
-                    ((ConstantExpression)((ConvertExpression)methodCallExpr.Arguments.ElementAt(1)).Operand).Value }));
+                    ((NespConstantExpression)FunctionCallExpr.Arguments.ElementAt(0)).Value,
+                    ((NespConstantExpression)((NespConvertExpression)FunctionCallExpr.Arguments.ElementAt(1)).Operand).Value }));
             Assert.AreEqual("Format", mi.Name);
         }
 
@@ -246,7 +246,7 @@ namespace Nesp
         public void ReservedIdTest()
         {
             var expr = ParseAndVisit("int.MinValue");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(int.MinValue, constExpr.Value);
         }
         #endregion
@@ -256,7 +256,7 @@ namespace Nesp
         public void NoValuesListTest()
         {
             var expr = ParseAndVisit("");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(Unit.Value, constExpr.Value);
         }
 
@@ -269,7 +269,7 @@ namespace Nesp
             Assert.IsTrue(
                 new object[] { (byte)123, (short)456, (short)789 }
                     .SequenceEqual(newArrayExpr.InitialValues.Select(iexpr => 
-                        ((ConstantExpression)((ConvertExpression)iexpr).Operand).Value)));
+                        ((NespConstantExpression)((NespConvertExpression)iexpr).Operand).Value)));
         }
         #endregion
 
@@ -278,7 +278,7 @@ namespace Nesp
         public void NoValuesExpressionTest()
         {
             var expr = ParseAndVisit("()");
-            var constExpr = (ConstantExpression)expr;
+            var constExpr = (NespConstantExpression)expr;
             Assert.AreEqual(Unit.Value, constExpr.Value);
         }
 
@@ -291,7 +291,7 @@ namespace Nesp
             Assert.IsTrue(
                 new object[] { (byte)123, (short)456, (short)789 }
                     .SequenceEqual(newArrayExpr.InitialValues.Select(iexpr =>
-                        ((ConstantExpression)((ConvertExpression)iexpr).Operand).Value)));
+                        ((NespConstantExpression)((NespConvertExpression)iexpr).Operand).Value)));
         }
         #endregion
 
@@ -300,7 +300,7 @@ namespace Nesp
         public void CompileFieldIdTest()
         {
             var expr = ParseAndVisit("System.DBNull.Value");
-            var lambda = Expression.Lambda<Func<DBNull>>(expr, "CompileFieldId", Enumerable.Empty<ParameterExpression>());
+            var lambda = NespExpression.Lambda<Func<DBNull>>(expr, "CompileFieldId", Enumerable.Empty<NespParameterExpression>());
             var compiled = lambda.Compile();
             var value = compiled();
             Assert.AreEqual("CompileFieldId", compiled.Method.Name);
@@ -311,7 +311,7 @@ namespace Nesp
         public void CompileEnumIdTest()
         {
             var expr = ParseAndVisit("System.DateTimeKind.Local");
-            var lambda = Expression.Lambda<Func<DateTimeKind>>(expr, "CompileEnumId", Enumerable.Empty<ParameterExpression>());
+            var lambda = NespExpression.Lambda<Func<DateTimeKind>>(expr, "CompileEnumId", Enumerable.Empty<NespParameterExpression>());
             var compiled = lambda.Compile();
             var value = compiled();
             Assert.AreEqual("CompileEnumId", compiled.Method.Name);
@@ -322,7 +322,7 @@ namespace Nesp
         public void CompilePropertyIdTest()
         {
             var expr = ParseAndVisit("System.IntPtr.Size");
-            var lambda = Expression.Lambda<Func<int>>(expr, "CompilePropertyId", Enumerable.Empty<ParameterExpression>());
+            var lambda = NespExpression.Lambda<Func<int>>(expr, "CompilePropertyId", Enumerable.Empty<NespParameterExpression>());
             var compiled = lambda.Compile();
             var size = compiled();
             Assert.AreEqual("CompilePropertyId", compiled.Method.Name);
@@ -330,13 +330,13 @@ namespace Nesp
         }
 
         [Test]
-        public void CompileMethodIdTest()
+        public void CompileFunctionIdTest()
         {
             var expr = ParseAndVisit("System.Guid.NewGuid");
-            var lambda = Expression.Lambda<Func<Guid>>(expr, "CompileMethodId", Enumerable.Empty<ParameterExpression>());
+            var lambda = NespExpression.Lambda<Func<Guid>>(expr, "CompileFunctionId", Enumerable.Empty<NespParameterExpression>());
             var compiled = lambda.Compile();
             var value = compiled();
-            Assert.AreEqual("CompileMethodId", compiled.Method.Name);
+            Assert.AreEqual("CompileFunctionId", compiled.Method.Name);
             Assert.IsFalse(value.Equals(Guid.Empty));
         }
         #endregion

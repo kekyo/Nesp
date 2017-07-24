@@ -18,33 +18,34 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System.Reflection;
-using Nesp.Internals.Expressions;
+
+using Nesp.Expressions;
 
 namespace Nesp.Internals
 {
     internal sealed class CandidateInfo
     {
-        public readonly CandidatesDictionary<ConstantExpression> Types;
-        public readonly CandidatesDictionary<Expression> Fields;
-        public readonly CandidatesDictionary<PropertyExpression> Properties;
+        public readonly CandidatesDictionary<NespConstantExpression> Types;
+        public readonly CandidatesDictionary<NespExpression> Fields;
+        public readonly CandidatesDictionary<NespPropertyExpression> Properties;
         public readonly CandidatesDictionary<MethodInfo> Methods;
-        public readonly CandidatesDictionary<Expression> Locals;
+        public readonly CandidatesDictionary<NespExpression> Locals;
 
         public CandidateInfo() : this(
-            new CandidatesDictionary<ConstantExpression>(),
-            new CandidatesDictionary<Expression>(),
-            new CandidatesDictionary<PropertyExpression>(),
+            new CandidatesDictionary<NespConstantExpression>(),
+            new CandidatesDictionary<NespExpression>(),
+            new CandidatesDictionary<NespPropertyExpression>(),
             new CandidatesDictionary<MethodInfo>(),
-            new CandidatesDictionary<Expression>())
+            new CandidatesDictionary<NespExpression>())
         {
         }
 
         private CandidateInfo(
-            CandidatesDictionary<ConstantExpression> types,
-            CandidatesDictionary<Expression> fields,
-            CandidatesDictionary<PropertyExpression> properties,
+            CandidatesDictionary<NespConstantExpression> types,
+            CandidatesDictionary<NespExpression> fields,
+            CandidatesDictionary<NespPropertyExpression> properties,
             CandidatesDictionary<MethodInfo> methods,
-            CandidatesDictionary<Expression> locals)
+            CandidatesDictionary<NespExpression> locals)
         {
             this.Types = types;
             this.Fields = fields;

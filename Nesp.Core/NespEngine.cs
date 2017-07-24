@@ -26,7 +26,7 @@ using Antlr4.Runtime.Tree;
 
 using Nesp.Extensions;
 using Nesp.Internals;
-using Nesp.Internals.Expressions;
+using Nesp.Expressions;
 
 namespace Nesp
 {
@@ -75,7 +75,7 @@ namespace Nesp
             }
         }
 
-        private LambdaExpression<Func<object>> ParseExpression(string expression)
+        private NespLambdaExpression<Func<object>> ParseExpression(string expression)
         {
             var inputStream = new AntlrInputStream(expression);
             var lexer = new NespGrammarLexer(inputStream);
@@ -86,7 +86,7 @@ namespace Nesp
                 ? (IParseTree)grammarParser.list()          // Take from list
                 : (IParseTree)grammarParser.expression();   // Take from expression
 
-            Expression expr;
+            NespExpression expr;
             lock (parser)
             {
                 expr = parser.Visit(context);
@@ -95,10 +95,10 @@ namespace Nesp
             var valueType = typeof(object);
             var strictExpr = (expr.CandidateType == valueType)
                 ? expr
-                : Expression.Convert(expr, valueType);
+                : NespExpression.Convert(expr, valueType);
 
-            return Expression.Lambda<Func<object>>(
-                strictExpr, "", Enumerable.Empty<ParameterExpression>());
+            return NespExpression.Lambda<Func<object>>(
+                strictExpr, "", Enumerable.Empty<NespParameterExpression>());
         }
 
         public async Task<Func<object>> CompileExpressionAsync(string expression)

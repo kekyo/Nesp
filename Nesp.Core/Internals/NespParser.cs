@@ -23,11 +23,11 @@ using System.Linq;
 using System.Reflection;
 
 using Nesp.Extensions;
-using Nesp.Internals.Expressions;
+using Nesp.Expressions;
 
 namespace Nesp.Internals
 {
-    internal sealed class NespParser : NespGrammarBaseVisitor<Expression>
+    internal sealed class NespParser : NespGrammarBaseVisitor<NespExpression>
     {
         private readonly INespMemberBinder binder;
         private readonly Stack<CandidateInfo> candidateInfos = new Stack<CandidateInfo>();
@@ -46,7 +46,7 @@ namespace Nesp.Internals
             {
                 current.Types.AddCandidates(
                     entry.Key,
-                    entry.Value.Select(Expression.Constant).ToArray());
+                    entry.Value.Select(NespExpression.Constant).ToArray());
             }
 
             foreach (var entry in members.FieldsByName)
@@ -55,15 +55,15 @@ namespace Nesp.Internals
                     entry.Key,
                     entry.Value.Select(fi =>
                         (fi.IsLiteral || fi.IsInitOnly)
-                            ? (Expression)Expression.Constant(fi.GetValue(null))
-                            : (Expression)Expression.Field(null, fi)).ToArray());
+                            ? (NespExpression)NespExpression.Constant(fi.GetValue(null))
+                            : (NespExpression)NespExpression.Field(null, fi)).ToArray());
             }
 
             foreach (var entry in members.PropertiesByName)
             {
                 current.Properties.AddCandidates(
                     entry.Key,
-                    entry.Value.Select(pi => Expression.Property(null, pi)).ToArray());
+                    entry.Value.Select(pi => NespExpression.Property(null, pi)).ToArray());
             }
 
             foreach (var entry in members.MethodsByName)
@@ -74,18 +74,18 @@ namespace Nesp.Internals
             }
         }
 
-        public override Expression VisitExpression(NespGrammarParser.ExpressionContext context)
+        public override NespExpression VisitExpression(NespGrammarParser.ExpressionContext context)
         {
             var listContext = (NespGrammarParser.ListContext)context.GetChildren()[1];
             return this.Visit(listContext);
         }
 
-        private static Expression NormalizeType(Expression expr, Type targetType)
+        private static NespExpression NormalizeType(NespExpression expr, Type targetType)
         {
-            return (expr.CandidateType != targetType) ? Expression.Convert(expr, targetType) : expr;
+            return (expr.CandidateType != targetType) ? NespExpression.Convert(expr, targetType) : expr;
         }
 
-        private MethodCallExpression SelectMethod(MethodInfo[] candidates, Expression[] argExprs)
+        private NespApplyFunctionExpression SelectMethod(MethodInfo[] candidates, NespExpression[] argExprs)
         {
             if (candidates.Length >= 1)
             {
@@ -100,7 +100,7 @@ namespace Nesp.Internals
                     var argTypes = mi.GetParameters()
                         .Select(pi => pi.ParameterType)
                         .ToArray();
-                    return Expression.Call(
+                    return NespExpression.Apply(
                         null, mi, argExprs
                             .Select((argExpr, index) => NormalizeType(argExpr, argTypes[index])));
                 }
@@ -109,7 +109,7 @@ namespace Nesp.Internals
             return null;
         }
 
-        public override Expression VisitList(NespGrammarParser.ListContext context)
+        public override NespExpression VisitList(NespGrammarParser.ListContext context)
         {
             // Empty.
             if (context.children == null)
@@ -170,7 +170,7 @@ namespace Nesp.Internals
                                     {
                                         var argName = argContext.GetInnerText();
                                         // TODO: Apply generic types
-                                        return Expression.Parameter(typeof(object), argName);
+                                        return NespExpression.Parameter(argName);
                                     }
                                     else
                                     {
@@ -190,7 +190,7 @@ namespace Nesp.Internals
                             var bodyContext = (NespGrammarParser.ListContext)childContext3.GetChildren()[1];
                             var bodyExpr = this.Visit(bodyContext);
 
-                            var lambdaExpr = Expression.Lambda(bodyExpr, name, argExprs);
+                            var lambdaExpr = NespExpression.Lambda(bodyExpr, name, argExprs);
 
                             candidateInfos.Pop();
 
@@ -207,48 +207,48 @@ namespace Nesp.Internals
             }
 
             // TODO: Calculate minimum assignable type.
-            return Expression.NewArrayInit(
+            return NespExpression.NewArrayInit(
                 typeof(object), context.GetChildren().Select(childContext =>
                     NormalizeType(this.Visit(childContext), typeof(object))));
         }
 
-        public override Expression VisitString(NespGrammarParser.StringContext context)
+        public override NespExpression VisitString(NespGrammarParser.StringContext context)
         {
             var text = context.GetInnerText();
             var unquoted = text.Substring(1, text.Length - 2);
             var unescaped = unquoted.InterpretEscapes();
-            return Expression.Constant(unescaped);
+            return NespExpression.Constant(unescaped);
         }
 
-        public override Expression VisitNumeric(NespGrammarParser.NumericContext context)
+        public override NespExpression VisitNumeric(NespGrammarParser.NumericContext context)
         {
             var numericText = context.GetInnerText();
 
             if (byte.TryParse(numericText, out var byteValue))
             {
-                return Expression.Constant(byteValue);
+                return NespExpression.Constant(byteValue);
             }
             if (short.TryParse(numericText, out var shortValue))
             {
-                return Expression.Constant(shortValue);
+                return NespExpression.Constant(shortValue);
             }
             if (int.TryParse(numericText, out var intValue))
             {
-                return Expression.Constant(intValue);
+                return NespExpression.Constant(intValue);
             }
             if (long.TryParse(numericText, out var longValue))
             {
-                return Expression.Constant(longValue);
+                return NespExpression.Constant(longValue);
             }
             if (double.TryParse(numericText, out var doubleValue))
             {
-                return Expression.Constant(doubleValue);
+                return NespExpression.Constant(doubleValue);
             }
 
             throw new OverflowException("Cannot parse numeric value: " + numericText);
         }
 
-        public override Expression VisitId(NespGrammarParser.IdContext context)
+        public override NespExpression VisitId(NespGrammarParser.IdContext context)
         {
             var current = candidateInfos.Peek();
 
@@ -277,7 +277,7 @@ namespace Nesp.Internals
             // ex: 'string.Format "ABC{0}DEF{1}GHI" 123 System.Guid.NewGuid'
             //     NewGuid function is no arguments so it's legal style and support below.
             var methodCandidates = current.Methods[id];
-            var expr = this.SelectMethod(methodCandidates, new Expression[0]);
+            var expr = this.SelectMethod(methodCandidates, new NespExpression[0]);
             if (expr != null)
             {
                 return expr;
