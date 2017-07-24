@@ -26,24 +26,24 @@ using Nesp.Internals;
 
 namespace Nesp.Extensions
 {
-    public sealed class MemberExtractor : IMemberProducer
+    public sealed class NespMemberExtractor : INespMemberProducer
     {
-        public MemberExtractor(IEnumerable<Assembly> assemblies)
+        public NespMemberExtractor(IEnumerable<Assembly> assemblies)
             : this(assemblies.SelectMany(assembly => assembly.DefinedTypes).Where(typeInfo => typeInfo.IsPublic))
         {
         }
 
-        public MemberExtractor(params Type[] types)
+        public NespMemberExtractor(params Type[] types)
             : this((IEnumerable<Type>)types)
         {
         }
 
-        public MemberExtractor(IEnumerable<Type> types)
+        public NespMemberExtractor(IEnumerable<Type> types)
             : this(types.Select(typeInfo => typeInfo.GetTypeInfo()))
         {
         }
 
-        public MemberExtractor(IEnumerable<TypeInfo> typeInfos)
+        public NespMemberExtractor(IEnumerable<TypeInfo> typeInfos)
         {
             var classOrValueTypeInfos = typeInfos
                 .Where(type => type.IsValueType || type.IsClass)
@@ -101,18 +101,18 @@ namespace Nesp.Extensions
 
         private static string GetTypeName(TypeInfo typeInfo)
         {
-            var memberBind = typeInfo.GetCustomAttribute<MemberBindAttribute>();
-            return (memberBind != null)
-                ? memberBind.MemberName
+            var identity = typeInfo.GetCustomAttribute<NespIdentityAttribute>();
+            return (identity != null)
+                ? identity.Name
                 : GetReadableTypeName(typeInfo.AsType());
         }
 
         private static string GetMemberName(MemberInfo member)
         {
-            var memberBind = member.GetCustomAttribute<MemberBindAttribute>();
-            if (memberBind != null)
+            var identity = member.GetCustomAttribute<NespIdentityAttribute>();
+            if (identity != null)
             {
-                return memberBind.MemberName;
+                return identity.Name;
             }
             if (NespUtilities.OperatorMethodNames.TryGetValue(member.Name, out var name))
             {

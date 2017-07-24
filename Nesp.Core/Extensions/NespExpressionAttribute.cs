@@ -17,12 +17,15 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Threading.Tasks;
+using System;
 
 namespace Nesp.Extensions
 {
-    public interface INespExtension
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class NespExpressionAttribute : Attribute
     {
-        Task<INespMemberProducer> GetMemberProducerAsync();
+        public NespExpressionAttribute()
+        {
+        }
     }
 }

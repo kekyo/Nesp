@@ -75,7 +75,7 @@ namespace Nesp
             }
         }
 
-        private NespLambdaExpression<Func<object>> ParseExpression(string expression)
+        private NespExpression ParseExpression(string expression)
         {
             var inputStream = new AntlrInputStream(expression);
             var lexer = new NespGrammarLexer(inputStream);
@@ -86,19 +86,10 @@ namespace Nesp
                 ? (IParseTree)grammarParser.list()          // Take from list
                 : (IParseTree)grammarParser.expression();   // Take from expression
 
-            NespExpression expr;
             lock (parser)
             {
-                expr = parser.Visit(context);
+                return parser.Visit(context);
             }
-
-            var valueType = typeof(object);
-            var strictExpr = (expr.CandidateType == valueType)
-                ? expr
-                : NespExpression.Convert(expr, valueType);
-
-            return NespExpression.Lambda<Func<object>>(
-                strictExpr, "", Enumerable.Empty<NespParameterExpression>());
         }
 
         public async Task<Func<object>> CompileExpressionAsync(string expression)
@@ -114,7 +105,16 @@ namespace Nesp
             var func = await Task.Run(() =>
                 {
                     var expr = this.ParseExpression(expression);
-                    return expr.Compile();
+
+                    var valueType = typeof(object);
+                    var strictExpr = (expr.CandidateType == valueType)
+                        ? expr
+                        : NespExpression.Convert(expr, valueType);
+
+                    var lambdaExpr = NespExpression.Lambda(
+                        strictExpr, "", Enumerable.Empty<NespParameterExpression>());
+
+                    return lambdaExpr.Compile<Func<object>>();
                 });
 
             lock (cachedFuncs)

@@ -38,7 +38,7 @@ namespace Nesp.Internals
             this.candidateInfos.Push(new CandidateInfo());
         }
 
-        public void AddMembers(IMemberProducer members)
+        public void AddMembers(INespMemberProducer members)
         {
             var current = candidateInfos.Peek();
 

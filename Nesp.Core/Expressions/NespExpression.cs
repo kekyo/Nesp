@@ -104,15 +104,6 @@ namespace Nesp.Expressions
         {
             return new NespLambdaExpression(expression, name, parameters);
         }
-
-        public static NespLambdaExpression<TDelegate> Lambda<TDelegate>(
-            NespExpression expression,
-            string name,
-            IEnumerable<NespParameterExpression> parameters)
-            where TDelegate : class
-        {
-            return new NespLambdaExpression<TDelegate>(expression, name, parameters);
-        }
     }
 
     public sealed class NespConvertExpression : NespExpression

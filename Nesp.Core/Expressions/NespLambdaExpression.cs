@@ -24,10 +24,12 @@ using System.Linq.Expressions;
 
 namespace Nesp.Expressions
 {
-
     public class NespLambdaExpression : NespExpression
     {
-        internal NespLambdaExpression(NespExpression expression, string name, IEnumerable<NespParameterExpression> parameters)
+        internal NespLambdaExpression(
+            NespExpression expression,
+            string name,
+            IEnumerable<NespParameterExpression> parameters)
         {
             this.Expression = expression;
             this.Name = name;
@@ -50,37 +52,17 @@ namespace Nesp.Expressions
                     .Select(argExpr => (ParameterExpression)argExpr.Create())
                     .ToArray());
         }
-    }
 
-    public sealed class NespLambdaExpression<TDelegate> : NespLambdaExpression
-        where TDelegate : class
-    {
-        private TDelegate cache;
-
-        internal NespLambdaExpression(NespExpression expression, string name, IEnumerable<NespParameterExpression> parameters)
-            : base(expression, name, parameters)
+        public TDelegate Compile<TDelegate>()
+            where TDelegate : class
         {
-        }
-
-        internal override Expression OnCreate()
-        {
-            // TODO: Support tailcall recursion
-            return System.Linq.Expressions.Expression.Lambda<TDelegate>(
+            var lambdaExpr = System.Linq.Expressions.Expression.Lambda<TDelegate>(
                 this.Expression.Create(),
                 this.Name,
                 this.Parameters
                     .Select(argExpr => (ParameterExpression)argExpr.Create())
                     .ToArray());
-        }
-
-        public TDelegate Compile()
-        {
-            if (cache == null)
-            {
-                var lambdaExpr = (Expression<TDelegate>)this.Create();
-                cache = lambdaExpr.Compile();
-            }
-            return cache;
+            return lambdaExpr.Compile();
         }
     }
 }

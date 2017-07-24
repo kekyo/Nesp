@@ -32,16 +32,16 @@ namespace Nesp.Extensions
         {
         }
 
-        internal static IMemberProducer CreateMemberProducer()
+        internal static INespMemberProducer CreateMemberProducer()
         {
-            return new MemberExtractor(
+            return new NespMemberExtractor(
                 new[] {typeof(object), typeof(Uri), typeof(Enumerable)}
                 .SelectMany(type => type.GetTypeInfo().Assembly.DefinedTypes)
                 .Where(typeInfo => typeInfo.IsPublic)
                 .Concat(new[] { typeof(Unit).GetTypeInfo() }));
         }
 
-        protected override Task<IMemberProducer> CreateMemberProducerAsync()
+        protected override Task<INespMemberProducer> CreateMemberProducerAsync()
         {
             return Task.Run(() => CreateMemberProducer());
         }

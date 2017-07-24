@@ -23,15 +23,15 @@ namespace Nesp.Extensions
 {
     public abstract class NespExtensionBase : INespExtension
     {
-        private IMemberProducer cached;
+        private INespMemberProducer cached;
 
         protected NespExtensionBase()
         {
         }
 
-        protected abstract Task<IMemberProducer> CreateMemberProducerAsync();
+        protected abstract Task<INespMemberProducer> CreateMemberProducerAsync();
 
-        public async Task<IMemberProducer> GetMemberProducerAsync()
+        public async Task<INespMemberProducer> GetMemberProducerAsync()
         {
             return cached ?? (cached = await this.CreateMemberProducerAsync());
         }

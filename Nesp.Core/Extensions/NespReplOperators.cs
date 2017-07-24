@@ -54,25 +54,25 @@ namespace Nesp.Extensions
 
     internal static class NespReplOperators
     {
-        [MemberBind("exit")]
+        [NespIdentity("exit")]
         public static object Exit()
         {
             return new NespReplExit(0);
         }
 
-        [MemberBind("exit")]
+        [NespIdentity("exit")]
         public static object Exit(int exitCode)
         {
             return new NespReplExit(exitCode);
         }
 
-        [MemberBind("cls")]
+        [NespIdentity("cls")]
         public static object Cls()
         {
             return NespReplCls.Instance;
         }
 
-        [MemberBind("help")]
+        [NespIdentity("help")]
         public static object Help()
         {
             return NespReplHelp.Instance;

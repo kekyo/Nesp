@@ -18,22 +18,16 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 
 namespace Nesp.Extensions
 {
-    [AttributeUsage(
-        AttributeTargets.Class |
-        AttributeTargets.Struct |
-        AttributeTargets.Method |
-        AttributeTargets.Field |
-        AttributeTargets.Property)]
-    public sealed class MemberBindAttribute : Attribute
+    public interface INespMemberProducer
     {
-        public MemberBindAttribute(string memberName)
-        {
-            this.MemberName = memberName;
-        }
-
-        public string MemberName { get; }
+        IReadOnlyDictionary<string, Type[]> TypesByName { get; }
+        IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
+        IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
+        IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }
     }
 }

@@ -26,55 +26,55 @@ namespace Nesp.Extensions
         // TODO: Replace native expressions.
 
         #region Addition
-        [MemberBind("+")]
+        [NespIdentity("+")]
         public static byte Addition(byte a, byte b)
         {
             return (byte)(a + b);
         }
 
-        [MemberBind("+")]
+        [NespIdentity("+")]
         public static short Addition(short a, short b)
         {
             return (short)(a + b);
         }
 
-        [MemberBind("+")]
+        [NespIdentity("+")]
         public static int Addition(int a, int b)
         {
             return a + b;
         }
 
-        [MemberBind("+")]
+        [NespIdentity("+")]
         public static long Addition(long a, long b)
         {
             return a + b;
         }
 
-        [MemberBind("+")]
+        [NespIdentity("+")]
         public static float Addition(float a, float b)
         {
             return a + b;
         }
 
-        [MemberBind("+")]
+        [NespIdentity("+")]
         public static double Addition(double a, double b)
         {
             return a + b;
         }
 
-        [MemberBind("+")]
+        [NespIdentity("+")]
         public static string Addition(string a, string b)
         {
             return a + b;
         }
 
-        [MemberBind("+")]
+        [NespIdentity("+")]
         public static string Addition(string a, char b)
         {
             return a + b;
         }
 
-        [MemberBind("+")]
+        [NespIdentity("+")]
         public static string Addition(char a, char b)
         {
             return a.ToString() + b;
@@ -82,37 +82,37 @@ namespace Nesp.Extensions
         #endregion
 
         #region Subtraction
-        [MemberBind("-")]
+        [NespIdentity("-")]
         public static byte Subtraction(byte a, byte b)
         {
             return (byte)(a - b);
         }
 
-        [MemberBind("-")]
+        [NespIdentity("-")]
         public static short Subtraction(short a, short b)
         {
             return (short)(a - b);
         }
 
-        [MemberBind("-")]
+        [NespIdentity("-")]
         public static int Subtraction(int a, int b)
         {
             return a - b;
         }
 
-        [MemberBind("-")]
+        [NespIdentity("-")]
         public static long Subtraction(long a, long b)
         {
             return a - b;
         }
 
-        [MemberBind("-")]
+        [NespIdentity("-")]
         public static float Subtraction(float a, float b)
         {
             return a - b;
         }
 
-        [MemberBind("-")]
+        [NespIdentity("-")]
         public static double Subtraction(double a, double b)
         {
             return a - b;
@@ -120,37 +120,37 @@ namespace Nesp.Extensions
         #endregion
 
         #region Multiply
-        [MemberBind("*")]
-        public static byte Multiply(byte a, byte b)
+        [NespIdentity("*")]
+        public static int Multiply(byte a, byte b)
         {
-            return (byte)(a * b);
+            return a * b;
         }
 
-        [MemberBind("*")]
-        public static short Multiply(short a, short b)
+        [NespIdentity("*")]
+        public static int Multiply(short a, short b)
         {
-            return (short)(a * b);
+            return a * b;
         }
 
-        [MemberBind("*")]
+        [NespIdentity("*")]
         public static int Multiply(int a, int b)
         {
             return a * b;
         }
 
-        [MemberBind("*")]
+        [NespIdentity("*")]
         public static long Multiply(long a, long b)
         {
             return a * b;
         }
 
-        [MemberBind("*")]
+        [NespIdentity("*")]
         public static float Multiply(float a, float b)
         {
             return a * b;
         }
 
-        [MemberBind("*")]
+        [NespIdentity("*")]
         public static double Multiply(double a, double b)
         {
             return a * b;
@@ -158,37 +158,37 @@ namespace Nesp.Extensions
         #endregion
 
         #region Division
-        [MemberBind("/")]
+        [NespIdentity("/")]
         public static byte Division(byte a, byte b)
         {
             return (byte)(a / b);
         }
 
-        [MemberBind("/")]
+        [NespIdentity("/")]
         public static short Division(short a, short b)
         {
             return (short)(a / b);
         }
 
-        [MemberBind("/")]
+        [NespIdentity("/")]
         public static int Division(int a, int b)
         {
             return a / b;
         }
 
-        [MemberBind("/")]
+        [NespIdentity("/")]
         public static long Division(long a, long b)
         {
             return a / b;
         }
 
-        [MemberBind("/")]
+        [NespIdentity("/")]
         public static float Division(float a, float b)
         {
             return a / b;
         }
 
-        [MemberBind("/")]
+        [NespIdentity("/")]
         public static double Division(double a, double b)
         {
             return a / b;
@@ -196,37 +196,37 @@ namespace Nesp.Extensions
         #endregion
 
         #region Modulus
-        [MemberBind("%")]
+        [NespIdentity("%")]
         public static byte Modulus(byte a, byte b)
         {
             return (byte)(a / b);
         }
 
-        [MemberBind("%")]
+        [NespIdentity("%")]
         public static short Modulus(short a, short b)
         {
             return (short)(a / b);
         }
 
-        [MemberBind("%")]
+        [NespIdentity("%")]
         public static int Modulus(int a, int b)
         {
             return a / b;
         }
 
-        [MemberBind("%")]
+        [NespIdentity("%")]
         public static long Modulus(long a, long b)
         {
             return a / b;
         }
 
-        [MemberBind("%")]
+        [NespIdentity("%")]
         public static float Modulus(float a, float b)
         {
             return a / b;
         }
 
-        [MemberBind("%")]
+        [NespIdentity("%")]
         public static double Modulus(double a, double b)
         {
             return a / b;
@@ -234,7 +234,7 @@ namespace Nesp.Extensions
         #endregion
 
         #region Equality
-        [MemberBind("==")]
+        [NespIdentity("==")]
         public static bool Equality(object a, object b)
         {
             if (a != null)
@@ -251,7 +251,7 @@ namespace Nesp.Extensions
             }
         }
 
-        [MemberBind("!=")]
+        [NespIdentity("!=")]
         public static bool Inequality(object a, object b)
         {
             if (a != null)
@@ -270,14 +270,14 @@ namespace Nesp.Extensions
         #endregion
 
         #region New
-        [MemberBind("new")]
+        [NespIdentity("new")]
         public static object New(Type type)
         {
             return Activator.CreateInstance(type);
         }
 
         // TODO: Support variable arguments.
-        [MemberBind("new")]
+        [NespIdentity("new")]
         public static object New(Type type, params object[] args)
         {
             return Activator.CreateInstance(type, args);

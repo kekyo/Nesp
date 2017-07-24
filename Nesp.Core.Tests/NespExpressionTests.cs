@@ -17,12 +17,35 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Threading.Tasks;
+using System;
+using System.Linq;
+using System.Reflection;
+using Nesp.Expressions;
+using NUnit.Framework;
 
-namespace Nesp.Extensions
+using Nesp.Extensions;
+using Nesp.Internals;
+
+namespace Nesp
 {
-    public interface INespExtension
+    [TestFixture]
+    public class NespExpressionTests
     {
-        Task<INespMemberProducer> GetMemberProducerAsync();
+        [Test]
+        public void ConstantTest()
+        {
+            var constExpr = NespExpression.Constant(123);
+            Assert.AreEqual(typeof(int), constExpr.CandidateType);
+            Assert.AreEqual(123, constExpr.Value);
+        }
+
+        [Test]
+        public void ConvertTest()
+        {
+            var constExpr = NespExpression.Constant(123);
+            var convExpr = NespExpression.Convert(constExpr, typeof(long));
+            Assert.AreEqual(typeof(long), convExpr.CandidateType);
+            Assert.AreSame(constExpr, convExpr.Operand);
+        }
     }
 }

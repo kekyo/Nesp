@@ -25,9 +25,9 @@ using System.Threading.Tasks;
 
 namespace Nesp.Extensions
 {
-    internal sealed class NespStandardMemberProducer : IMemberProducer
+    internal sealed class NespStandardMemberProducer : INespMemberProducer
     {
-        public NespStandardMemberProducer(IMemberProducer members)
+        public NespStandardMemberProducer(INespMemberProducer members)
         {
             this.TypesByName = FixupMemberNames(members.TypesByName, GetTypeName);
             this.FieldsByName = FixupMemberNames(members.FieldsByName, GetMemberName);

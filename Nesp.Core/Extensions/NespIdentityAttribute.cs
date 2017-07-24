@@ -18,16 +18,22 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 
 namespace Nesp.Extensions
 {
-    public interface IMemberProducer
+    [AttributeUsage(
+        AttributeTargets.Class |
+        AttributeTargets.Struct |
+        AttributeTargets.Method |
+        AttributeTargets.Field |
+        AttributeTargets.Property)]
+    public sealed class NespIdentityAttribute : Attribute
     {
-        IReadOnlyDictionary<string, Type[]> TypesByName { get; }
-        IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
-        IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
-        IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }
+        public NespIdentityAttribute(string name)
+        {
+            this.Name = name;
+        }
+
+        public string Name { get; }
     }
 }

@@ -48,13 +48,14 @@
     <Compile Include="Expressions\NespApplyFunctionExpression.cs" />
     <Compile Include="Expressions\NespParameterExpression.cs" />
     <Compile Include="Expressions\NespLambdaExpression.cs" />
-    <Compile Include="Extensions\IMemberProducer.cs" />
-    <Compile Include="Extensions\MemberExtractor.cs" />
+    <Compile Include="Extensions\INespMemberProducer.cs" />
+    <Compile Include="Extensions\NespMemberExtractor.cs" />
     <Compile Include="Extensions\NespExtensionBase.cs" />
+    <Compile Include="Extensions\NespExpressionAttribute.cs" />
     <Compile Include="Extensions\NespReplOperators.cs" />
     <Compile Include="Extensions\NespStandardMemberProducer.cs" />
     <Compile Include="Extensions\NespStandardExtension.cs" />
-    <Compile Include="Extensions\MemberBindAttribute.cs" />
+    <Compile Include="Extensions\NespIdentityAttribute.cs" />
     <Compile Include="Extensions\NespStandardOperators.cs" />
     <Compile Include="Internals\CandidateInfo.cs" />
     <Compile Include="Internals\CandidatesDictionary.cs" />

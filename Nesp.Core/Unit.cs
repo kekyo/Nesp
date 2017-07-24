@@ -22,7 +22,7 @@ using Nesp.Extensions;
 
 namespace Nesp
 {
-    [MemberBind("unit")]
+    [NespIdentity("unit")]
     public struct Unit : IEquatable<Unit>
     {
         public static readonly object Value = new Unit();

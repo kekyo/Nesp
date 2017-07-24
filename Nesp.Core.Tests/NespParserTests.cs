@@ -300,8 +300,8 @@ namespace Nesp
         public void CompileFieldIdTest()
         {
             var expr = ParseAndVisit("System.DBNull.Value");
-            var lambda = NespExpression.Lambda<Func<DBNull>>(expr, "CompileFieldId", Enumerable.Empty<NespParameterExpression>());
-            var compiled = lambda.Compile();
+            var lambda = NespExpression.Lambda(expr, "CompileFieldId", Enumerable.Empty<NespParameterExpression>());
+            var compiled = lambda.Compile<Func<DBNull>>();
             var value = compiled();
             Assert.AreEqual("CompileFieldId", compiled.Method.Name);
             Assert.AreEqual(DBNull.Value, value);
@@ -311,8 +311,8 @@ namespace Nesp
         public void CompileEnumIdTest()
         {
             var expr = ParseAndVisit("System.DateTimeKind.Local");
-            var lambda = NespExpression.Lambda<Func<DateTimeKind>>(expr, "CompileEnumId", Enumerable.Empty<NespParameterExpression>());
-            var compiled = lambda.Compile();
+            var lambda = NespExpression.Lambda(expr, "CompileEnumId", Enumerable.Empty<NespParameterExpression>());
+            var compiled = lambda.Compile<Func<DateTimeKind>>();
             var value = compiled();
             Assert.AreEqual("CompileEnumId", compiled.Method.Name);
             Assert.AreEqual(DateTimeKind.Local, value);
@@ -322,8 +322,8 @@ namespace Nesp
         public void CompilePropertyIdTest()
         {
             var expr = ParseAndVisit("System.IntPtr.Size");
-            var lambda = NespExpression.Lambda<Func<int>>(expr, "CompilePropertyId", Enumerable.Empty<NespParameterExpression>());
-            var compiled = lambda.Compile();
+            var lambda = NespExpression.Lambda(expr, "CompilePropertyId", Enumerable.Empty<NespParameterExpression>());
+            var compiled = lambda.Compile<Func<int>>();
             var size = compiled();
             Assert.AreEqual("CompilePropertyId", compiled.Method.Name);
             Assert.AreEqual(IntPtr.Size, size);
@@ -333,8 +333,8 @@ namespace Nesp
         public void CompileFunctionIdTest()
         {
             var expr = ParseAndVisit("System.Guid.NewGuid");
-            var lambda = NespExpression.Lambda<Func<Guid>>(expr, "CompileFunctionId", Enumerable.Empty<NespParameterExpression>());
-            var compiled = lambda.Compile();
+            var lambda = NespExpression.Lambda(expr, "CompileFunctionId", Enumerable.Empty<NespParameterExpression>());
+            var compiled = lambda.Compile<Func<Guid>>();
             var value = compiled();
             Assert.AreEqual("CompileFunctionId", compiled.Method.Name);
             Assert.IsFalse(value.Equals(Guid.Empty));

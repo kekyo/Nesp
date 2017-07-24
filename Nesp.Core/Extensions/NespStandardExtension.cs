@@ -58,14 +58,14 @@ namespace Nesp.Extensions
         {
         }
 
-        internal static IMemberProducer CreateMemberProducer()
+        internal static INespMemberProducer CreateMemberProducer()
         {
-            var extractor = new MemberExtractor(
+            var extractor = new NespMemberExtractor(
                 ReservedTypeNames.Keys.Concat(new[] { typeof(NespStandardOperators) }));
             return new NespStandardMemberProducer(extractor);
         }
 
-        protected override Task<IMemberProducer> CreateMemberProducerAsync()
+        protected override Task<INespMemberProducer> CreateMemberProducerAsync()
         {
             return Task.Run(() => CreateMemberProducer());
         }
