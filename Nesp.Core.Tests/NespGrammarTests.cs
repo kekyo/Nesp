@@ -54,6 +54,62 @@ namespace Nesp
         }
 
         [Test]
+        public void HexadecimalNumericTest()
+        {
+            var actual = Parse("0x123456", p => p.numeric());
+            Assert.AreEqual("(numeric 0x123456)", actual);
+        }
+
+        [Test]
+        public void Int64AsStrictTest()
+        {
+            var actual = Parse("123456l", p => p.numeric());
+            Assert.AreEqual("(numeric 123456l)", actual);
+        }
+
+        [Test]
+        public void UInt64AsStrictTest()
+        {
+            var actual = Parse("123456u", p => p.numeric());
+            Assert.AreEqual("(numeric 123456u)", actual);
+        }
+
+        [Test]
+        public void Int64AsStrictHexadecimalTest()
+        {
+            var actual = Parse("0x123456l", p => p.numeric());
+            Assert.AreEqual("(numeric 0x123456l)", actual);
+        }
+
+        [Test]
+        public void UInt64AsStrictHexadecimalTest()
+        {
+            var actual = Parse("0x123456u", p => p.numeric());
+            Assert.AreEqual("(numeric 0x123456u)", actual);
+        }
+
+        [Test]
+        public void FloatAsStrictTest()
+        {
+            var actual = Parse("123.456f", p => p.numeric());
+            Assert.AreEqual("(numeric 123.456f)", actual);
+        }
+
+        [Test]
+        public void DoubleAsStrictTest()
+        {
+            var actual = Parse("123.456d", p => p.numeric());
+            Assert.AreEqual("(numeric 123.456d)", actual);
+        }
+
+        [Test]
+        public void DecimalAsStrictTest()
+        {
+            var actual = Parse("123.456m", p => p.numeric());
+            Assert.AreEqual("(numeric 123.456m)", actual);
+        }
+
+        [Test]
         public void PlusNumericTest()
         {
             var actual = Parse("+123456", p => p.numeric());
@@ -95,6 +151,36 @@ namespace Nesp
         {
             var actual = Parse("\"abc\\\\def\"", p => p.@string());
             Assert.AreEqual("(string \"abc\\\\def\")", actual);
+        }
+        #endregion
+
+        #region Char
+        [Test]
+        public void CharTest()
+        {
+            var actual = Parse("'a'", p => p.@char());
+            Assert.AreEqual("(char 'a')", actual);
+        }
+
+        [Test]
+        public void CharWithEscapedTest()
+        {
+            var actual = Parse("'\\t'", p => p.@char());
+            Assert.AreEqual("(char '\\t')", actual);
+        }
+
+        [Test]
+        public void CharWithEscapedQuoteTest()
+        {
+            var actual = Parse("'\\''", p => p.@char());
+            Assert.AreEqual("(char '\\'')", actual);
+        }
+
+        [Test]
+        public void CharWithEscapeCharTest()
+        {
+            var actual = Parse("'\\\\'", p => p.@char());
+            Assert.AreEqual("(char '\\\\')", actual);
         }
         #endregion
 

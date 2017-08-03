@@ -17,38 +17,23 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
-using System.Reflection;
-
 namespace Nesp.Expressions
 {
-    public sealed class NespApplyFunctionExpression : NespExpression
+    public sealed class NespIdExpression : NespTokenExpression<string>
     {
-        internal NespApplyFunctionExpression(
-            NespExpression instance,
-            MethodInfo mi,
-            IEnumerable<NespExpression> arguments)
+        internal NespIdExpression(string id, int line, int column)
+            : base(line, column)
         {
-            this.Instance = instance;
-            this.Function = mi;
-            this.Arguments = arguments;
+            this.Id = id;
         }
 
-        public override Type CandidateType => this.Function.ReturnType;
+        public string Id { get; }
 
-        public NespExpression Instance { get; }
-        public MethodInfo Function { get; }
-        public IEnumerable<NespExpression> Arguments { get; }
+        public override string Value => this.Id;
 
-        internal override Expression OnCreate()
+        public override string ToString()
         {
-            return Expression.Call(
-                this.Instance.Create(),
-                this.Function,
-                this.Arguments.Select(argExpr => argExpr.Create()));
+            return $"[{this.Id}]";
         }
     }
 }

@@ -21,17 +21,42 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 
-using Nesp.Expressions;
-
 namespace Nesp.Internals
 {
     internal static class NespUtilities
     {
+        public static readonly IReadOnlyDictionary<Type, string> ReservedTypeNames =
+            new Dictionary<Type, string>
+            {
+                { typeof(object), "object" },
+                { typeof(byte), "byte" },
+                { typeof(sbyte), "sbyte" },
+                { typeof(short), "short" },
+                { typeof(ushort), "ushort" },
+                { typeof(int), "int" },
+                { typeof(uint), "uint" },
+                { typeof(long), "long" },
+                { typeof(ulong), "ulong" },
+                { typeof(float), "float" },
+                { typeof(double), "double" },
+                { typeof(decimal), "decimal" },
+                { typeof(bool), "bool" },
+                { typeof(char), "char" },
+                { typeof(string), "string" },
+                { typeof(DateTime), "datetime" },
+                { typeof(TimeSpan), "timespan" },
+                { typeof(Guid), "guid" },
+                { typeof(Math), "math" },
+                { typeof(Enum), "enum" },
+                { typeof(Type), "type" },
+            };
+
         public static readonly IReadOnlyDictionary<string, string> OperatorMethodNames =
             new Dictionary<string, string>
             {
@@ -73,8 +98,8 @@ namespace Nesp.Internals
                 { "op_Range", ".." },
             };
 
-        public static readonly NespConstantExpression UnitExpression =
-            NespExpression.Constant(Unit.Value);
+        public static readonly ConstantExpression UnitExpression =
+            Expression.Constant(Unit.Value);
 
         private static readonly IList<IParseTree> empty =
             new IParseTree[0];
@@ -83,6 +108,16 @@ namespace Nesp.Internals
         private static readonly Type unitType = typeof(Unit);
         private static readonly Type delegateType = typeof(Delegate);
         private static readonly TypeInfo delegateTypeInfo = delegateType.GetTypeInfo();
+
+        public static string GetReservedReadableTypeName(Type type)
+        {
+            if (ReservedTypeNames.TryGetValue(type, out var typeName))
+            {
+                return typeName;
+            }
+
+            return GetReadableTypeName(type, GetReservedReadableTypeName);
+        }
 
         public static string GetReadableTypeName(Type type, Func<Type, string> getTypeName)
         {
@@ -101,10 +136,10 @@ namespace Nesp.Internals
                 return $"{getTypeName(elementType)}[{new string(Enumerable.Range(0, type.GetArrayRank() - 1).Select(index => ',').ToArray())}]";
             }
 
-            // Delegate
-            // TODO: Curryable print is Func<> and Action<> only
+            // Delegate (Func<>)
             var typeInfo = type.GetTypeInfo();
-            if ((typeInfo.IsAbstract == false) && delegateTypeInfo.IsAssignableFrom(typeInfo))
+            if ((typeInfo.IsAbstract == false)
+                && delegateTypeInfo.IsAssignableFrom(typeInfo))
             {
                 var invokeMethod = typeInfo.GetDeclaredMethod("Invoke");
                 var parameters = invokeMethod.GetParameters();
@@ -143,12 +178,6 @@ namespace Nesp.Internals
                     collection
                     .Cast<object>()
                     .Select(InternalFormatReadableString));
-            }
-
-            var dlg = value as Delegate;
-            if (dlg != null)
-            {
-                return dlg.GetMethodInfo().Name;
             }
             else
             {
@@ -192,6 +221,9 @@ namespace Nesp.Internals
                     ch = escaped[index];
                     switch (ch)
                     {
+                        case '0':
+                            sb.Append('\0');
+                            break;
                         case 'b':
                             sb.Append('\b');
                             break;

@@ -17,17 +17,23 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Reflection;
+using Nesp.Internals;
 
-namespace Nesp.Extensions
+namespace Nesp.Expressions
 {
-    public interface INespMemberProducer
+    public sealed class NespNumericExpression : NespTokenExpression<object>
     {
-        IReadOnlyDictionary<string, Type[]> TypesByName { get; }
-        IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
-        IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
-        IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }
+        internal NespNumericExpression(object value, int line, int column)
+            : base(line, column)
+        {
+            this.Value = value;
+        }
+
+        public override object Value { get; }
+
+        public override string ToString()
+        {
+            return $"{this.Value}:{NespUtilities.GetReservedReadableTypeName(this.Value.GetType())}";
+        }
     }
 }

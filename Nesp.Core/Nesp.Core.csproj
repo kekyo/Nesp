@@ -44,26 +44,28 @@
     </Antlr4>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Expressions\NespConstantExpression.cs" />
-    <Compile Include="Expressions\NespApplyFunctionExpression.cs" />
-    <Compile Include="Expressions\NespParameterExpression.cs" />
-    <Compile Include="Expressions\NespLambdaExpression.cs" />
-    <Compile Include="Extensions\INespMemberProducer.cs" />
-    <Compile Include="Extensions\NespExtensionAttribute.cs" />
-    <Compile Include="Extensions\NespMemberExtractor.cs" />
+    <Compile Include="Expressions\NespCharExpression.cs" />
+    <Compile Include="Expressions\NespBoolExpression.cs" />
+    <Compile Include="Expressions\NespTokenExpression.cs" />
+    <Compile Include="Expressions\NespUnitExpression.cs" />
+    <Compile Include="Expressions\NespListExpression.cs" />
+    <Compile Include="Expressions\NespStringExpression.cs" />
+    <Compile Include="Expressions\NespIdExpression.cs" />
+    <Compile Include="Expressions\NespNumericExpression.cs" />
+    <Compile Include="Expressions\NespExpression.cs" />
+    <Compile Include="Extensions\IMemberProducer.cs" />
+    <Compile Include="Extensions\MemberExtractor.cs" />
     <Compile Include="Extensions\NespExtensionBase.cs" />
-    <Compile Include="Extensions\NespExpressionAttribute.cs" />
     <Compile Include="Extensions\NespReplOperators.cs" />
     <Compile Include="Extensions\NespStandardMemberProducer.cs" />
     <Compile Include="Extensions\NespStandardExtension.cs" />
-    <Compile Include="Extensions\NespIdentityAttribute.cs" />
+    <Compile Include="Extensions\MemberBindAttribute.cs" />
     <Compile Include="Extensions\NespStandardOperators.cs" />
     <Compile Include="Internals\CandidateInfo.cs" />
     <Compile Include="Internals\CandidatesDictionary.cs" />
     <Compile Include="Extensions\INespExtension.cs" />
     <Compile Include="Extensions\NespReplExtension.cs" />
     <Compile Include="Extensions\NespBaseExtension.cs" />
-    <Compile Include="Expressions\NespExpression.cs" />
     <Compile Include="Internals\NespUtilities.cs" />
     <Compile Include="Unit.cs" />
     <Compile Include="NespEngine.cs" />

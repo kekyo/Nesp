@@ -20,13 +20,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
-
+using Nesp.Expressions;
 using Nesp.Extensions;
 using Nesp.Internals;
-using Nesp.Expressions;
 
 namespace Nesp
 {
@@ -51,7 +51,7 @@ namespace Nesp
 
         public static string GetReadableTypeName(Type type)
         {
-            return NespStandardExtension.ReservedTypeNames.TryGetValue(type, out var typeName)
+            return NespUtilities.ReservedTypeNames.TryGetValue(type, out var typeName)
                 ? typeName
                 : NespUtilities.GetReadableTypeName(
                     type, GetReadableTypeName);
@@ -75,7 +75,7 @@ namespace Nesp
             }
         }
 
-        private NespExpression ParseExpression(string expression)
+        public Expression<Func<object>> ParseExpression(string expression)
         {
             var inputStream = new AntlrInputStream(expression);
             var lexer = new NespGrammarLexer(inputStream);
@@ -86,10 +86,21 @@ namespace Nesp
                 ? (IParseTree)grammarParser.list()          // Take from list
                 : (IParseTree)grammarParser.expression();   // Take from expression
 
+            NespExpression expr;
             lock (parser)
             {
-                return parser.Visit(context);
+                expr = parser.Visit(context);
             }
+
+            return null;
+
+            //var valueType = typeof(object);
+            //var strictExpr = (expr.Type == valueType)
+            //    ? expr
+            //    : Expression.Convert(expr, valueType);
+
+            //return Expression.Lambda<Func<object>>(
+            //    strictExpr, false, Enumerable.Empty<ParameterExpression>());
         }
 
         public async Task<Func<object>> CompileExpressionAsync(string expression)
@@ -105,16 +116,7 @@ namespace Nesp
             var func = await Task.Run(() =>
                 {
                     var expr = this.ParseExpression(expression);
-
-                    var valueType = typeof(object);
-                    var strictExpr = (expr.CandidateType == valueType)
-                        ? expr
-                        : NespExpression.Convert(expr, valueType);
-
-                    var lambdaExpr = NespExpression.Lambda(
-                        strictExpr, "", Enumerable.Empty<NespParameterExpression>());
-
-                    return lambdaExpr.Compile<Func<object>>();
+                    return expr.Compile();
                 });
 
             lock (cachedFuncs)

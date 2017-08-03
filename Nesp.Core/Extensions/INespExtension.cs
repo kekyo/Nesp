@@ -23,6 +23,6 @@ namespace Nesp.Extensions
 {
     public interface INespExtension
     {
-        Task<INespMemberProducer> GetMemberProducerAsync();
+        Task<IMemberProducer> GetMemberProducerAsync();
     }
 }

@@ -18,34 +18,16 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Linq;
+using System.Collections.Generic;
 using System.Reflection;
-using Nesp.Expressions;
-using NUnit.Framework;
 
-using Nesp.Extensions;
-using Nesp.Internals;
-
-namespace Nesp
+namespace Nesp.Extensions
 {
-    [TestFixture]
-    public class NespExpressionTests
+    public interface IMemberProducer
     {
-        [Test]
-        public void ConstantTest()
-        {
-            var constExpr = NespExpression.Constant(123);
-            Assert.AreEqual(typeof(int), constExpr.CandidateType);
-            Assert.AreEqual(123, constExpr.Value);
-        }
-
-        [Test]
-        public void ConvertTest()
-        {
-            var constExpr = NespExpression.Constant(123);
-            var convExpr = NespExpression.Convert(constExpr, typeof(long));
-            Assert.AreEqual(typeof(long), convExpr.CandidateType);
-            Assert.AreSame(constExpr, convExpr.Operand);
-        }
+        IReadOnlyDictionary<string, Type[]> TypesByName { get; }
+        IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
+        IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
+        IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }
     }
 }

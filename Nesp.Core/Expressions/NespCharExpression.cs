@@ -17,15 +17,21 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-
-namespace Nesp.Extensions
+namespace Nesp.Expressions
 {
-    [AttributeUsage(AttributeTargets.Method)]
-    public sealed class NespExpressionAttribute : NespExtensionAttribute
+    public sealed class NespCharExpression : NespTokenExpression<char>
     {
-        public NespExpressionAttribute()
+        internal NespCharExpression(char value, int line, int column)
+            : base(line, column)
         {
+            this.Value = value;
+        }
+
+        public override char Value { get; }
+
+        public override string ToString()
+        {
+            return $"'{this.Value}'";
         }
     }
 }

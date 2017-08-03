@@ -19,11 +19,13 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
-using System.Reflection;
-
-using Nesp.Extensions;
+using System.Linq.Expressions;
+using System.Runtime.InteropServices.WindowsRuntime;
 using Nesp.Expressions;
+using Nesp.Extensions;
 
 namespace Nesp.Internals
 {
@@ -38,7 +40,7 @@ namespace Nesp.Internals
             this.candidateInfos.Push(new CandidateInfo());
         }
 
-        public void AddMembers(INespMemberProducer members)
+        public void AddMembers(IMemberProducer members)
         {
             var current = candidateInfos.Peek();
 
@@ -46,7 +48,7 @@ namespace Nesp.Internals
             {
                 current.Types.AddCandidates(
                     entry.Key,
-                    entry.Value.Select(NespExpression.Constant).ToArray());
+                    entry.Value.Select(Expression.Constant).ToArray());
             }
 
             foreach (var entry in members.FieldsByName)
@@ -55,15 +57,15 @@ namespace Nesp.Internals
                     entry.Key,
                     entry.Value.Select(fi =>
                         (fi.IsLiteral || fi.IsInitOnly)
-                            ? (NespExpression)NespExpression.Constant(fi.GetValue(null))
-                            : (NespExpression)NespExpression.Field(null, fi)).ToArray());
+                            ? (Expression)Expression.Constant(fi.GetValue(null))
+                            : (Expression)Expression.Field(null, fi)).ToArray());
             }
 
             foreach (var entry in members.PropertiesByName)
             {
                 current.Properties.AddCandidates(
                     entry.Key,
-                    entry.Value.Select(pi => NespExpression.Property(null, pi)).ToArray());
+                    entry.Value.Select(pi => Expression.Property(null, pi)).ToArray());
             }
 
             foreach (var entry in members.MethodsByName)
@@ -76,220 +78,228 @@ namespace Nesp.Internals
 
         public override NespExpression VisitExpression(NespGrammarParser.ExpressionContext context)
         {
-            var listContext = (NespGrammarParser.ListContext)context.GetChildren()[1];
+            var listContext = (NespGrammarParser.ListContext)context.GetChild(1);
+            if (listContext == null)
+            {
+                // "()"
+                return new NespUnitExpression(context.Start.Line, context.Start.Column);
+            }
+
             return this.Visit(listContext);
         }
 
-        private static NespExpression NormalizeType(NespExpression expr, Type targetType)
+        public override NespExpression VisitList(NespGrammarParser.ListContext context)
         {
-            return (expr.CandidateType != targetType) ? NespExpression.Convert(expr, targetType) : expr;
+            switch (context.ChildCount)
+            {
+                case 0:
+                    return new NespUnitExpression(context.Start.Line, context.Start.Column);
+                case 1:
+                    return this.Visit(context.GetChild(0));
+                default:
+                    return new NespListExpression(
+                        context.GetChildren().Select(this.Visit).ToArray());
+            }
         }
 
-        private NespApplyFunctionExpression SelectMethod(MethodInfo[] candidates, NespExpression[] argExprs)
+        public override NespExpression VisitString(NespGrammarParser.StringContext context)
         {
-            if (candidates.Length >= 1)
-            {
-                var types = argExprs
-                    .Select(argExpr => argExpr.CandidateType)
-                    .ToArray();
+            var token = context.STRING().Symbol;
+            var text = token.Text;
 
-                // TODO: DefaultBinder.SelectMethod can't resolve variable arguments (params).
-                var mi = binder.SelectMethod(candidates, types);
-                if (mi != null)
+            var unquoted = text.Substring(1, text.Length - 2);
+            var unescaped = unquoted.InterpretEscapes();
+
+            return new NespStringExpression(unescaped, token.Line - 1, token.Column);
+        }
+
+        public override NespExpression VisitChar(NespGrammarParser.CharContext context)
+        {
+            var token = context.CHAR().Symbol;
+            var text = token.Text;
+
+            var unquoted = text.Substring(1, text.Length - 2);
+            var unescaped = unquoted.InterpretEscapes();
+
+            return new NespCharExpression(unescaped[0], token.Line - 1, token.Column);
+        }
+
+        private static NespNumericExpression ParseHexadecimalNumeric(
+            string text, int line, int column)
+        {
+            if (text.StartsWith("0x") == false)
+            {
+                return null;
+            }
+
+            var numericText = text.Substring(2);
+            if (numericText.EndsWith("ul"))
+            {
+                numericText = numericText.Substring(0, numericText.Length - 2);
+                if (ulong.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var ulongValue))
                 {
-                    var argTypes = mi.GetParameters()
-                        .Select(pi => pi.ParameterType)
-                        .ToArray();
-                    return NespExpression.Apply(
-                        null, mi, argExprs
-                            .Select((argExpr, index) => NormalizeType(argExpr, argTypes[index])));
+                    return new NespNumericExpression(ulongValue, line, column);
+                }
+            }
+            else if (numericText.EndsWith("l"))
+            {
+                numericText = numericText.Substring(0, numericText.Length - 1);
+                if (long.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var longValue))
+                {
+                    return new NespNumericExpression(longValue, line, column);
+                }
+            }
+            else if (numericText.EndsWith("u"))
+            {
+                numericText = numericText.Substring(0, numericText.Length - 1);
+                if (uint.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var uintValue))
+                {
+                    return new NespNumericExpression(uintValue, line, column);
+                }
+            }
+            else
+            {
+                if (byte.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var byteValue))
+                {
+                    return new NespNumericExpression(byteValue, line, column);
+                }
+                if (short.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var shortValue))
+                {
+                    return new NespNumericExpression(shortValue, line, column);
+                }
+                if (int.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var intValue))
+                {
+                    return new NespNumericExpression(intValue, line, column);
+                }
+                if (long.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var longValue))
+                {
+                    return new NespNumericExpression(longValue, line, column);
                 }
             }
 
             return null;
         }
 
-        public override NespExpression VisitList(NespGrammarParser.ListContext context)
+        private static NespNumericExpression ParseStrictNumeric(
+            string text, int line, int column)
         {
-            // Empty.
-            if (context.children == null)
+            if (text.EndsWith("ul"))
             {
-                return NespUtilities.UnitExpression;
-            }
-
-            // First child is id?
-            var children = context.GetChildren();
-            var childContext0 = children[0] as NespGrammarParser.IdContext;
-            if (childContext0 != null)
-            {
-                // Lookup id from known dict.
-                var current = candidateInfos.Peek();
-                var id0 = childContext0.GetInnerText();
-
-                var candidates = current.Methods[id0];
-                if (candidates.Length >= 1)
+                var numericText = text.Substring(0, text.Length - 2);
+                if (ulong.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var ulongValue))
                 {
-                    var argExprs = children
-                        .Skip(1)
-                        .Select(this.Visit)
-                        .ToArray();
-                    var expr = this.SelectMethod(candidates, argExprs);
-                    if (expr != null)
-                    {
-                        return expr;
-                    }
+                    return new NespNumericExpression(ulongValue, line, column);
                 }
-
-                //////////////////////////////////////
-                // TODO: HACK: Resolve let operator
-                //   MEMO: Convert totally Expression-based infrastructure from MemberInfo.
-
-                if (id0 == "let")
+            }
+            else if (text.EndsWith("l"))
+            {
+                var numericText = text.Substring(0, text.Length - 1);
+                if (long.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var longValue))
                 {
-                    // TODO: Static binding (Count == 3)
-                    if (children.Count == 4)
-                    {
-                        var childContext1 = children[1] as NespGrammarParser.IdContext;
-                        var childContext2 = children[2] as NespGrammarParser.ExpressionContext;
-                        var childContext3 = children[3] as NespGrammarParser.ExpressionContext;
-                        if ((childContext1 != null) && (childContext2 != null) && (childContext3 != null))
-                        {
-                            var name = childContext1.GetInnerText();
-                            // name must not contain period
-                            if (name.Contains("."))
-                            {
-                                throw new ArgumentException("Can't bind name contains period: " + name);
-                            }
-
-                            var argExprs = ((NespGrammarParser.ListContext)childContext2.GetChildren()[1])
-                                .GetChildren()
-                                .Select(arg =>
-                                {
-                                    var argContext = arg as NespGrammarParser.IdContext;
-                                    if (argContext != null)
-                                    {
-                                        var argName = argContext.GetInnerText();
-                                        // TODO: Apply generic types
-                                        return NespExpression.Parameter(argName);
-                                    }
-                                    else
-                                    {
-                                        return null;
-                                    }
-                                })
-                                .ToArray();
-
-                            current = current.Clone();
-                            candidateInfos.Push(current);
-
-                            foreach (var argExpr in argExprs)
-                            {
-                                current.Locals.AddCandidate(argExpr.Name, argExpr);
-                            }
-
-                            var bodyContext = (NespGrammarParser.ListContext)childContext3.GetChildren()[1];
-                            var bodyExpr = this.Visit(bodyContext);
-
-                            var lambdaExpr = NespExpression.Lambda(bodyExpr, name, argExprs);
-
-                            candidateInfos.Pop();
-
-                            return lambdaExpr;
-                        }
-                    }
+                    return new NespNumericExpression(longValue, line, column);
+                }
+            }
+            else if (text.EndsWith("u"))
+            {
+                var numericText = text.Substring(0, text.Length - 1);
+                if (uint.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var uintValue))
+                {
+                    return new NespNumericExpression(uintValue, line, column);
+                }
+            }
+            else if (text.EndsWith("f"))
+            {
+                var numericText = text.Substring(0, text.Length - 1);
+                if (float.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var floatValue))
+                {
+                    return new NespNumericExpression(floatValue, line, column);
+                }
+            }
+            else if (text.EndsWith("d"))
+            {
+                var numericText = text.Substring(0, text.Length - 1);
+                if (double.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleValue))
+                {
+                    return new NespNumericExpression(doubleValue, line, column);
+                }
+            }
+            else if (text.EndsWith("m"))
+            {
+                var numericText = text.Substring(0, text.Length - 1);
+                if (decimal.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var decimalValue))
+                {
+                    return new NespNumericExpression(decimalValue, line, column);
                 }
             }
 
-            // Become literal?
-            if (children.Count == 1)
-            {
-                return this.Visit(children[0]);
-            }
-
-            // TODO: Calculate minimum assignable type.
-            return NespExpression.NewArrayInit(
-                typeof(object), context.GetChildren().Select(childContext =>
-                    NormalizeType(this.Visit(childContext), typeof(object))));
+            return null;
         }
 
-        public override NespExpression VisitString(NespGrammarParser.StringContext context)
+        private static NespNumericExpression ParseNumeric(
+            string text, int line, int column)
         {
-            var text = context.GetInnerText();
-            var unquoted = text.Substring(1, text.Length - 2);
-            var unescaped = unquoted.InterpretEscapes();
-            return NespExpression.Constant(unescaped);
+            if (byte.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var byteValue))
+            {
+                return new NespNumericExpression(byteValue, line, column);
+            }
+            if (short.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var shortValue))
+            {
+                return new NespNumericExpression(shortValue, line, column);
+            }
+            if (int.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var intValue))
+            {
+                return new NespNumericExpression(intValue, line, column);
+            }
+            if (long.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var longValue))
+            {
+                return new NespNumericExpression(longValue, line, column);
+            }
+            if (double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleValue))
+            {
+                return new NespNumericExpression(doubleValue, line, column);
+            }
+            if (decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var decimalValue))
+            {
+                return new NespNumericExpression(decimalValue, line, column);
+            }
+
+            return null;
         }
 
         public override NespExpression VisitNumeric(NespGrammarParser.NumericContext context)
         {
-            var numericText = context.GetInnerText();
+            var token = context.NUMERIC().Symbol;
+            var text = token.Text.ToLowerInvariant();
 
-            if (byte.TryParse(numericText, out var byteValue))
+            var line = token.Line - 1;
+            var column = token.Column;
+
+            var expr =
+                ParseHexadecimalNumeric(text, line, column) ??
+                ParseStrictNumeric(text, line, column) ??
+                ParseNumeric(text, line, column);
+
+            if (expr == null)
             {
-                return NespExpression.Constant(byteValue);
-            }
-            if (short.TryParse(numericText, out var shortValue))
-            {
-                return NespExpression.Constant(shortValue);
-            }
-            if (int.TryParse(numericText, out var intValue))
-            {
-                return NespExpression.Constant(intValue);
-            }
-            if (long.TryParse(numericText, out var longValue))
-            {
-                return NespExpression.Constant(longValue);
-            }
-            if (double.TryParse(numericText, out var doubleValue))
-            {
-                return NespExpression.Constant(doubleValue);
+                throw new FormatException();
             }
 
-            throw new OverflowException("Cannot parse numeric value: " + numericText);
+            return expr;
         }
 
         public override NespExpression VisitId(NespGrammarParser.IdContext context)
         {
-            var current = candidateInfos.Peek();
+            var token = context.ID().Symbol;
+            var text = token.Text;
 
-            var id = context.GetInnerText();
-            var localCandidate = current.Locals[id].FirstOrDefault();
-            if (localCandidate != null)
+            if (bool.TryParse(text, out var boolValue))
             {
-                return localCandidate;
+                return new NespBoolExpression(boolValue, token.Line - 1, token.Column);
             }
-
-            var fieldCandidate = current.Fields[id].FirstOrDefault();
-            if (fieldCandidate != null)
+            else
             {
-                return fieldCandidate;
+                return new NespIdExpression(text, token.Line - 1, token.Column);
             }
-
-            var propertiesCandidate = current.Properties[id].FirstOrDefault();
-            if (propertiesCandidate != null)
-            {
-                return propertiesCandidate;
-            }
-
-            // TODO: indexer
-
-            // We can use only no arguments function in this place.
-            // ex: 'string.Format "ABC{0}DEF{1}GHI" 123 System.Guid.NewGuid'
-            //     NewGuid function is no arguments so it's legal style and support below.
-            var methodCandidates = current.Methods[id];
-            var expr = this.SelectMethod(methodCandidates, new NespExpression[0]);
-            if (expr != null)
-            {
-                return expr;
-            }
-
-            var typeCandidate = current.Types[id].FirstOrDefault();
-            if (typeCandidate != null)
-            {
-                return typeCandidate;
-            }
-
-            throw new ArgumentException("Id not found: " + id);
         }
     }
 }

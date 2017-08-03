@@ -17,23 +17,36 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-
-namespace Nesp.Extensions
+namespace Nesp.Expressions
 {
-    [AttributeUsage(
-        AttributeTargets.Class |
-        AttributeTargets.Struct |
-        AttributeTargets.Method |
-        AttributeTargets.Field |
-        AttributeTargets.Property)]
-    public sealed class NespIdentityAttribute : NespExtensionAttribute
+    public abstract class NespTokenExpression : NespExpression
     {
-        public NespIdentityAttribute(string name)
+        internal NespTokenExpression(int line, int column)
         {
-            this.Name = name;
+            this.Line = line;
+            this.Column = column;
         }
 
-        public string Name { get; }
+        public int Line { get; }
+        public int Column { get; }
+
+        public object Value => this.GetValue();
+
+        internal abstract object GetValue();
+    }
+
+    public abstract class NespTokenExpression<T> : NespTokenExpression
+    {
+        internal NespTokenExpression(int line, int column)
+            : base(line, column)
+        {
+        }
+
+        internal override object GetValue()
+        {
+            return this.Value;
+        }
+
+        public new abstract T Value { get; }
     }
 }

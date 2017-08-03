@@ -22,12 +22,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Nesp.Internals;
 
 namespace Nesp.Extensions
 {
-    internal sealed class NespStandardMemberProducer : INespMemberProducer
+    internal sealed class NespStandardMemberProducer : IMemberProducer
     {
-        public NespStandardMemberProducer(INespMemberProducer members)
+        public NespStandardMemberProducer(IMemberProducer members)
         {
             this.TypesByName = FixupMemberNames(members.TypesByName, GetTypeName);
             this.FieldsByName = FixupMemberNames(members.FieldsByName, GetMemberName);
@@ -50,7 +51,7 @@ namespace Nesp.Extensions
 
         private static string GetTypeName(Type type, string fallbackName)
         {
-            return NespStandardExtension.ReservedTypeNames.TryGetValue(type, out var typeName)
+            return NespUtilities.ReservedTypeNames.TryGetValue(type, out var typeName)
                 ? typeName
                 : fallbackName;
         }
@@ -58,7 +59,7 @@ namespace Nesp.Extensions
         private static string GetMemberName(MemberInfo member, string fallbackName)
         {
             var type = member.DeclaringType;
-            return NespStandardExtension.ReservedTypeNames.TryGetValue(type, out var typeName)
+            return NespUtilities.ReservedTypeNames.TryGetValue(type, out var typeName)
                 ? typeName + "." + member.Name
                 : fallbackName;
         }

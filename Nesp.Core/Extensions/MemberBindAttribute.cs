@@ -18,34 +18,22 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Nesp.Internals;
 
 namespace Nesp.Extensions
 {
-    public sealed class NespStandardExtension : NespExtensionBase
+    [AttributeUsage(
+        AttributeTargets.Class |
+        AttributeTargets.Struct |
+        AttributeTargets.Method |
+        AttributeTargets.Field |
+        AttributeTargets.Property)]
+    public sealed class MemberBindAttribute : Attribute
     {
-        public static readonly IReadOnlyDictionary<Type, string> ReservedTypeNames =
-            NespUtilities.ReservedTypeNames;
-
-        public static readonly INespExtension Instance = new NespStandardExtension();
-
-        private NespStandardExtension()
+        public MemberBindAttribute(string memberName)
         {
+            this.MemberName = memberName;
         }
 
-        internal static IMemberProducer CreateMemberProducer()
-        {
-            var extractor = new MemberExtractor(
-                ReservedTypeNames.Keys.Concat(new[] { typeof(NespStandardOperators) }));
-            return new NespStandardMemberProducer(extractor);
-        }
-
-        protected override Task<IMemberProducer> CreateMemberProducerAsync()
-        {
-            return Task.Run(() => CreateMemberProducer());
-        }
+        public string MemberName { get; }
     }
 }

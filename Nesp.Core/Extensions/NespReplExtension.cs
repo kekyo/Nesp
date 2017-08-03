@@ -29,12 +29,12 @@ namespace Nesp.Extensions
         {
         }
 
-        internal static INespMemberProducer CreateMemberProducer()
+        internal static IMemberProducer CreateMemberProducer()
         {
-            return new NespMemberExtractor(typeof(NespReplOperators));
+            return new MemberExtractor(typeof(NespReplOperators));
         }
 
-        protected override Task<INespMemberProducer> CreateMemberProducerAsync()
+        protected override Task<IMemberProducer> CreateMemberProducerAsync()
         {
             return Task.Run(() => CreateMemberProducer());
         }

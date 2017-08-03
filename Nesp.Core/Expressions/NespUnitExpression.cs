@@ -17,25 +17,25 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Linq.Expressions;
-
 namespace Nesp.Expressions
 {
-    public sealed class NespConstantExpression : NespExpression
+    public sealed class NespUnitExpression : NespTokenExpression<Unit>
     {
-        internal NespConstantExpression(object value)
+        internal NespUnitExpression(int line, int column)
+            : base(line, column)
         {
-            this.Value = value;
         }
 
-        public override Type CandidateType => this.Value?.GetType();
-
-        public object Value { get; }
-
-        internal override Expression OnCreate()
+        internal override object GetValue()
         {
-            return Expression.Constant(this.Value);
+            return Unit.Value;
+        }
+
+        public override Unit Value => new Unit();
+
+        public override string ToString()
+        {
+            return ":unit";
         }
     }
 }
