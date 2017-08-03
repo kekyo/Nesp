@@ -24,7 +24,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
-
+using Nesp.Expressions;
 using Nesp.Extensions;
 using Nesp.Internals;
 
@@ -51,7 +51,7 @@ namespace Nesp
 
         public static string GetReadableTypeName(Type type)
         {
-            return NespStandardExtension.ReservedTypeNames.TryGetValue(type, out var typeName)
+            return NespUtilities.ReservedTypeNames.TryGetValue(type, out var typeName)
                 ? typeName
                 : NespUtilities.GetReadableTypeName(
                     type, GetReadableTypeName);
@@ -86,19 +86,21 @@ namespace Nesp
                 ? (IParseTree)grammarParser.list()          // Take from list
                 : (IParseTree)grammarParser.expression();   // Take from expression
 
-            Expression expr;
+            NespExpression expr;
             lock (parser)
             {
                 expr = parser.Visit(context);
             }
 
-            var valueType = typeof(object);
-            var strictExpr = (expr.Type == valueType)
-                ? expr
-                : Expression.Convert(expr, valueType);
+            return null;
 
-            return Expression.Lambda<Func<object>>(
-                strictExpr, false, Enumerable.Empty<ParameterExpression>());
+            //var valueType = typeof(object);
+            //var strictExpr = (expr.Type == valueType)
+            //    ? expr
+            //    : Expression.Convert(expr, valueType);
+
+            //return Expression.Lambda<Func<object>>(
+            //    strictExpr, false, Enumerable.Empty<ParameterExpression>());
         }
 
         public async Task<Func<object>> CompileExpressionAsync(string expression)

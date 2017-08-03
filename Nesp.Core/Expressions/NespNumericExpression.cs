@@ -17,35 +17,23 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Nesp.Internals;
 
-namespace Nesp.Extensions
+namespace Nesp.Expressions
 {
-    public sealed class NespStandardExtension : NespExtensionBase
+    public sealed class NespNumericExpression : NespTokenExpression<object>
     {
-        public static readonly IReadOnlyDictionary<Type, string> ReservedTypeNames =
-            NespUtilities.ReservedTypeNames;
-
-        public static readonly INespExtension Instance = new NespStandardExtension();
-
-        private NespStandardExtension()
+        internal NespNumericExpression(object value, int line, int column)
+            : base(line, column)
         {
+            this.Value = value;
         }
 
-        internal static IMemberProducer CreateMemberProducer()
-        {
-            var extractor = new MemberExtractor(
-                ReservedTypeNames.Keys.Concat(new[] { typeof(NespStandardOperators) }));
-            return new NespStandardMemberProducer(extractor);
-        }
+        public override object Value { get; }
 
-        protected override Task<IMemberProducer> CreateMemberProducerAsync()
+        public override string ToString()
         {
-            return Task.Run(() => CreateMemberProducer());
+            return $"{this.Value}:{NespUtilities.GetReservedReadableTypeName(this.Value.GetType())}";
         }
     }
 }

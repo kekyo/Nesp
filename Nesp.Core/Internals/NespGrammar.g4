@@ -20,8 +20,9 @@
 grammar NespGrammar;
 
 expression : BRACKETLEFT WHITESPACE? list WHITESPACE? BRACKETRIGHT ;
-list : (expression | string | numeric | id)? (WHITESPACE? (expression | string | numeric | id))* ;
+list : (expression | string | char | numeric | id)? (WHITESPACE? (expression | string | char | numeric | id))* ;
 string : STRING ;
+char : CHAR ;
 numeric : NUMERIC ;
 id : ID ;
 
@@ -30,12 +31,14 @@ id : ID ;
 // "Rule reference is not currently supported in a set"
 // https://stackoverflow.com/questions/16790861/rule-reference-is-not-currently-supported-in-a-set-in-antlr4-grammar
 STRING : DOUBLEQUOTE ((ESCAPE .) | ~["\\\r\n])* DOUBLEQUOTE ;
+CHAR : QUOTE ((ESCAPE .) | ~['\\\r\n]) QUOTE ;
 
-NUMERIC : (PLUS|MINUS)? [0-9]+ (PERIOD [0-9]*)? ;
+NUMERIC : (PLUS|MINUS)? (('0' [xX] [0-9a-fA-F]+ [uU]? [lL]?) | ([0-9]+ (([uU]? [lL]?) | (PERIOD [0-9]* [dfmDFM]?)?))) ;
 ID : COMPLEXSYMBOL (WHITESPACE? GREATER WHITESPACE? ID WHITESPACE? (COMMA WHITESPACE? ID)* LESS)* ;
 COMPLEXSYMBOL : SYMBOL (PERIOD SYMBOL)* ;
 SYMBOL : ~[0-9"().\\ \t\r\n] (~["().\\ \t\r\n])* ;
 
+QUOTE : '\'' ;
 DOUBLEQUOTE : '"' ;
 BRACKETLEFT : '(' ;
 BRACKETRIGHT : ')' ;

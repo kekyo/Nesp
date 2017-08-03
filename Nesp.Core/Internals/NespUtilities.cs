@@ -31,6 +31,32 @@ namespace Nesp.Internals
 {
     internal static class NespUtilities
     {
+        public static readonly IReadOnlyDictionary<Type, string> ReservedTypeNames =
+            new Dictionary<Type, string>
+            {
+                { typeof(object), "object" },
+                { typeof(byte), "byte" },
+                { typeof(sbyte), "sbyte" },
+                { typeof(short), "short" },
+                { typeof(ushort), "ushort" },
+                { typeof(int), "int" },
+                { typeof(uint), "uint" },
+                { typeof(long), "long" },
+                { typeof(ulong), "ulong" },
+                { typeof(float), "float" },
+                { typeof(double), "double" },
+                { typeof(decimal), "decimal" },
+                { typeof(bool), "bool" },
+                { typeof(char), "char" },
+                { typeof(string), "string" },
+                { typeof(DateTime), "datetime" },
+                { typeof(TimeSpan), "timespan" },
+                { typeof(Guid), "guid" },
+                { typeof(Math), "math" },
+                { typeof(Enum), "enum" },
+                { typeof(Type), "type" },
+            };
+
         public static readonly IReadOnlyDictionary<string, string> OperatorMethodNames =
             new Dictionary<string, string>
             {
@@ -77,6 +103,16 @@ namespace Nesp.Internals
 
         private static readonly IList<IParseTree> empty =
             new IParseTree[0];
+
+        public static string GetReservedReadableTypeName(Type type)
+        {
+            if (ReservedTypeNames.TryGetValue(type, out var typeName))
+            {
+                return typeName;
+            }
+
+            return GetReadableTypeName(type, GetReservedReadableTypeName);
+        }
 
         public static string GetReadableTypeName(Type type, Func<Type, string> getTypeName)
         {
@@ -156,6 +192,9 @@ namespace Nesp.Internals
                     ch = escaped[index];
                     switch (ch)
                     {
+                        case '0':
+                            sb.Append('\0');
+                            break;
                         case 'b':
                             sb.Append('\b');
                             break;
