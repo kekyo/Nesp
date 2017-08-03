@@ -23,8 +23,8 @@ namespace Nesp.Expressions
 {
     public abstract class NespExpression
     {
-        private NespExpressionResolverContext cachedContext;
-        private NespExpression cachedExpression;
+        private NespMetadataResolverContext cachedContext;
+        private NespExpression[] cachedExpressions;
 
         internal NespExpression()
         {
@@ -36,20 +36,20 @@ namespace Nesp.Expressions
             return Task.FromResult((NespExpression)value);
         }
 
-        internal virtual Task<NespExpression> OnResolveAsync(NespExpressionResolverContext context)
+        internal virtual Task<NespExpression[]> OnResolveMetadataAsync(NespMetadataResolverContext context)
         {
-            return Task.FromResult(this);
+            return Task.FromResult(new [] { this });
         }
 
-        public async Task<NespExpression> ResolveAsync(NespExpressionResolverContext context)
+        public async Task<NespExpression[]> ResolveMetadataAsync(NespMetadataResolverContext context)
         {
             if (object.ReferenceEquals(context, cachedContext) == false)
             {
                 cachedContext = context;
-                cachedExpression = await this.OnResolveAsync(context);
+                cachedExpressions = await this.OnResolveMetadataAsync(context);
             }
 
-            return cachedExpression;
+            return cachedExpressions;
         }
     }
 }

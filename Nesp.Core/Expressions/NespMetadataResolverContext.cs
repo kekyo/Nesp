@@ -27,12 +27,12 @@ using Nesp.Internals;
 
 namespace Nesp.Expressions
 {
-    public sealed class NespExpressionResolverContext
+    public sealed class NespMetadataResolverContext
     {
         private readonly CandidatesDictionary<FieldInfo> fields = new CandidatesDictionary<FieldInfo>();
         private readonly CandidatesDictionary<PropertyInfo> properties = new CandidatesDictionary<PropertyInfo>();
 
-        public NespExpressionResolverContext()
+        public NespMetadataResolverContext()
         {
             foreach (var typeInfo in
                 typeof(object).GetTypeInfo().Assembly.DefinedTypes
@@ -67,27 +67,21 @@ namespace Nesp.Expressions
             }
         }
 
-        internal static Task<NespExpression> FromResult<T>(T value)
-            where T : NespExpression
-        {
-            return Task.FromResult((NespExpression)value);
-        }
-
-        internal async Task<NespExpression> ResolveListAsync(
+        internal async Task<NespExpression[]> ResolveListAsync(
             NespExpression[] list, NespListExpression untypedExpression)
         {
-            var resolvedList = await Task.WhenAll(list.Select(iexpr => iexpr.ResolveAsync(this)));
+            var resolvedList = await Task.WhenAll(list.Select(iexpr => iexpr.ResolveMetadataAsync(this)));
             if (resolvedList.Length == 1)
             {
                 return resolvedList[0];
             }
             else
             {
-                return new NespListExpression(resolvedList);
+                return resolvedList.Select(iexprs => new NespListExpression(iexprs)).ToArray();
             }
         }
 
-        private static Task<NespExpression> ConstructExpressionFromFieldAsync(
+        private static NespExpression ConstructExpressionFromField(
             FieldInfo field, NespTokenExpression untypedExpression)
         {
             if (field.IsStatic && (field.IsLiteral || field.IsInitOnly))
@@ -97,15 +91,15 @@ namespace Nesp.Expressions
                 var type = field.FieldType;
                 if (type == typeof(bool))
                 {
-                    return FromResult(new NespBoolExpression((bool)value, untypedExpression.Token));
+                    return new NespBoolExpression((bool)value, untypedExpression.Token);
                 }
                 if (type == typeof(string))
                 {
-                    return FromResult(new NespStringExpression((string)value, untypedExpression.Token));
+                    return new NespStringExpression((string)value, untypedExpression.Token);
                 }
                 if (type == typeof(char))
                 {
-                    return FromResult(new NespCharExpression((char)value, untypedExpression.Token));
+                    return new NespCharExpression((char)value, untypedExpression.Token);
                 }
                 if ((type == typeof(byte))
                     || (type == typeof(sbyte))
@@ -119,29 +113,30 @@ namespace Nesp.Expressions
                     || (type == typeof(double))
                     || (type == typeof(decimal)))
                 {
-                    return FromResult(new NespNumericExpression(value, untypedExpression.Token));
+                    return new NespNumericExpression(value, untypedExpression.Token);
                 }
 
-                return FromResult(new NespConstantExpression(value, untypedExpression.Token));
+                return new NespConstantExpression(value, untypedExpression.Token);
             }
 
-            return FromResult(new NespFieldExpression(field, untypedExpression.Token));
+            return new NespFieldExpression(field, untypedExpression.Token);
         }
 
-        internal Task<NespExpression> ResolveIdAsync(
+        internal Task<NespExpression[]> ResolveIdAsync(
             string id, NespTokenExpression untypedExpression)
         {
             var fieldInfos = fields[id];
             if (fieldInfos.Length >= 1)
             {
-                var field = fieldInfos[0];
-                return ConstructExpressionFromFieldAsync(field, untypedExpression);
+                return Task.FromResult(
+                    fieldInfos.Select(field => ConstructExpressionFromField(field, untypedExpression)).ToArray());
             }
 
             var propertyInfos = properties[id];
             if (propertyInfos.Length >= 1)
             {
-                return FromResult(new NespPropertyExpression(propertyInfos[0], untypedExpression.Token));
+                return Task.FromResult(
+                    propertyInfos.Select(property => (NespExpression)new NespPropertyExpression(property, untypedExpression.Token)).ToArray());
             }
 
             throw new ArgumentException();

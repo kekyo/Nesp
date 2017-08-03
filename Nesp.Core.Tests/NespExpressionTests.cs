@@ -453,11 +453,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.BoolInitOnly");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var boolExpr = (NespBoolExpression)typedExpr;
+            var boolExpr = (NespBoolExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestClass.BoolInitOnly, boolExpr.Value);
         }
 
@@ -466,11 +466,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.StringInitOnly");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var stringExpr = (NespStringExpression)typedExpr;
+            var stringExpr = (NespStringExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestClass.StringInitOnly, stringExpr.Value);
         }
 
@@ -479,11 +479,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.CharInitOnly");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var charExpr = (NespCharExpression)typedExpr;
+            var charExpr = (NespCharExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestClass.CharInitOnly, charExpr.Value);
         }
 
@@ -492,11 +492,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.GuidInitOnly");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var charExpr = (NespConstantExpression)typedExpr;
+            var charExpr = (NespConstantExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestClass.GuidInitOnly, charExpr.Value);
         }
 
@@ -521,11 +521,11 @@ namespace Nesp
                 {
                     var untypedExpr = ParseAndVisit($"Nesp.NespExpressionTests.FieldIdTestClass.{entry.Key}");
 
-                    var context = new NespExpressionResolverContext();
+                    var context = new NespMetadataResolverContext();
                     context.AddCandidate(typeof(FieldIdTestClass));
-                    var typedExpr = await untypedExpr.ResolveAsync(context);
+                    var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-                    var numericExpr = (NespNumericExpression)typedExpr;
+                    var numericExpr = (NespNumericExpression)typedExprs.Single();
                     return new { entry.Value, Result = numericExpr.Value };
                 })))
             {
@@ -538,11 +538,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.BoolLiteral");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var boolExpr = (NespBoolExpression)typedExpr;
+            var boolExpr = (NespBoolExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestClass.BoolLiteral, boolExpr.Value);
         }
 
@@ -551,11 +551,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.StringLiteral");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var stringExpr = (NespStringExpression)typedExpr;
+            var stringExpr = (NespStringExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestClass.StringLiteral, stringExpr.Value);
         }
 
@@ -564,11 +564,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.CharLiteral");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var charExpr = (NespCharExpression)typedExpr;
+            var charExpr = (NespCharExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestClass.CharLiteral, charExpr.Value);
         }
 
@@ -593,11 +593,11 @@ namespace Nesp
                 {
                     var untypedExpr = ParseAndVisit($"Nesp.NespExpressionTests.FieldIdTestClass.{entry.Key}");
 
-                    var context = new NespExpressionResolverContext();
+                    var context = new NespMetadataResolverContext();
                     context.AddCandidate(typeof(FieldIdTestClass));
-                    var typedExpr = await untypedExpr.ResolveAsync(context);
+                    var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-                    var numericExpr = (NespNumericExpression) typedExpr;
+                    var numericExpr = (NespNumericExpression) typedExprs.Single();
                     return new {entry.Value, Result = numericExpr.Value};
                 })))
             {
@@ -610,11 +610,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.BoolField");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var fieldExpr = (NespFieldExpression)typedExpr;
+            var fieldExpr = (NespFieldExpression)typedExprs.Single();
             Assert.AreSame(typeof(FieldIdTestClass).GetField("BoolField"), fieldExpr.Field);
         }
 
@@ -623,11 +623,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.StringField");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var fieldExpr = (NespFieldExpression)typedExpr;
+            var fieldExpr = (NespFieldExpression)typedExprs.Single();
             Assert.AreSame(typeof(FieldIdTestClass).GetField("StringField"), fieldExpr.Field);
         }
 
@@ -636,11 +636,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.CharField");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var fieldExpr = (NespFieldExpression)typedExpr;
+            var fieldExpr = (NespFieldExpression)typedExprs.Single();
             Assert.AreSame(typeof(FieldIdTestClass).GetField("CharField"), fieldExpr.Field);
         }
 
@@ -649,11 +649,11 @@ namespace Nesp
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.GuidField");
 
-            var context = new NespExpressionResolverContext();
+            var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
-            var typedExpr = await untypedExpr.ResolveAsync(context);
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-            var fieldExpr = (NespFieldExpression)typedExpr;
+            var fieldExpr = (NespFieldExpression)typedExprs.Single();
             Assert.AreSame(typeof(FieldIdTestClass).GetField("GuidField"), fieldExpr.Field);
         }
 
@@ -678,11 +678,11 @@ namespace Nesp
                 {
                     var untypedExpr = ParseAndVisit($"Nesp.NespExpressionTests.FieldIdTestClass.{entry.Key}");
 
-                    var context = new NespExpressionResolverContext();
+                    var context = new NespMetadataResolverContext();
                     context.AddCandidate(typeof(FieldIdTestClass));
-                    var typedExpr = await untypedExpr.ResolveAsync(context);
+                    var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
 
-                    var fieldExpr = (NespFieldExpression)typedExpr;
+                    var fieldExpr = (NespFieldExpression)typedExprs.Single();
                     return new { entry.Key, fieldExpr.Field };
                 })))
             {

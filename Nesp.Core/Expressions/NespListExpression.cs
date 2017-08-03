@@ -33,7 +33,7 @@ namespace Nesp.Expressions
 
         public NespExpression[] List { get; }
 
-        internal override Task<NespExpression> OnResolveAsync(NespExpressionResolverContext context)
+        internal override Task<NespExpression[]> OnResolveMetadataAsync(NespMetadataResolverContext context)
         {
             return context.ResolveListAsync(this.List, this);
         }

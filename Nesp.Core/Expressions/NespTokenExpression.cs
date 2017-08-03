@@ -19,7 +19,7 @@
 
 namespace Nesp.Expressions
 {
-    public struct NespTokenInformation
+    public sealed class NespTokenInformation
     {
         public readonly int StartLine;
         public readonly int StartColumn;
