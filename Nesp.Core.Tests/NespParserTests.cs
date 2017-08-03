@@ -397,6 +397,22 @@ namespace Nesp
             var idExpr = (NespIdExpression)expr;
             Assert.AreEqual("abc<def>", idExpr.Id);
         }
+
+        [Test]
+        public void TrueTest()
+        {
+            var expr = ParseAndVisit("true");
+            var boolExpr = (NespBoolExpression)expr;
+            Assert.AreEqual(true, boolExpr.Value);
+        }
+
+        [Test]
+        public void FalseTest()
+        {
+            var expr = ParseAndVisit("false");
+            var boolExpr = (NespBoolExpression)expr;
+            Assert.AreEqual(false, boolExpr.Value);
+        }
         #endregion
 
         //#region Id

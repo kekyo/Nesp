@@ -23,7 +23,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
-
+using System.Runtime.InteropServices.WindowsRuntime;
 using Nesp.Expressions;
 using Nesp.Extensions;
 
@@ -292,7 +292,14 @@ namespace Nesp.Internals
             var token = context.ID().Symbol;
             var text = token.Text;
 
-            return new NespIdExpression(text, token.Line - 1, token.Column);
+            if (bool.TryParse(text, out var boolValue))
+            {
+                return new NespBoolExpression(boolValue, token.Line - 1, token.Column);
+            }
+            else
+            {
+                return new NespIdExpression(text, token.Line - 1, token.Column);
+            }
         }
     }
 }

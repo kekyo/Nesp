@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Expressions\NespCharExpression.cs" />
+    <Compile Include="Expressions\NespBoolExpression.cs" />
     <Compile Include="Expressions\NespTokenExpression.cs" />
     <Compile Include="Expressions\NespUnitExpression.cs" />
     <Compile Include="Expressions\NespListExpression.cs" />
