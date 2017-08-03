@@ -397,90 +397,107 @@ namespace Nesp
         //#region Id
         public sealed class FieldIdTestClass
         {
-            public static readonly bool BoolField = true;
-            public static readonly string StringField = "abc";
-            public static readonly char CharField = 'a';
-            public static readonly Guid GuidField = Guid.NewGuid();
+            public static readonly bool BoolInitOnly = true;
+            public static readonly string StringInitOnly = "abc";
+            public static readonly char CharInitOnly = 'a';
+            public static readonly Guid GuidInitOnly = Guid.NewGuid();
 
-            public static readonly byte ByteField = 123;
-            public static readonly sbyte SByteField = 123;
-            public static readonly short Int16Field = 12345;
-            public static readonly ushort UInt16Field = 12345;
-            public static readonly int Int32Field = 12345678;
-            public static readonly uint UInt32Field = 12345678;
-            public static readonly long Int64Field = 12345678901234567;
-            public static readonly ulong UInt64Field = 12345678901234567;
-            public static readonly float FloatField = 123.45f;
-            public static readonly double DoubleField = 123.45d;
-            public static readonly decimal DecimalField = 1234567890123456789012345678m;
+            public static readonly byte ByteInitOnly = 123;
+            public static readonly sbyte SByteInitOnly = 123;
+            public static readonly short Int16InitOnly = 12345;
+            public static readonly ushort UInt16InitOnly = 12345;
+            public static readonly int Int32InitOnly = 12345678;
+            public static readonly uint UInt32InitOnly = 12345678;
+            public static readonly long Int64InitOnly = 12345678901234567;
+            public static readonly ulong UInt64InitOnly = 12345678901234567;
+            public static readonly float FloatInitOnly = 123.45f;
+            public static readonly double DoubleInitOnly = 123.45d;
+            public static readonly decimal DecimalInitOnly = 1234567890123456789012345678m;
 
             public const bool BoolLiteral = true;
-            public const string StringLiteral = "abc";
-            public const char CharLiteral = 'a';
+            public const string StringLiteral = "def";
+            public const char CharLiteral = 'b';
 
-            public const byte ByteLiteral = 123;
-            public const sbyte SByteLiteral = 123;
-            public const short Int16Literal = 12345;
-            public const ushort UInt16Literal = 12345;
-            public const int Int32Literal = 12345678;
-            public const uint UInt32Literal = 12345678;
-            public const long Int64Literal = 12345678901234567;
-            public const ulong UInt64Literal = 12345678901234567;
-            public const float FloatLiteral = 123.45f;
-            public const double DoubleLiteral = 123.45d;
-            public const decimal DecimalLiteral = 1234567890123456789012345678m;
+            public const byte ByteLiteral = 112;
+            public const sbyte SByteLiteral = 112;
+            public const short Int16Literal = 11234;
+            public const ushort UInt16Literal = 11234;
+            public const int Int32Literal = 112345678;
+            public const uint UInt32Literal = 112345678;
+            public const long Int64Literal = 112345678901234567;
+            public const ulong UInt64Literal = 112345678901234567;
+            public const float FloatLiteral = 1123.45f;
+            public const double DoubleLiteral = 1123.45d;
+            public const decimal DecimalLiteral = 11234567890123456789012345678m;
+
+            public static bool BoolField = true;
+            public static string StringField = "ghi";
+            public static char CharField = 'c';
+            public static Guid GuidField = Guid.NewGuid();
+
+            public static byte ByteField = 122;
+            public static sbyte SByteField = 122;
+            public static short Int16Field = 12245;
+            public static ushort UInt16Field = 12245;
+            public static int Int32Field = 12245678;
+            public static uint UInt32Field = 12245678;
+            public static long Int64Field = 12245678901234567;
+            public static ulong UInt64Field = 12245678901234567;
+            public static float FloatField = 122.45f;
+            public static double DoubleField = 122.45d;
+            public static decimal DecimalField = 1224567890123456789012345678m;
         }
 
         [Test]
         public async Task InitOnlyBoolFieldIdTest()
         {
-            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.BoolField");
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.BoolInitOnly");
 
             var context = new NespExpressionResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
             var typedExpr = await untypedExpr.ResolveAsync(context);
 
             var boolExpr = (NespBoolExpression)typedExpr;
-            Assert.AreEqual(true, boolExpr.Value);
+            Assert.AreEqual(FieldIdTestClass.BoolInitOnly, boolExpr.Value);
         }
 
         [Test]
         public async Task InitOnlyStringFieldIdTest()
         {
-            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.StringField");
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.StringInitOnly");
 
             var context = new NespExpressionResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
             var typedExpr = await untypedExpr.ResolveAsync(context);
 
             var stringExpr = (NespStringExpression)typedExpr;
-            Assert.AreEqual("abc", stringExpr.Value);
+            Assert.AreEqual(FieldIdTestClass.StringInitOnly, stringExpr.Value);
         }
 
         [Test]
         public async Task InitOnlyCharFieldIdTest()
         {
-            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.CharField");
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.CharInitOnly");
 
             var context = new NespExpressionResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
             var typedExpr = await untypedExpr.ResolveAsync(context);
 
             var charExpr = (NespCharExpression)typedExpr;
-            Assert.AreEqual('a', charExpr.Value);
+            Assert.AreEqual(FieldIdTestClass.CharInitOnly, charExpr.Value);
         }
 
         [Test]
         public async Task InitOnlyFieldIdTest()
         {
-            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.GuidField");
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.GuidInitOnly");
 
             var context = new NespExpressionResolverContext();
             context.AddCandidate(typeof(FieldIdTestClass));
             var typedExpr = await untypedExpr.ResolveAsync(context);
 
             var charExpr = (NespConstantExpression)typedExpr;
-            Assert.AreEqual(FieldIdTestClass.GuidField, charExpr.Value);
+            Assert.AreEqual(FieldIdTestClass.GuidInitOnly, charExpr.Value);
         }
 
         [Test]
@@ -488,17 +505,17 @@ namespace Nesp
         {
             foreach (var entry in await Task.WhenAll(new Dictionary<string, object>
                 {
-                    {"ByteField", FieldIdTestClass.ByteField},
-                    {"SByteField", FieldIdTestClass.SByteField},
-                    {"Int16Field", FieldIdTestClass.Int16Field},
-                    {"UInt16Field", FieldIdTestClass.UInt16Field},
-                    {"Int32Field", FieldIdTestClass.Int32Field},
-                    {"UInt32Field", FieldIdTestClass.UInt32Field},
-                    {"Int64Field", FieldIdTestClass.Int64Field},
-                    {"UInt64Field", FieldIdTestClass.UInt64Field},
-                    {"FloatField", FieldIdTestClass.FloatField},
-                    {"DoubleField", FieldIdTestClass.DoubleField},
-                    {"DecimalField", FieldIdTestClass.DecimalField},
+                    {"ByteInitOnly", FieldIdTestClass.ByteInitOnly},
+                    {"SByteInitOnly", FieldIdTestClass.SByteInitOnly},
+                    {"Int16InitOnly", FieldIdTestClass.Int16InitOnly},
+                    {"UInt16InitOnly", FieldIdTestClass.UInt16InitOnly},
+                    {"Int32InitOnly", FieldIdTestClass.Int32InitOnly},
+                    {"UInt32InitOnly", FieldIdTestClass.UInt32InitOnly},
+                    {"Int64InitOnly", FieldIdTestClass.Int64InitOnly},
+                    {"UInt64InitOnly", FieldIdTestClass.UInt64InitOnly},
+                    {"FloatInitOnly", FieldIdTestClass.FloatInitOnly},
+                    {"DoubleInitOnly", FieldIdTestClass.DoubleInitOnly},
+                    {"DecimalInitOnly", FieldIdTestClass.DecimalInitOnly},
                 }
                 .Select(async entry =>
                 {
@@ -526,7 +543,7 @@ namespace Nesp
             var typedExpr = await untypedExpr.ResolveAsync(context);
 
             var boolExpr = (NespBoolExpression)typedExpr;
-            Assert.AreEqual(true, boolExpr.Value);
+            Assert.AreEqual(FieldIdTestClass.BoolLiteral, boolExpr.Value);
         }
 
         [Test]
@@ -539,7 +556,7 @@ namespace Nesp
             var typedExpr = await untypedExpr.ResolveAsync(context);
 
             var stringExpr = (NespStringExpression)typedExpr;
-            Assert.AreEqual("abc", stringExpr.Value);
+            Assert.AreEqual(FieldIdTestClass.StringLiteral, stringExpr.Value);
         }
 
         [Test]
@@ -552,7 +569,7 @@ namespace Nesp
             var typedExpr = await untypedExpr.ResolveAsync(context);
 
             var charExpr = (NespCharExpression)typedExpr;
-            Assert.AreEqual('a', charExpr.Value);
+            Assert.AreEqual(FieldIdTestClass.CharLiteral, charExpr.Value);
         }
 
         [Test]
@@ -585,6 +602,91 @@ namespace Nesp
                 })))
             {
                 Assert.AreEqual(entry.Value, entry.Result);
+            }
+        }
+
+        [Test]
+        public async Task BoolFieldIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.BoolField");
+
+            var context = new NespExpressionResolverContext();
+            context.AddCandidate(typeof(FieldIdTestClass));
+            var typedExpr = await untypedExpr.ResolveAsync(context);
+
+            var fieldExpr = (NespFieldExpression)typedExpr;
+            Assert.AreSame(typeof(FieldIdTestClass).GetField("BoolField"), fieldExpr.Field);
+        }
+
+        [Test]
+        public async Task StringFieldIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.StringField");
+
+            var context = new NespExpressionResolverContext();
+            context.AddCandidate(typeof(FieldIdTestClass));
+            var typedExpr = await untypedExpr.ResolveAsync(context);
+
+            var fieldExpr = (NespFieldExpression)typedExpr;
+            Assert.AreSame(typeof(FieldIdTestClass).GetField("StringField"), fieldExpr.Field);
+        }
+
+        [Test]
+        public async Task CharFieldIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.CharField");
+
+            var context = new NespExpressionResolverContext();
+            context.AddCandidate(typeof(FieldIdTestClass));
+            var typedExpr = await untypedExpr.ResolveAsync(context);
+
+            var fieldExpr = (NespFieldExpression)typedExpr;
+            Assert.AreSame(typeof(FieldIdTestClass).GetField("CharField"), fieldExpr.Field);
+        }
+
+        [Test]
+        public async Task FieldIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestClass.GuidField");
+
+            var context = new NespExpressionResolverContext();
+            context.AddCandidate(typeof(FieldIdTestClass));
+            var typedExpr = await untypedExpr.ResolveAsync(context);
+
+            var fieldExpr = (NespFieldExpression)typedExpr;
+            Assert.AreSame(typeof(FieldIdTestClass).GetField("GuidField"), fieldExpr.Field);
+        }
+
+        [Test]
+        public async Task NumericFieldIdTest()
+        {
+            foreach (var entry in await Task.WhenAll(new Dictionary<string, object>
+                {
+                    {"ByteField", FieldIdTestClass.ByteField},
+                    {"SByteField", FieldIdTestClass.SByteField},
+                    {"Int16Field", FieldIdTestClass.Int16Field},
+                    {"UInt16Field", FieldIdTestClass.UInt16Field},
+                    {"Int32Field", FieldIdTestClass.Int32Field},
+                    {"UInt32Field", FieldIdTestClass.UInt32Field},
+                    {"Int64Field", FieldIdTestClass.Int64Field},
+                    {"UInt64Field", FieldIdTestClass.UInt64Field},
+                    {"FloatField", FieldIdTestClass.FloatField},
+                    {"DoubleField", FieldIdTestClass.DoubleField},
+                    {"DecimalField", FieldIdTestClass.DecimalField},
+                }
+                .Select(async entry =>
+                {
+                    var untypedExpr = ParseAndVisit($"Nesp.NespExpressionTests.FieldIdTestClass.{entry.Key}");
+
+                    var context = new NespExpressionResolverContext();
+                    context.AddCandidate(typeof(FieldIdTestClass));
+                    var typedExpr = await untypedExpr.ResolveAsync(context);
+
+                    var fieldExpr = (NespFieldExpression)typedExpr;
+                    return new { entry.Key, fieldExpr.Field };
+                })))
+            {
+                Assert.AreSame(typeof(FieldIdTestClass).GetField(entry.Key), entry.Field);
             }
         }
 
