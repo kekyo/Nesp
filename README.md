@@ -112,6 +112,17 @@ bb11b743-f5fe-4d68-bbe3-22e05606b3a5 : guid
 "___7ded117e-c873-48cf-a00b-75c57b8aa317___" : string
 ```
 
+### Bind result
+
+TODO:
+
+```
+> let fooValue (+ 123 456)
+fooValue : int
+> fooValue
+579 : int
+```
+
 ### Bind function
 
 TODO:
