@@ -42,6 +42,7 @@
     <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="NespExpressionTests.cs" />
     <Compile Include="NespParserTests.cs" />
     <Compile Include="NespGrammarTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

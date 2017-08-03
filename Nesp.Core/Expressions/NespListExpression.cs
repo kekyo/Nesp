@@ -17,7 +17,9 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Nesp.Expressions
 {
@@ -25,10 +27,16 @@ namespace Nesp.Expressions
     {
         internal NespListExpression(NespExpression[] list)
         {
+            Debug.Assert(list.Length >= 1);
             this.List = list;
         }
 
         public NespExpression[] List { get; }
+
+        internal override Task<NespExpression> OnResolveAsync(NespExpressionResolverContext context)
+        {
+            return context.ResolveListAsync(this.List, this);
+        }
 
         public override string ToString()
         {

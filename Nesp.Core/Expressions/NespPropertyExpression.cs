@@ -17,21 +17,24 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System.Reflection;
+using Nesp.Internals;
+
 namespace Nesp.Expressions
 {
-    public sealed class NespBoolExpression : NespTokenExpression<bool>
+    public sealed class NespPropertyExpression : NespTypedTokenExpression
     {
-        internal NespBoolExpression(bool value, NespTokenInformation token)
+        internal NespPropertyExpression(PropertyInfo property, NespTokenInformation token)
             : base(token)
         {
-            this.Value = value;
+            this.Property = property;
         }
 
-        public override bool Value { get; }
+        public PropertyInfo Property { get; }
 
         public override string ToString()
         {
-            return $"{this.Value}";
+            return $"[{NespUtilities.GetReservedReadableTypeName(this.Property.DeclaringType)}.{this.Property.Name}]:property";
         }
     }
 }

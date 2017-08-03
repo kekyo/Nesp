@@ -17,12 +17,39 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System.Threading.Tasks;
+
 namespace Nesp.Expressions
 {
     public abstract class NespExpression
     {
+        private NespExpressionResolverContext cachedContext;
+        private NespExpression cachedExpression;
+
         internal NespExpression()
         {
+        }
+
+        internal static Task<NespExpression> FromResult<T>(T value)
+            where T : NespExpression
+        {
+            return Task.FromResult((NespExpression)value);
+        }
+
+        internal virtual Task<NespExpression> OnResolveAsync(NespExpressionResolverContext context)
+        {
+            return Task.FromResult(this);
+        }
+
+        public async Task<NespExpression> ResolveAsync(NespExpressionResolverContext context)
+        {
+            if (object.ReferenceEquals(context, cachedContext) == false)
+            {
+                cachedContext = context;
+                cachedExpression = await this.OnResolveAsync(context);
+            }
+
+            return cachedExpression;
         }
     }
 }

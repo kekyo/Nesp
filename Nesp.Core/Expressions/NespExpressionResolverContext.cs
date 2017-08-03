@@ -1,0 +1,150 @@
+﻿/////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Nesp - A Lisp-like lightweight functional language on .NET
+// Copyright (c) 2017 Kouji Matsui (@kekyo2)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
+
+using Nesp.Internals;
+
+namespace Nesp.Expressions
+{
+    public sealed class NespExpressionResolverContext
+    {
+        private readonly CandidatesDictionary<FieldInfo> fields = new CandidatesDictionary<FieldInfo>();
+        private readonly CandidatesDictionary<PropertyInfo> properties = new CandidatesDictionary<PropertyInfo>();
+
+        public NespExpressionResolverContext()
+        {
+            foreach (var typeInfo in
+                typeof(object).GetTypeInfo().Assembly.DefinedTypes
+                .Where(typeInfo =>
+                    typeInfo.IsPublic && (typeInfo.IsClass || typeInfo.IsValueType || typeInfo.IsEnum)))
+            {
+                this.AddCandidate(typeInfo);
+            }
+        }
+
+        public void AddCandidate(Type type)
+        {
+            this.AddCandidate(type.GetTypeInfo());
+        }
+
+        public void AddCandidate(TypeInfo typeInfo)
+        {
+            var typeName = NespUtilities.GetReadableTypeName(typeInfo.AsType());
+
+            foreach (var field in typeInfo.DeclaredFields
+                .Where(field => field.IsPublic && (!typeInfo.IsEnum || !field.IsSpecialName)))
+            {
+                var key = $"{typeName}.{field.Name}";
+                fields.AddCandidate(key, field);
+            }
+
+            foreach (var property in typeInfo.DeclaredProperties
+                .Where(property => property.CanRead && property.GetMethod.IsPublic))
+            {
+                var key = $"{typeName}.{property.Name}";
+                properties.AddCandidate(key, property);
+            }
+        }
+
+        internal static Task<NespExpression> FromResult<T>(T value)
+            where T : NespExpression
+        {
+            return Task.FromResult((NespExpression)value);
+        }
+
+        internal async Task<NespExpression> ResolveListAsync(
+            NespExpression[] list, NespListExpression untypedExpression)
+        {
+            var resolvedList = await Task.WhenAll(list.Select(iexpr => iexpr.ResolveAsync(this)));
+            if (resolvedList.Length == 1)
+            {
+                return resolvedList[0];
+            }
+            else
+            {
+                return new NespListExpression(resolvedList);
+            }
+        }
+
+        private static Task<NespExpression> ConstructExpressionFromFieldAsync(
+            FieldInfo field, NespTokenExpression untypedExpression)
+        {
+            if (field.IsStatic && (field.IsLiteral || field.IsInitOnly))
+            {
+                var value = field.GetValue(null);
+
+                var type = field.FieldType;
+                if (type == typeof(bool))
+                {
+                    return FromResult(new NespBoolExpression((bool)value, untypedExpression.Token));
+                }
+                if (type == typeof(string))
+                {
+                    return FromResult(new NespStringExpression((string)value, untypedExpression.Token));
+                }
+                if (type == typeof(char))
+                {
+                    return FromResult(new NespCharExpression((char)value, untypedExpression.Token));
+                }
+                if ((type == typeof(byte))
+                    || (type == typeof(sbyte))
+                    || (type == typeof(short))
+                    || (type == typeof(ushort))
+                    || (type == typeof(int))
+                    || (type == typeof(uint))
+                    || (type == typeof(long))
+                    || (type == typeof(ulong))
+                    || (type == typeof(float))
+                    || (type == typeof(double))
+                    || (type == typeof(decimal)))
+                {
+                    return FromResult(new NespNumericExpression(value, untypedExpression.Token));
+                }
+
+                return FromResult(new NespConstantExpression(value, untypedExpression.Token));
+            }
+
+            return FromResult(new NespFieldExpression(field, untypedExpression.Token));
+        }
+
+        internal Task<NespExpression> ResolveIdAsync(
+            string id, NespTokenExpression untypedExpression)
+        {
+            var fieldInfos = fields[id];
+            if (fieldInfos.Length >= 1)
+            {
+                var field = fieldInfos[0];
+                return ConstructExpressionFromFieldAsync(field, untypedExpression);
+            }
+
+            var propertyInfos = properties[id];
+            if (propertyInfos.Length >= 1)
+            {
+                return FromResult(new NespPropertyExpression(propertyInfos[0], untypedExpression.Token));
+            }
+
+            throw new ArgumentException();
+        }
+    }
+}

@@ -19,16 +19,35 @@
 
 namespace Nesp.Expressions
 {
-    public abstract class NespTokenExpression : NespExpression
+    public struct NespTokenInformation
     {
-        internal NespTokenExpression(int line, int column)
+        public readonly int StartLine;
+        public readonly int StartColumn;
+        public readonly int EndLine;
+        public readonly int EndColumn;
+
+        public NespTokenInformation(int startLine, int startColumn, int endLine, int endColumn)
         {
-            this.Line = line;
-            this.Column = column;
+            this.StartLine = startLine;
+            this.StartColumn = startColumn;
+            this.EndLine = endLine;
+            this.EndColumn = endColumn;
         }
 
-        public int Line { get; }
-        public int Column { get; }
+        public override string ToString()
+        {
+            return $"({this.StartLine},{this.StartColumn}) - ({this.EndLine},{this.EndColumn})";
+        }
+    }
+
+    public abstract class NespTokenExpression : NespExpression
+    {
+        internal NespTokenExpression(NespTokenInformation token)
+        {
+            this.Token = token;
+        }
+
+        public NespTokenInformation Token { get; }
 
         public object Value => this.GetValue();
 
@@ -37,8 +56,8 @@ namespace Nesp.Expressions
 
     public abstract class NespTokenExpression<T> : NespTokenExpression
     {
-        internal NespTokenExpression(int line, int column)
-            : base(line, column)
+        internal NespTokenExpression(NespTokenInformation token)
+            : base(token)
         {
         }
 
@@ -48,5 +67,15 @@ namespace Nesp.Expressions
         }
 
         public new abstract T Value { get; }
+    }
+
+    public abstract class NespTypedTokenExpression : NespExpression
+    {
+        internal NespTypedTokenExpression(NespTokenInformation token)
+        {
+            this.Token = token;
+        }
+
+        public NespTokenInformation Token { get; }
     }
 }

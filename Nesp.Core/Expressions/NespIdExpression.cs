@@ -17,12 +17,14 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System.Threading.Tasks;
+
 namespace Nesp.Expressions
 {
     public sealed class NespIdExpression : NespTokenExpression<string>
     {
-        internal NespIdExpression(string id, int line, int column)
-            : base(line, column)
+        internal NespIdExpression(string id, NespTokenInformation token)
+            : base(token)
         {
             this.Id = id;
         }
@@ -30,6 +32,11 @@ namespace Nesp.Expressions
         public string Id { get; }
 
         public override string Value => this.Id;
+
+        internal override Task<NespExpression> OnResolveAsync(NespExpressionResolverContext context)
+        {
+            return context.ResolveIdAsync(this.Id, this);
+        }
 
         public override string ToString()
         {
