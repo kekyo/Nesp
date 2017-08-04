@@ -19,7 +19,6 @@
 
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace Nesp.Expressions
 {
@@ -33,9 +32,9 @@ namespace Nesp.Expressions
 
         public NespExpression[] List { get; }
 
-        internal override Task<NespExpression[]> OnResolveMetadataAsync(NespMetadataResolverContext context)
+        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
         {
-            return context.ResolveListAsync(this.List, this);
+            return context.ResolveByList(this.List, this);
         }
 
         public override string ToString()

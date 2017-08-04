@@ -19,9 +19,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
@@ -449,61 +447,61 @@ namespace Nesp
         }
 
         [Test]
-        public async Task InitOnlyBoolFieldIdTest()
+        public void InitOnlyBoolFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.BoolInitOnly");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var boolExpr = (NespBoolExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestType.BoolInitOnly, boolExpr.Value);
         }
 
         [Test]
-        public async Task InitOnlyStringFieldIdTest()
+        public void InitOnlyStringFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.StringInitOnly");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var stringExpr = (NespStringExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestType.StringInitOnly, stringExpr.Value);
         }
 
         [Test]
-        public async Task InitOnlyCharFieldIdTest()
+        public void InitOnlyCharFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.CharInitOnly");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var charExpr = (NespCharExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestType.CharInitOnly, charExpr.Value);
         }
 
         [Test]
-        public async Task InitOnlyFieldIdTest()
+        public void InitOnlyFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.GuidInitOnly");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var charExpr = (NespConstantExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestType.GuidInitOnly, charExpr.Value);
         }
 
         [Test]
-        public async Task InitOnlyNumericFieldIdTest()
+        public void InitOnlyNumericFieldIdTest()
         {
-            foreach (var entry in await Task.WhenAll(new Dictionary<string, object>
+            foreach (var entry in new Dictionary<string, object>
                 {
                     {"ByteInitOnly", FieldIdTestType.ByteInitOnly},
                     {"SByteInitOnly", FieldIdTestType.SByteInitOnly},
@@ -517,65 +515,65 @@ namespace Nesp
                     {"DoubleInitOnly", FieldIdTestType.DoubleInitOnly},
                     {"DecimalInitOnly", FieldIdTestType.DecimalInitOnly},
                 }
-                .Select(async entry =>
+                .Select(entry =>
                 {
                     var untypedExpr = ParseAndVisit($"Nesp.NespExpressionTests.FieldIdTestType.{entry.Key}");
 
                     var context = new NespMetadataResolverContext();
                     context.AddCandidate(typeof(FieldIdTestType));
-                    var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+                    var typedExprs = untypedExpr.ResolveMetadata(context);
 
                     var numericExpr = (NespNumericExpression)typedExprs.Single();
                     return new { entry.Value, Result = numericExpr.Value };
-                })))
+                }))
             {
                 Assert.AreEqual(entry.Value, entry.Result);
             }
         }
         
         [Test]
-        public async Task LiteralBoolFieldIdTest()
+        public void LiteralBoolFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.BoolLiteral");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var boolExpr = (NespBoolExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestType.BoolLiteral, boolExpr.Value);
         }
 
         [Test]
-        public async Task LiteralStringFieldIdTest()
+        public void LiteralStringFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.StringLiteral");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var stringExpr = (NespStringExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestType.StringLiteral, stringExpr.Value);
         }
 
         [Test]
-        public async Task LiteralCharFieldIdTest()
+        public void LiteralCharFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.CharLiteral");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var charExpr = (NespCharExpression)typedExprs.Single();
             Assert.AreEqual(FieldIdTestType.CharLiteral, charExpr.Value);
         }
 
         [Test]
-        public async Task LiteralNumericFieldIdTest()
+        public void LiteralNumericFieldIdTest()
         {
-            foreach (var entry in await Task.WhenAll(new Dictionary<string, object>
+            foreach (var entry in new Dictionary<string, object>
                 {
                     {"ByteLiteral", FieldIdTestType.ByteLiteral},
                     {"SByteLiteral", FieldIdTestType.SByteLiteral},
@@ -589,78 +587,78 @@ namespace Nesp
                     {"DoubleLiteral", FieldIdTestType.DoubleLiteral},
                     {"DecimalLiteral", FieldIdTestType.DecimalLiteral},
                 }
-                .Select(async entry =>
+                .Select(entry =>
                 {
                     var untypedExpr = ParseAndVisit($"Nesp.NespExpressionTests.FieldIdTestType.{entry.Key}");
 
                     var context = new NespMetadataResolverContext();
                     context.AddCandidate(typeof(FieldIdTestType));
-                    var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+                    var typedExprs = untypedExpr.ResolveMetadata(context);
 
                     var numericExpr = (NespNumericExpression) typedExprs.Single();
                     return new {entry.Value, Result = numericExpr.Value};
-                })))
+                }))
             {
                 Assert.AreEqual(entry.Value, entry.Result);
             }
         }
 
         [Test]
-        public async Task BoolFieldIdTest()
+        public void BoolFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.BoolField");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var fieldExpr = (NespFieldExpression)typedExprs.Single();
             Assert.AreSame(typeof(FieldIdTestType).GetField("BoolField"), fieldExpr.Field);
         }
 
         [Test]
-        public async Task StringFieldIdTest()
+        public void StringFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.StringField");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var fieldExpr = (NespFieldExpression)typedExprs.Single();
             Assert.AreSame(typeof(FieldIdTestType).GetField("StringField"), fieldExpr.Field);
         }
 
         [Test]
-        public async Task CharFieldIdTest()
+        public void CharFieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.CharField");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var fieldExpr = (NespFieldExpression)typedExprs.Single();
             Assert.AreSame(typeof(FieldIdTestType).GetField("CharField"), fieldExpr.Field);
         }
 
         [Test]
-        public async Task FieldIdTest()
+        public void FieldIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.FieldIdTestType.GuidField");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(FieldIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var fieldExpr = (NespFieldExpression)typedExprs.Single();
             Assert.AreSame(typeof(FieldIdTestType).GetField("GuidField"), fieldExpr.Field);
         }
 
         [Test]
-        public async Task NumericFieldIdTest()
+        public void NumericFieldIdTest()
         {
-            foreach (var entry in await Task.WhenAll(new Dictionary<string, object>
+            foreach (var entry in new Dictionary<string, object>
                 {
                     {"ByteField", FieldIdTestType.ByteField},
                     {"SByteField", FieldIdTestType.SByteField},
@@ -674,17 +672,17 @@ namespace Nesp
                     {"DoubleField", FieldIdTestType.DoubleField},
                     {"DecimalField", FieldIdTestType.DecimalField},
                 }
-                .Select(async entry =>
+                .Select(entry =>
                 {
                     var untypedExpr = ParseAndVisit($"Nesp.NespExpressionTests.FieldIdTestType.{entry.Key}");
 
                     var context = new NespMetadataResolverContext();
                     context.AddCandidate(typeof(FieldIdTestType));
-                    var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+                    var typedExprs = untypedExpr.ResolveMetadata(context);
 
                     var fieldExpr = (NespFieldExpression)typedExprs.Single();
                     return new { entry.Key, fieldExpr.Field };
-                })))
+                }))
             {
                 Assert.AreSame(typeof(FieldIdTestType).GetField(entry.Key), entry.Field);
             }
@@ -713,9 +711,9 @@ namespace Nesp
         }
 
         [Test]
-        public async Task BoolPropertyIdTest()
+        public void BoolPropertyIdTest()
         {
-            foreach (var entry in await Task.WhenAll(new Dictionary<string, object>
+            foreach (var entry in new Dictionary<string, object>
                 {
                     {"Bool", PropertyIdTestType.Bool},
                     {"String", PropertyIdTestType.String},
@@ -733,17 +731,17 @@ namespace Nesp
                     {"Double", PropertyIdTestType.Double},
                     {"Decimal", PropertyIdTestType.Decimal},
                 }
-                .Select(async entry =>
+                .Select(entry =>
                 {
                     var untypedExpr = ParseAndVisit($"Nesp.NespExpressionTests.PropertyIdTestType.{entry.Key}");
 
                     var context = new NespMetadataResolverContext();
                     context.AddCandidate(typeof(PropertyIdTestType));
-                    var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+                    var typedExprs = untypedExpr.ResolveMetadata(context);
 
                     var propertyExpr = (NespPropertyExpression)typedExprs.Single();
                     return new { entry.Key, propertyExpr.Property };
-                })))
+                }))
             {
                 Assert.AreSame(typeof(PropertyIdTestType).GetProperty(entry.Key), entry.Property);
             }
@@ -761,9 +759,9 @@ namespace Nesp
         }
 
         [Test]
-        public async Task EnumIdTest()
+        public void EnumIdTest()
         {
-            foreach (var entry in await Task.WhenAll(new Dictionary<string, object>
+            foreach (var entry in new Dictionary<string, object>
                 {
                     {"AAA", EnumIdTestType.AAA},
                     {"BBB", EnumIdTestType.BBB},
@@ -771,17 +769,17 @@ namespace Nesp
                     {"DDD", EnumIdTestType.DDD},
                     {"EEE", EnumIdTestType.EEE},
                 }
-                .Select(async entry =>
+                .Select(entry =>
                 {
                     var untypedExpr = ParseAndVisit($"Nesp.NespExpressionTests.EnumIdTestType.{entry.Key}");
 
                     var context = new NespMetadataResolverContext();
                     context.AddCandidate(typeof(EnumIdTestType));
-                    var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+                    var typedExprs = untypedExpr.ResolveMetadata(context);
 
                     var enumExpr = (NespEnumExpression)typedExprs.Single();
                     return new { entry.Value, ExprValue = enumExpr.Value };
-                })))
+                }))
             {
                 Assert.AreEqual(entry.Value, entry.ExprValue);
             }
@@ -795,19 +793,100 @@ namespace Nesp
             {
                 return "ABC";
             }
+
+            public static string GetString1(int value)
+            {
+                return value.ToString();
+            }
+
+            public static string GetString1()
+            {
+                return "ABC";
+            }
+
+            public static string GetString2(string value0)
+            {
+                return $"{value0}";
+            }
+
+            public static string GetString2(int value0)
+            {
+                return $"{value0}";
+            }
+
+            public static string GetString2()
+            {
+                return "ABC";
+            }
+
+            public static string GetString2(params object[] args)
+            {
+                return string.Join(",", args);
+            }
         }
 
         [Test]
-        public async Task MethodArgument0IdTest()
+        public void MethodArgument0IdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.SimpleFunctionIdTestType.GetString0");
 
             var context = new NespMetadataResolverContext();
             context.AddCandidate(typeof(SimpleFunctionIdTestType));
-            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
             var functionExpr = (NespApplyFunctionExpression)typedExprs.Single();
-            Assert.AreEqual(typeof(SimpleFunctionIdTestType).GetMethod("GetString0"), functionExpr.Method);
+            var expected = typeof(SimpleFunctionIdTestType).GetMethod("GetString0");
+            Assert.AreEqual(expected, functionExpr.Method);
+        }
+
+        [Test]
+        public void MethodArgument0OverloadedIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.SimpleFunctionIdTestType.GetString1");
+
+            var context = new NespMetadataResolverContext();
+            context.AddCandidate(typeof(SimpleFunctionIdTestType));
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var functionExpr = (NespApplyFunctionExpression)typedExprs.Single();
+            var expected = typeof(SimpleFunctionIdTestType)
+                .GetMethods()
+                .First(method => (method.Name == "GetString1") && (method.GetParameters().Length == 0));
+            Assert.AreEqual(expected, functionExpr.Method);
+        }
+
+        [Test]
+        public void MethodArgument0ParamsOverloadedIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.SimpleFunctionIdTestType.GetString2");
+
+            var context = new NespMetadataResolverContext();
+            context.AddCandidate(typeof(SimpleFunctionIdTestType));
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var functionExpr = (NespApplyFunctionExpression)typedExprs.Single();
+            var expected = typeof(SimpleFunctionIdTestType)
+                .GetMethods()
+                .First(method => (method.Name == "GetString2") && (method.GetParameters().Length == 0));
+            Assert.AreEqual(expected, functionExpr.Method);
+        }
+
+        [Test]
+        public void MethodArgument1Int32OverloadedIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.SimpleFunctionIdTestType.GetString2 12345678");
+
+            var context = new NespMetadataResolverContext();
+            context.AddCandidate(typeof(SimpleFunctionIdTestType));
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var functionExpr = (NespApplyFunctionExpression)typedExprs.Single();
+            var expected = typeof(SimpleFunctionIdTestType)
+                .GetMethods()
+                .First(method =>
+                    (method.Name == "GetString2") &&
+                    (method.GetParameters().Select(parameter => parameter.ParameterType).SequenceEqual(new [] { typeof(int) })));
+            Assert.AreEqual(expected, functionExpr.Method);
         }
         #endregion
 

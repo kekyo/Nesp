@@ -19,6 +19,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -35,13 +36,20 @@ namespace Nesp.Expressions
 
         public NespMetadataResolverContext()
         {
-            foreach (var typeInfo in
+            Task.WaitAll(
                 typeof(object).GetTypeInfo().Assembly.DefinedTypes
-                .Where(typeInfo =>
-                    typeInfo.IsPublic && (typeInfo.IsClass || typeInfo.IsValueType || typeInfo.IsEnum)))
-            {
-                this.AddCandidate(typeInfo);
-            }
+                    .Where(typeInfo => typeInfo.IsPublic && (typeInfo.IsClass || typeInfo.IsValueType || typeInfo.IsEnum))
+                    .Select(typeInfo => Task.Run(() => this.AddCandidate(typeInfo)))
+                    .ToArray());
+        }
+
+        public void AddCandidate(Assembly assembly)
+        {
+            Task.WhenAll(
+                assembly.DefinedTypes
+                .Where(typeInfo => typeInfo.IsPublic && (typeInfo.IsClass || typeInfo.IsValueType || typeInfo.IsEnum))
+                .Select(typeInfo => Task.Run(() => this.AddCandidate(typeInfo))))
+                .Wait();
         }
 
         public void AddCandidate(Type type)
@@ -53,43 +61,116 @@ namespace Nesp.Expressions
         {
             var typeName = NespUtilities.GetReadableTypeName(typeInfo.AsType());
 
-            foreach (var field in typeInfo.DeclaredFields
-                .Where(field => field.IsPublic && (!typeInfo.IsEnum || !field.IsSpecialName)))
+            lock (fields)
             {
-                var key = $"{typeName}.{field.Name}";
-                fields.AddCandidate(key, field);
+                foreach (var field in typeInfo.DeclaredFields
+                    .Where(field => field.IsPublic && (!typeInfo.IsEnum || !field.IsSpecialName)))
+                {
+                    var key = $"{typeName}.{field.Name}";
+                    fields.AddCandidate(key, field);
+                }
             }
 
             var propertyMethods = new HashSet<MethodInfo>();
-            foreach (var property in typeInfo.DeclaredProperties
-                .Where(property => property.CanRead && property.GetMethod.IsPublic))
+            lock (properties)
             {
-                var key = $"{typeName}.{property.Name}";
-                properties.AddCandidate(key, property);
+                foreach (var property in typeInfo.DeclaredProperties
+                    .Where(property => property.CanRead && property.GetMethod.IsPublic))
+                {
+                    var key = $"{typeName}.{property.Name}";
+                    properties.AddCandidate(key, property);
 
-                propertyMethods.Add(property.GetMethod);
-                propertyMethods.Add(property.SetMethod);
+                    propertyMethods.Add(property.GetMethod);
+                    propertyMethods.Add(property.SetMethod);
+                }
             }
 
-            foreach (var method in typeInfo.DeclaredMethods
-                .Where(method => method.IsPublic && (propertyMethods.Contains(method) == false)))
+            lock (methods)
             {
-                var key = $"{typeName}.{method.Name}";
-                methods.AddCandidate(key, method);
+                foreach (var method in typeInfo.DeclaredMethods
+                    .Where(method => method.IsPublic && (propertyMethods.Contains(method) == false)))
+                {
+                    var key = $"{typeName}.{method.Name}";
+                    methods.AddCandidate(key, method);
+                }
             }
         }
 
-        internal async Task<NespExpression[]> ResolveListAsync(
-            NespExpression[] list, NespListExpression untypedExpression)
+        private static NespExpression[][] TransposeLists(NespExpression[][] list)
         {
-            var resolvedList = await Task.WhenAll(list.Select(iexpr => iexpr.ResolveMetadataAsync(this)));
-            if (resolvedList.Length == 1)
+            var results = new List<NespExpression[]>();
+            var targetIndex = new int[list.Length];
+            while (true)
             {
-                return resolvedList[0];
+                var exprs = new NespExpression[list.Length];
+                for (var listIndex = 0; listIndex < list.Length; listIndex++)
+                {
+                    var iexprs = list[listIndex];
+                    exprs[listIndex] = iexprs[targetIndex[listIndex]];
+                }
+
+                results.Add(exprs);
+
+                var index = 0;
+                for (; index < list.Length; index++)
+                {
+                    targetIndex[index]++;
+                    if (targetIndex[index] < list[index].Length)
+                    {
+                        break;
+                    }
+                    targetIndex[index] = 0;
+                }
+
+                if (index >= list.Length)
+                {
+                    break;
+                }
+            }
+
+            return results.ToArray();
+        }
+
+        private static NespExpression ConstructExpressionFromList(NespExpression[] list)
+        {
+            if (list.Length == 1)
+            {
+                return list[0];
+            }
+
+            // TODO: ResolveMetadataしてしまうと、ResolveByIdAsyncで引数を取らないmethodを検索して失敗してしまう
+            var applyFunctionExpr = list[0] as NespApplyFunctionExpression;
+            if (applyFunctionExpr != null)
+            {
+                
+            }
+            return list[0];
+        }
+
+        internal NespExpression[] ResolveByList(NespExpression[] list, NespListExpression untypedExpression)
+        {
+            Debug.Assert(list.Length >= 1);
+
+            var idExpression0 = list[0] as NespIdExpression;
+            if (idExpression0 != null)
+            {
+                // TODO:
+                return list;
             }
             else
             {
-                return resolvedList.Select(iexprs => new NespListExpression(iexprs)).ToArray();
+                var resolvedExpressionsList = list
+                    .Select(iexpr => iexpr.ResolveMetadata(this))
+                    .ToArray();
+
+                var transposedLists = TransposeLists(resolvedExpressionsList);
+
+                var filtered = transposedLists
+                    .Select(resultlist => ConstructExpressionFromList(resultlist))
+                    .Where(iexpr => iexpr != null)
+                    .ToArray();
+
+                return filtered;
             }
         }
 
@@ -138,28 +219,34 @@ namespace Nesp.Expressions
             return new NespFieldExpression(field, untypedExpression.Token);
         }
 
-        internal Task<NespExpression[]> ResolveIdAsync(
-            string id, NespTokenExpression untypedExpression)
+        internal NespExpression[] ResolveById(string id, NespTokenExpression untypedExpression)
         {
             var fieldInfos = fields[id];
             if (fieldInfos.Length >= 1)
             {
-                return Task.FromResult(
-                    fieldInfos.Select(field => ConstructExpressionFromField(field, untypedExpression)).ToArray());
+                return fieldInfos
+                    .Select(field => ConstructExpressionFromField(field, untypedExpression))
+                    .ToArray();
             }
 
             var propertyInfos = properties[id];
             if (propertyInfos.Length >= 1)
             {
-                return Task.FromResult(
-                    propertyInfos.Select(property => (NespExpression)new NespPropertyExpression(property, untypedExpression.Token)).ToArray());
+                return propertyInfos
+                    .Select(property => (NespExpression)new NespPropertyExpression(property, untypedExpression.Token))
+                    .ToArray();
             }
 
-            var methodInfos = methods[id];
+            // This situation only id (no list), so selectable methods have to no arguments.
+            // (Maybe nothing or only 1 methodInfo)
+            var methodInfos = methods[id]
+                .Where(method => method.GetParameters().Length == 0)
+                .ToArray();
             if (methodInfos.Length >= 1)
             {
-                return Task.FromResult(
-                    methodInfos.Select(method => (NespExpression)new NespApplyFunctionExpression(method, untypedExpression.Token)).ToArray());
+                return methodInfos
+                    .Select(method => (NespExpression)new NespApplyFunctionExpression(method, untypedExpression.Token))
+                    .ToArray();
             }
 
             throw new ArgumentException();

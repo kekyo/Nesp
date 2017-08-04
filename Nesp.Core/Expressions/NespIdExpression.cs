@@ -33,9 +33,9 @@ namespace Nesp.Expressions
 
         public override string Value => this.Id;
 
-        internal override Task<NespExpression[]> OnResolveMetadataAsync(NespMetadataResolverContext context)
+        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
         {
-            return context.ResolveIdAsync(this.Id, this);
+            return context.ResolveById(this.Id, this);
         }
 
         public override string ToString()
