@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26430.14
-MinimumVisualStudioVersion = 10.0.40219.1
+MinimumVisualStudioVersion = 15.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nesp.NET4", "Nesp.NET4\Nesp.NET4.csproj", "{62A59A77-D13B-4370-AEF3-9811148EC2B0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nesp.Core", "Nesp.Core\Nesp.Core.csproj", "{4611AB6D-9405-4DEC-8691-583F7F691C35}"
