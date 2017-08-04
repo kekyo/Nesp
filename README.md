@@ -2,6 +2,8 @@
 
 ![Nesp](Images/Nesp512.png)
 
+[![AppVeyor Nesp](https://ci.appveyor.com/api/projects/status/1j6821cl3y5y9etu?svg=true)](https://ci.appveyor.com/project/kekyo/nesp)
+
 ## What's this?
 
 * Nesp is a Lisp-like lightweight functional language on .NET

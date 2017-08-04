@@ -31,6 +31,7 @@ namespace Nesp.Expressions
     {
         private readonly CandidatesDictionary<FieldInfo> fields = new CandidatesDictionary<FieldInfo>();
         private readonly CandidatesDictionary<PropertyInfo> properties = new CandidatesDictionary<PropertyInfo>();
+        private readonly CandidatesDictionary<MethodInfo> methods = new CandidatesDictionary<MethodInfo>();
 
         public NespMetadataResolverContext()
         {
@@ -59,11 +60,22 @@ namespace Nesp.Expressions
                 fields.AddCandidate(key, field);
             }
 
+            var propertyMethods = new HashSet<MethodInfo>();
             foreach (var property in typeInfo.DeclaredProperties
                 .Where(property => property.CanRead && property.GetMethod.IsPublic))
             {
                 var key = $"{typeName}.{property.Name}";
                 properties.AddCandidate(key, property);
+
+                propertyMethods.Add(property.GetMethod);
+                propertyMethods.Add(property.SetMethod);
+            }
+
+            foreach (var method in typeInfo.DeclaredMethods
+                .Where(method => method.IsPublic && (propertyMethods.Contains(method) == false)))
+            {
+                var key = $"{typeName}.{method.Name}";
+                methods.AddCandidate(key, method);
             }
         }
 
@@ -141,6 +153,13 @@ namespace Nesp.Expressions
             {
                 return Task.FromResult(
                     propertyInfos.Select(property => (NespExpression)new NespPropertyExpression(property, untypedExpression.Token)).ToArray());
+            }
+
+            var methodInfos = methods[id];
+            if (methodInfos.Length >= 1)
+            {
+                return Task.FromResult(
+                    methodInfos.Select(method => (NespExpression)new NespApplyFunctionExpression(method, untypedExpression.Token)).ToArray());
             }
 
             throw new ArgumentException();

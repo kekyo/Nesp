@@ -788,26 +788,30 @@ namespace Nesp
         }
         #endregion
 
+        #region Id (Function)
+        public sealed class SimpleFunctionIdTestType
+        {
+            public static string GetString0()
+            {
+                return "ABC";
+            }
+        }
 
-        //[Test]
-        //public void EnumIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.DateTimeKind.Local");
-        //    var constExpr = (ConstantExpression)expr;
-        //    Assert.AreEqual(DateTimeKind.Local, constExpr.Value);
-        //}
+        [Test]
+        public async Task MethodArgument0IdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.SimpleFunctionIdTestType.GetString0");
 
-        //[Test]
-        //public void PropertyIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.IntPtr.Size");
-        //    var memberExpr = (MemberExpression)expr;
-        //    var pi = (PropertyInfo)memberExpr.Member;
-        //    Assert.IsNull(memberExpr.Expression);
-        //    Assert.AreEqual(typeof(IntPtr), pi.DeclaringType);
-        //    Assert.AreEqual(typeof(int), pi.PropertyType);
-        //    Assert.AreEqual("Size", pi.Name);
-        //}
+            var context = new NespMetadataResolverContext();
+            context.AddCandidate(typeof(SimpleFunctionIdTestType));
+            var typedExprs = await untypedExpr.ResolveMetadataAsync(context);
+
+            var functionExpr = (NespApplyFunctionExpression)typedExprs.Single();
+            Assert.AreEqual(typeof(SimpleFunctionIdTestType).GetMethod("GetString0"), functionExpr.Method);
+        }
+        #endregion
+
+
 
         //[Test]
         //public void MethodIdTest()
