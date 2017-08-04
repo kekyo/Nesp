@@ -44,6 +44,7 @@
     </Antlr4>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Expressions\NespEnumExpression.cs" />
     <Compile Include="Expressions\NespConstantExpression.cs" />
     <Compile Include="Expressions\NespPropertyExpression.cs" />
     <Compile Include="Expressions\NespFieldExpression.cs" />

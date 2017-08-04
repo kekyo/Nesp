@@ -115,6 +115,10 @@ namespace Nesp.Expressions
                 {
                     return new NespNumericExpression(value, untypedExpression.Token);
                 }
+                if (type.GetTypeInfo().IsEnum)
+                {
+                    return new NespEnumExpression((Enum)value, untypedExpression.Token);
+                }
 
                 return new NespConstantExpression(value, untypedExpression.Token);
             }
