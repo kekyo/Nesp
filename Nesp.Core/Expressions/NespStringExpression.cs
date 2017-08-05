@@ -21,8 +21,8 @@ namespace Nesp.Expressions
 {
     public sealed class NespStringExpression : NespTokenExpression<string>
     {
-        internal NespStringExpression(string value, NespTokenInformation token)
-            : base(token)
+        internal NespStringExpression(string value, NespSourceInformation source)
+            : base(source)
         {
             this.Value = value;
         }

@@ -21,8 +21,8 @@ namespace Nesp.Expressions
 {
     public sealed class NespUnitExpression : NespTokenExpression<Unit>
     {
-        internal NespUnitExpression(NespTokenInformation token)
-            : base(token)
+        internal NespUnitExpression(NespSourceInformation source)
+            : base(source)
         {
         }
 

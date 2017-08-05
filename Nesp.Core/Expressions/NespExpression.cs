@@ -28,6 +28,10 @@ namespace Nesp.Expressions
         {
         }
 
+        public abstract bool IsResolved { get; }
+
+        public abstract NespSourceInformation Source { get; }
+
         internal virtual NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
         {
             return new [] { this };

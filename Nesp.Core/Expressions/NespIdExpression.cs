@@ -23,8 +23,8 @@ namespace Nesp.Expressions
 {
     public sealed class NespIdExpression : NespTokenExpression<string>
     {
-        internal NespIdExpression(string id, NespTokenInformation token)
-            : base(token)
+        internal NespIdExpression(string id, NespSourceInformation source)
+            : base(source)
         {
             this.Id = id;
         }

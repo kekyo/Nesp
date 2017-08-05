@@ -17,23 +17,26 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using Nesp.Internals;
-
 namespace Nesp.Expressions
 {
-    public sealed class NespConstantExpression : NespTokenExpression<object>
+    public sealed class NespSourceInformation
     {
-        internal NespConstantExpression(object value, NespSourceInformation source)
-            : base(source)
-        {
-            this.Value = value;
-        }
+        public readonly int StartLine;
+        public readonly int StartColumn;
+        public readonly int EndLine;
+        public readonly int EndColumn;
 
-        public override object Value { get; }
+        public NespSourceInformation(int startLine, int startColumn, int endLine, int endColumn)
+        {
+            this.StartLine = startLine;
+            this.StartColumn = startColumn;
+            this.EndLine = endLine;
+            this.EndColumn = endColumn;
+        }
 
         public override string ToString()
         {
-            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
+            return $"({this.StartLine},{this.StartColumn}) - ({this.EndLine},{this.EndColumn})";
         }
     }
 }

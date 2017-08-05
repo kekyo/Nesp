@@ -30,17 +30,14 @@ namespace Nesp.Expressions
 {
     public sealed class NespMetadataResolverContext
     {
+        private static readonly NespExpression[] emptyExpressions = new NespExpression[0];
+
         private readonly CandidatesDictionary<FieldInfo> fields = new CandidatesDictionary<FieldInfo>();
         private readonly CandidatesDictionary<PropertyInfo> properties = new CandidatesDictionary<PropertyInfo>();
         private readonly CandidatesDictionary<MethodInfo> methods = new CandidatesDictionary<MethodInfo>();
 
         public NespMetadataResolverContext()
         {
-            Task.WaitAll(
-                typeof(object).GetTypeInfo().Assembly.DefinedTypes
-                    .Where(typeInfo => typeInfo.IsPublic && (typeInfo.IsClass || typeInfo.IsValueType || typeInfo.IsEnum))
-                    .Select(typeInfo => Task.Run(() => this.AddCandidate(typeInfo)))
-                    .ToArray());
         }
 
         public void AddCandidate(Assembly assembly)
@@ -154,8 +151,25 @@ namespace Nesp.Expressions
             var idExpression0 = list[0] as NespIdExpression;
             if (idExpression0 != null)
             {
-                // TODO:
-                return list;
+                var id = idExpression0.Id;
+
+                var propertyInfos = properties[id];
+                if (propertyInfos.Length >= 1)
+                {
+                    return propertyInfos
+                        .Select(property => (NespExpression)new NespPropertyExpression(property, untypedExpression.Source))
+                        .ToArray();
+                }
+
+                var methodInfos = methods[id]
+                    .Where(method => method.GetParameters().Length == (list.Length - 1))
+                    .ToArray();
+                if (methodInfos.Length >= 1)
+                {
+                    return methodInfos
+                        .Select(method => (NespExpression)new NespApplyFunctionExpression(method, emptyExpressions, untypedExpression.Source))
+                        .ToArray();
+                }
             }
             else
             {
@@ -170,8 +184,13 @@ namespace Nesp.Expressions
                     .Where(iexpr => iexpr != null)
                     .ToArray();
 
-                return filtered;
+                if (filtered.Length >= 1)
+                {
+                    return filtered;
+                }
             }
+
+            throw new ArgumentException();
         }
 
         private static NespExpression ConstructExpressionFromField(
@@ -184,15 +203,15 @@ namespace Nesp.Expressions
                 var type = field.FieldType;
                 if (type == typeof(bool))
                 {
-                    return new NespBoolExpression((bool)value, untypedExpression.Token);
+                    return new NespBoolExpression((bool)value, untypedExpression.Source);
                 }
                 if (type == typeof(string))
                 {
-                    return new NespStringExpression((string)value, untypedExpression.Token);
+                    return new NespStringExpression((string)value, untypedExpression.Source);
                 }
                 if (type == typeof(char))
                 {
-                    return new NespCharExpression((char)value, untypedExpression.Token);
+                    return new NespCharExpression((char)value, untypedExpression.Source);
                 }
                 if ((type == typeof(byte))
                     || (type == typeof(sbyte))
@@ -206,17 +225,17 @@ namespace Nesp.Expressions
                     || (type == typeof(double))
                     || (type == typeof(decimal)))
                 {
-                    return new NespNumericExpression(value, untypedExpression.Token);
+                    return new NespNumericExpression(value, untypedExpression.Source);
                 }
                 if (type.GetTypeInfo().IsEnum)
                 {
-                    return new NespEnumExpression((Enum)value, untypedExpression.Token);
+                    return new NespEnumExpression((Enum)value, untypedExpression.Source);
                 }
 
-                return new NespConstantExpression(value, untypedExpression.Token);
+                return new NespConstantExpression(value, untypedExpression.Source);
             }
 
-            return new NespFieldExpression(field, untypedExpression.Token);
+            return new NespFieldExpression(field, untypedExpression.Source);
         }
 
         internal NespExpression[] ResolveById(string id, NespTokenExpression untypedExpression)
@@ -233,7 +252,7 @@ namespace Nesp.Expressions
             if (propertyInfos.Length >= 1)
             {
                 return propertyInfos
-                    .Select(property => (NespExpression)new NespPropertyExpression(property, untypedExpression.Token))
+                    .Select(property => (NespExpression)new NespPropertyExpression(property, untypedExpression.Source))
                     .ToArray();
             }
 
@@ -245,7 +264,7 @@ namespace Nesp.Expressions
             if (methodInfos.Length >= 1)
             {
                 return methodInfos
-                    .Select(method => (NespExpression)new NespApplyFunctionExpression(method, untypedExpression.Token))
+                    .Select(method => (NespExpression)new NespApplyFunctionExpression(method, emptyExpressions, untypedExpression.Source))
                     .ToArray();
             }
 

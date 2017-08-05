@@ -24,8 +24,8 @@ namespace Nesp.Expressions
 {
     public sealed class NespEnumExpression : NespTokenExpression<Enum>
     {
-        internal NespEnumExpression(Enum value, NespTokenInformation token)
-            : base(token)
+        internal NespEnumExpression(Enum value, NespSourceInformation source)
+            : base(source)
         {
             this.Value = value;
         }

@@ -22,10 +22,10 @@ using Nesp.Internals;
 
 namespace Nesp.Expressions
 {
-    public sealed class NespFieldExpression : NespTypedTokenExpression
+    public sealed class NespFieldExpression : NespResolvedTokenExpression
     {
-        internal NespFieldExpression(FieldInfo field, NespTokenInformation token)
-            : base(token)
+        internal NespFieldExpression(FieldInfo field, NespSourceInformation source)
+            : base(source)
         {
             this.Field = field;
         }

@@ -21,8 +21,8 @@ namespace Nesp.Expressions
 {
     public sealed class NespBoolExpression : NespTokenExpression<bool>
     {
-        internal NespBoolExpression(bool value, NespTokenInformation token)
-            : base(token)
+        internal NespBoolExpression(bool value, NespSourceInformation source)
+            : base(source)
         {
             this.Value = value;
         }

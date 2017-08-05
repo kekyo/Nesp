@@ -76,12 +76,12 @@ namespace Nesp.Internals
             }
         }
 
-        private static NespTokenInformation GetTokenInformation(ParserRuleContext context)
+        private static NespSourceInformation GetTokenInformation(ParserRuleContext context)
         {
             var start = context.Start;
             var stop = context.Stop ?? context.Start;
 
-            return new NespTokenInformation(
+            return new NespSourceInformation(
                 start.Line - 1,
                 start.Column,
                 stop.Line - 1,
@@ -140,7 +140,7 @@ namespace Nesp.Internals
         }
 
         private static NespNumericExpression ParseHexadecimalNumeric(
-            string text, NespTokenInformation token)
+            string text, NespSourceInformation token)
         {
             if (text.StartsWith("0x") == false)
             {
@@ -196,7 +196,7 @@ namespace Nesp.Internals
         }
 
         private static NespNumericExpression ParseStrictNumeric(
-            string text, NespTokenInformation token)
+            string text, NespSourceInformation token)
         {
             if (text.EndsWith("ul"))
             {
@@ -251,7 +251,7 @@ namespace Nesp.Internals
         }
 
         private static NespNumericExpression ParseNumeric(
-            string text, NespTokenInformation token)
+            string text, NespSourceInformation token)
         {
             if (byte.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var byteValue))
             {

@@ -24,15 +24,17 @@ using Nesp.Internals;
 
 namespace Nesp.Expressions
 {
-    public sealed class NespApplyFunctionExpression : NespTypedTokenExpression
+    public sealed class NespApplyFunctionExpression : NespResolvedTokenExpression
     {
-        internal NespApplyFunctionExpression(MethodInfo method, NespTokenInformation token)
-            : base(token)
+        internal NespApplyFunctionExpression(MethodInfo method, NespExpression[] arguments, NespSourceInformation source)
+            : base(source)
         {
             this.Method = method;
+            this.Arguments = arguments;
         }
 
         public MethodInfo Method { get; }
+        public NespExpression[] Arguments { get; }
 
         public override string ToString()
         {

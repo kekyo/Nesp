@@ -23,8 +23,8 @@ namespace Nesp.Expressions
 {
     public sealed class NespNumericExpression : NespTokenExpression<object>
     {
-        internal NespNumericExpression(object value, NespTokenInformation token)
-            : base(token)
+        internal NespNumericExpression(object value, NespSourceInformation source)
+            : base(source)
         {
             this.Value = value;
         }

@@ -30,6 +30,19 @@ namespace Nesp.Expressions
             this.List = list;
         }
 
+        public override bool IsResolved => false;
+
+        public override NespSourceInformation Source
+        {
+            get
+            {
+                var start = this.List[0].Source;
+                var end = this.List[this.List.Length - 1].Source;
+
+                return new NespSourceInformation(start.StartLine, start.StartColumn, end.StartLine, end.EndColumn);
+            }
+        }
+
         public NespExpression[] List { get; }
 
         internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
