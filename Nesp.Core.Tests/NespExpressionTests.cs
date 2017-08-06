@@ -877,7 +877,7 @@ namespace Nesp
         }
 
         [Test]
-        public void MethodArgument1Int32OverloadedIdTest()
+        public void MethodArgument1Int32OverloadedCompletedIdTest()
         {
             var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.SimpleFunctionIdTestType.GetString2 12345678");
 
@@ -892,6 +892,11 @@ namespace Nesp
                     (method.Name == "GetString2") &&
                     (method.GetParameters().Select(parameter => parameter.ParameterType).SequenceEqual(new [] { typeof(int) })));
             Assert.AreEqual(expected, functionExpr.Method);
+            var argExprs = functionExpr.Arguments
+                .Select(iexpr => (NespNumericExpression)iexpr)
+                .ToArray();
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new [] { typeof(int) }));
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new object[] { 12345678 }));
         }
         #endregion
 
