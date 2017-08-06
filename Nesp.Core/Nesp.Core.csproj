@@ -47,6 +47,7 @@
     <Compile Include="Expressions\NespApplyFunctionExpression.cs" />
     <Compile Include="Expressions\NespEnumExpression.cs" />
     <Compile Include="Expressions\NespConstantExpression.cs" />
+    <Compile Include="Expressions\NespResolvedListExpression.cs" />
     <Compile Include="Expressions\NespPropertyExpression.cs" />
     <Compile Include="Expressions\NespFieldExpression.cs" />
     <Compile Include="Expressions\NespCharExpression.cs" />

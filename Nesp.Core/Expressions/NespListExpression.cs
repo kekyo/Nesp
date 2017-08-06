@@ -18,32 +18,22 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Nesp.Expressions
 {
     public sealed class NespListExpression : NespExpression
     {
-        internal NespListExpression(NespExpression[] list)
+        internal NespListExpression(NespExpression[] list, NespSourceInformation source)
         {
-            Debug.Assert(list.Length >= 1);
             this.List = list;
+            this.Source = source;
         }
 
         public override Type Type => null;
         public override bool IsResolved => false;
 
-        public override NespSourceInformation Source
-        {
-            get
-            {
-                var start = this.List[0].Source;
-                var end = this.List[this.List.Length - 1].Source;
-
-                return new NespSourceInformation(start.StartLine, start.StartColumn, end.StartLine, end.EndColumn);
-            }
-        }
+        public override NespSourceInformation Source { get; }
 
         public NespExpression[] List { get; }
 

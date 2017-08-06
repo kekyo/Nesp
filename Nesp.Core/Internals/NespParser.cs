@@ -76,7 +76,7 @@ namespace Nesp.Internals
             }
         }
 
-        private static NespSourceInformation GetTokenInformation(ParserRuleContext context)
+        private static NespSourceInformation GetSourceInformation(ParserRuleContext context)
         {
             var start = context.Start;
             var stop = context.Stop ?? context.Start;
@@ -88,55 +88,48 @@ namespace Nesp.Internals
                 stop.Column + (stop.StopIndex - stop.StartIndex));
         }
 
+        public override NespExpression VisitRepl(NespGrammarParser.ReplContext context)
+        {
+            var childContext = context.GetChild(0);
+            return this.Visit(childContext);
+        }
+
         public override NespExpression VisitExpression(NespGrammarParser.ExpressionContext context)
         {
             var listContext = (NespGrammarParser.ListContext)context.GetChild(1);
-            if (listContext == null)
-            {
-                // "()"
-                var token = GetTokenInformation(context);
-                return new NespUnitExpression(token);
-            }
-
             return this.Visit(listContext);
         }
 
         public override NespExpression VisitList(NespGrammarParser.ListContext context)
         {
-            switch (context.ChildCount)
-            {
-                case 0:
-                    var token = GetTokenInformation(context);
-                    return new NespUnitExpression(token);
-                case 1:
-                    return this.Visit(context.GetChild(0));
-                default:
-                    return new NespListExpression(context.GetChildren().Select(this.Visit).ToArray());
-            }
+            var source = GetSourceInformation(context);
+            var list = context.GetChildren().Select(this.Visit).ToArray();
+
+            return new NespListExpression(list, source);
         }
 
         public override NespExpression VisitString(NespGrammarParser.StringContext context)
         {
             var symbol = context.STRING().Symbol;
             var text = symbol.Text;
-            var token = GetTokenInformation(context);
+            var source = GetSourceInformation(context);
 
             var unquoted = text.Substring(1, text.Length - 2);
             var unescaped = unquoted.InterpretEscapes();
 
-            return new NespStringExpression(unescaped, token);
+            return new NespStringExpression(unescaped, source);
         }
 
         public override NespExpression VisitChar(NespGrammarParser.CharContext context)
         {
             var symbol = context.CHAR().Symbol;
             var text = symbol.Text;
-            var token = GetTokenInformation(context);
+            var source = GetSourceInformation(context);
 
             var unquoted = text.Substring(1, text.Length - 2);
             var unescaped = unquoted.InterpretEscapes();
 
-            return new NespCharExpression(unescaped[0], token);
+            return new NespCharExpression(unescaped[0], source);
         }
 
         private static NespNumericExpression ParseHexadecimalNumeric(
@@ -285,12 +278,12 @@ namespace Nesp.Internals
         {
             var symbol = context.NUMERIC().Symbol;
             var text = symbol.Text.ToLowerInvariant();
-            var token = GetTokenInformation(context);
+            var source = GetSourceInformation(context);
 
             var expr =
-                ParseHexadecimalNumeric(text, token) ??
-                ParseStrictNumeric(text, token) ??
-                ParseNumeric(text, token);
+                ParseHexadecimalNumeric(text, source) ??
+                ParseStrictNumeric(text, source) ??
+                ParseNumeric(text, source);
 
             if (expr == null)
             {
@@ -304,15 +297,15 @@ namespace Nesp.Internals
         {
             var symbol = context.ID().Symbol;
             var text = symbol.Text;
-            var token = GetTokenInformation(context);
+            var source = GetSourceInformation(context);
 
             if (bool.TryParse(text, out var boolValue))
             {
-                return new NespBoolExpression(boolValue, token);
+                return new NespBoolExpression(boolValue, source);
             }
             else
             {
-                return new NespIdExpression(text, token);
+                return new NespIdExpression(text, source);
             }
         }
     }

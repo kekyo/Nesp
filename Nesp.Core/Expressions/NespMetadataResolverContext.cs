@@ -159,20 +159,22 @@ namespace Nesp.Expressions
                 return -1;
             }
 
+            var score = 0;
             for (var parameterIndex = 0; parameterIndex < parameterTypes.Length; parameterIndex++)
             {
                 var expressionType = argumentResolvedExpressions[parameterIndex].Type;
                 if (expressionType == null)
                 {
-                    // Argument expression cannot apply at this time.
-                    return 0;
+                    // Don't match for expression will be resolving.
+                    continue;
                 }
 
                 var parameterType = parameterTypes[parameterIndex];
                 if (object.ReferenceEquals(parameterType, expressionType))
                 {
-                    // Mostly compatible types: just same.
-                    return int.MaxValue;
+                    // Exactly match.
+                    score += 10000;
+                    continue;
                 }
 
                 // TODO: Generic type arguments
@@ -181,97 +183,81 @@ namespace Nesp.Expressions
                 if (parameterTypeInfo.IsAssignableFrom(expressionTypeInfo))
                 {
                     // Argument can cast implicitly.
-                    // TODO: We have to make different between inherit level and implements.
-                    return 10;
+                    score += 10;
+                }
+                else
+                {
+                    // Don't match
+                    return -1;
                 }
             }
 
-            return -1;
+            return score;
         }
 
-        private static NespExpression ConstructExpressionFromList(NespExpression[] list)
+        private static NespExpression ConstructExpressionFromList(
+            NespExpression[] listExpressions, NespListExpression untypedExpression)
         {
-            if (list.Length == 1)
+            // TODO: Property apply
+
+            // Function apply:
+            var applyFunction0 = listExpressions[0] as NespApplyFunctionExpression;
+            if (applyFunction0 != null)
             {
-                return list[0];
+                var argumentExpresssions = listExpressions
+                    .Skip(1)
+                    .ToArray();
+
+                var score = CalculateCandidateScoreByArguments(applyFunction0.Method, argumentExpresssions);
+
+                var expr = new NespApplyFunctionExpression(
+                    applyFunction0.Method, argumentExpresssions, untypedExpression.Source);
+                expr.SetScore(score);
+                return expr;
             }
 
-            // TODO: ResolveMetadataしてしまうと、ResolveByIdAsyncで引数を取らないmethodを検索して失敗してしまう
-            var applyFunctionExpr = list[0] as NespApplyFunctionExpression;
-            if (applyFunctionExpr != null)
+            // Only one expression.
+            if (listExpressions.Length == 1)
             {
-
+                // Very low but verified score
+                listExpressions[0].SetScore(0);
+                return listExpressions[0];
             }
-            return list[0];
+            else
+            {
+                // Construct list expression.
+                // TODO: List type.
+                var type = typeof(object[]);
+                var expr = new NespResolvedListExpression(listExpressions, type);
+                expr.SetScore(0);
+                return expr;
+            }
         }
 
         internal NespExpression[] ResolveByList(NespExpression[] list, NespListExpression untypedExpression)
         {
             Debug.Assert(list.Length >= 1);
 
-            var idExpression0 = list[0] as NespIdExpression;
-            if (idExpression0 != null)
+            var transposedResolvedExpressionLists = TransposeLists(
+                list
+                .Select(iexpr => iexpr.ResolveMetadata(this))
+                .ToArray());
+
+            var filteredCandidatesScored = transposedResolvedExpressionLists
+                .Select(resolvedExpressionList => ConstructExpressionFromList(resolvedExpressionList, untypedExpression))
+                .Where(scored => scored.Score >= 0)
+                .OrderByDescending(scored => scored.Score)
+                .ToArray();
+            if (filteredCandidatesScored.Length >= 1)
             {
-                var id = idExpression0.Id;
-
-                var propertyInfos = properties[id];
-                if (propertyInfos.Length >= 1)
+                // Exactly matched
+                if (filteredCandidatesScored[0].Score == int.MaxValue)
                 {
-                    return propertyInfos
-                        .Select(property => (NespExpression)new NespPropertyExpression(property, untypedExpression.Source))
-                        .ToArray();
+                    return new [] { filteredCandidatesScored[0] };
                 }
-
-                var argumentsResolvedExpressions = TransposeLists(
-                    list.Skip(1)
-                    .Select(iexpr => iexpr.ResolveMetadata(this))
-                    .ToArray());
-                var methodInfos = methods[id];
-                var candidates =
-                    (from exprs in argumentsResolvedExpressions
-                     from method in methodInfos
-                     let score = CalculateCandidateScoreByArguments(method, exprs)
-                     where score >= 0
-                     orderby score descending
-                     select new { exprs, method, score })
-                    .ToArray();
-
-                if (candidates.Length >= 1)
+                else
                 {
-                    var candidate = candidates[0];
-                    if (candidate.score == int.MaxValue)
-                    {
-                        return new NespExpression[]
-                        {
-                            new NespApplyFunctionExpression(
-                                candidate.method, candidate.exprs, untypedExpression.Source)
-                        };
-                    }
-                    else
-                    {
-                        return candidates
-                            .Select(entry => (NespExpression)new NespApplyFunctionExpression(
-                                entry.method, entry.exprs, untypedExpression.Source))
-                            .ToArray();
-                    }
-                }
-            }
-            else
-            {
-                var resolvedExpressionsList = list
-                    .Select(iexpr => iexpr.ResolveMetadata(this))
-                    .ToArray();
-
-                var transposedLists = TransposeLists(resolvedExpressionsList);
-
-                var filtered = transposedLists
-                    .Select(resultlist => ConstructExpressionFromList(resultlist))
-                    .Where(iexpr => iexpr != null)
-                    .ToArray();
-
-                if (filtered.Length >= 1)
-                {
-                    return filtered;
+                    return filteredCandidatesScored;
                 }
             }
 
@@ -341,11 +327,9 @@ namespace Nesp.Expressions
                     .ToArray();
             }
 
-            // This situation only id (no list), so selectable methods have to no arguments.
-            // (Maybe nothing or only 1 methodInfo)
-            var methodInfos = methods[id]
-                .Where(method => method.GetParameters().Length == 0)
-                .ToArray();
+            // TODO: Events
+
+            var methodInfos = methods[id];
             if (methodInfos.Length >= 1)
             {
                 return methodInfos

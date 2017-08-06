@@ -18,27 +18,43 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Reflection;
-using Nesp.Internals;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Nesp.Expressions
 {
-    public sealed class NespPropertyExpression : NespResolvedTokenExpression
+    public sealed class NespResolvedListExpression : NespResolvedTokenExpression
     {
-        internal NespPropertyExpression(PropertyInfo property, NespSourceInformation source)
+        internal NespResolvedListExpression(NespExpression[] list, Type type)
         {
-            this.Property = property;
-            this.Source = source;
+            Debug.Assert(list.Length >= 1);
+            this.List = list;
+            this.Type = type;
         }
 
-        public override Type Type => this.Property.PropertyType;
-        public override NespSourceInformation Source { get; }
+        public override Type Type { get; }
 
-        public PropertyInfo Property { get; }
+        public override NespSourceInformation Source
+        {
+            get
+            {
+                var start = this.List[0].Source;
+                var end = this.List[this.List.Length - 1].Source;
+
+                return new NespSourceInformation(start.StartLine, start.StartColumn, end.StartLine, end.EndColumn);
+            }
+        }
+
+        public NespExpression[] List { get; }
+
+        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
+        {
+            throw new InvalidOperationException();
+        }
 
         public override string ToString()
         {
-            return $"[{NespUtilities.GetReservedReadableTypeName(this.Property.DeclaringType)}.{this.Property.Name}]:property";
+            return $"({string.Join(" ", this.List.Select(iexpr => iexpr.ToString()))})";
         }
     }
 }

@@ -21,13 +21,10 @@ namespace Nesp.Expressions
 {
     public abstract class NespResolvedTokenExpression : NespExpression
     {
-        internal NespResolvedTokenExpression(NespSourceInformation source)
+        internal NespResolvedTokenExpression()
         {
-            this.Source = source;
         }
 
         public sealed override bool IsResolved => true;
-
-        public sealed override NespSourceInformation Source { get; }
     }
 }
