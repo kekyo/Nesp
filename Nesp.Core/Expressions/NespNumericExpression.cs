@@ -30,6 +30,8 @@ namespace Nesp.Expressions
             this.Value = value;
         }
 
+        public override bool IsResolved => true;
+
         public override Type Type => this.Value.GetType();
         public override object Value { get; }
 

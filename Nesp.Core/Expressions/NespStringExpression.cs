@@ -29,6 +29,8 @@ namespace Nesp.Expressions
             this.Value = value;
         }
 
+        public override bool IsResolved => true;
+
         public override string Value { get; }
 
         public override string ToString()

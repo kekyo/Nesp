@@ -26,6 +26,8 @@ namespace Nesp.Expressions
         {
         }
 
+        public override bool IsResolved => true;
+
         internal override object GetValue()
         {
             return Unit.Value;

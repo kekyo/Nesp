@@ -18,7 +18,6 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Threading.Tasks;
 
 namespace Nesp.Expressions
 {
@@ -29,6 +28,8 @@ namespace Nesp.Expressions
         {
             this.Id = id;
         }
+
+        public override bool IsResolved => false;
 
         public override Type Type => null;
 

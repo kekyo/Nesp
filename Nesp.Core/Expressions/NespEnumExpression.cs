@@ -31,8 +31,9 @@ namespace Nesp.Expressions
             this.Value = value;
         }
 
-        public override Type Type { get; }
+        public override bool IsResolved => true;
 
+        public override Type Type { get; }
         public override Enum Value { get; }
 
         public override string ToString()

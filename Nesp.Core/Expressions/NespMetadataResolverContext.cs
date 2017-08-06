@@ -111,8 +111,44 @@ namespace Nesp.Expressions
                    && (this.methods.Equals(cachedContext.methods));
         }
 
+        /// <summary>
+        /// Transpose expression lists.
+        /// </summary>
+        /// <param name="list">Expression lists</param>
+        /// <returns>Transposed expression lists</returns>
+        /// <remarks>This method compute transpose for expression list.</remarks>
         private static NespExpression[][] TransposeLists(NespExpression[][] list)
         {
+            // From list (These expression lists are candidate argument expressions):
+            //   Target: string GetString(int a0, char a1, double a2, object a3)
+            //   [a0]: { [a00], [a01], [a02] }          // Argument a0's expression candidates are a00 or a01 or a02
+            //   [a1]: { [a10], [a11] }                 // Argument a1's expression candidates are a10 or a11
+            //   [a2]: { [a20], [a21], [a22] }          // Argument a2's expression candidates are a20 or a21 or a22
+            //   [a3]: { [a30], [a31], [a32], [a33] }   // Argument a3's expression candidates are a30 or a31 or a32 or a33
+
+            // Transposed list (Completely arguments composed candidate list):
+            //   [0]:  { [a00], [a10], [a20], [a30] }   // string GetString(a00, a10, a20, a30)
+            //   [1]:  { [a01], [a10], [a20], [a30] }   // string GetString(a01, a10, a20, a30)
+            //   [2]:  { [a02], [a10], [a20], [a30] }   // string GetString(a02, a10, a20, a30)
+            //   [3]:  { [a00], [a11], [a20], [a30] }   // string GetString(a00, a11, a20, a30)
+            //   [4]:  { [a01], [a11], [a20], [a30] }   // string GetString(a01, a11, a20, a30)
+            //   [5]:  { [a02], [a11], [a20], [a30] }   // string GetString(a02, a11, a20, a30)
+            //   [6]:  { [a00], [a10], [a21], [a30] }   // string GetString(a00, a10, a21, a30)
+            //   [7]:  { [a01], [a10], [a21], [a30] }   // string GetString(a01, a10, a21, a30)
+            //   [8]:  { [a02], [a10], [a21], [a30] }   // string GetString(a02, a10, a21, a30)
+            //   [9]:  { [a00], [a11], [a21], [a30] }   // string GetString(a00, a11, a21, a30)
+            //   [10]: { [a01], [a11], [a21], [a30] }   // string GetString(a01, a11, a21, a30)
+            //   [11]: { [a02], [a11], [a21], [a30] }   // string GetString(a02, a11, a21, a30)
+            //   [12]: { [a00], [a10], [a22], [a30] }   // string GetString(a00, a10, a22, a30)
+            //   [13]: { [a01], [a10], [a22], [a30] }   // string GetString(a01, a10, a22, a30)
+            //
+            //            ...
+            //
+            //   [68]: { [a02], [a10], [a22], [a33] }   // string GetString(a02, a10, a22, a33)
+            //   [69]: { [a00], [a11], [a22], [a33] }   // string GetString(a00, a11, a22, a33)
+            //   [70]: { [a01], [a11], [a22], [a33] }   // string GetString(a01, a11, a22, a33)
+            //   [71]: { [a02], [a11], [a22], [a33] }   // string GetString(a02, a11, a22, a33)
+
             var results = new List<NespExpression[]>();
             var targetIndex = new int[list.Length];
             while (true)
@@ -146,9 +182,17 @@ namespace Nesp.Expressions
             return results.ToArray();
         }
 
-        private static int CalculateCandidateScoreByArguments(
+        /// <summary>
+        /// Calculate how adaptable do apply this method's parametes and expressions.
+        /// </summary>
+        /// <param name="method">Target method</param>
+        /// <param name="argumentResolvedExpressions">Target expressions (require resolved)</param>
+        /// <returns>Adaptable score (-1: cannot use, 0 >= better for large amount value, int.MaxValue: exactly matched)</returns>
+        private static int CalculateAdaptableScoreByArguments(
             MethodInfo method, NespExpression[] argumentResolvedExpressions)
         {
+            Debug.Assert(argumentResolvedExpressions.All(iexpr => iexpr.IsResolved));
+
             // TODO: param array
             var parameterTypes = method.GetParameters()
                 .Select(parameter => parameter.ParameterType)
@@ -159,6 +203,7 @@ namespace Nesp.Expressions
                 return -1;
             }
 
+            var exactlyCount = 0;
             var score = 0;
             for (var parameterIndex = 0; parameterIndex < parameterTypes.Length; parameterIndex++)
             {
@@ -174,6 +219,7 @@ namespace Nesp.Expressions
                 {
                     // Exactly match.
                     score += 10000;
+                    exactlyCount++;
                     continue;
                 }
 
@@ -187,29 +233,52 @@ namespace Nesp.Expressions
                 }
                 else
                 {
-                    // Don't match
+                    // Can't match
                     return -1;
                 }
             }
 
-            return score;
+            // Maximum score gives if all arguments exactly matched.
+            return (exactlyCount >= parameterTypes.Length) ? int.MaxValue : score;
         }
 
+        /// <summary>
+        /// Construct expression from list expressions.
+        /// </summary>
+        /// <param name="listExpressions">List contained expressions.</param>
+        /// <param name="untypedExpression">Target untyped expression reference.</param>
+        /// <returns>Expression (resolved)</returns>
         private static NespExpression ConstructExpressionFromList(
             NespExpression[] listExpressions, NespListExpression untypedExpression)
         {
-            // TODO: Property apply
+            // List expressions are:
+            //   Target: (a0 a1 a2 a3)
+            //   listExpressions = { [a00], [a10], [a20], [a30] }    // Transposed a candidate list.
 
-            // Function apply:
+            // TODO: Apply indexer
+
+            // Apply function:
+            //   Target: (a0 a1 a2 a3)
+            //            |  |  |  |
+            //            |  |  |  a30
+            //            |  |  a20
+            //            |  a10
+            //            a00: Foo.GetString(int, char, double)
             var applyFunction0 = listExpressions[0] as NespApplyFunctionExpression;
             if (applyFunction0 != null)
             {
+                // Calculate adaptable score.
                 var argumentExpresssions = listExpressions
                     .Skip(1)
                     .ToArray();
+                var score = CalculateAdaptableScoreByArguments(applyFunction0.Method, argumentExpresssions);
+                if (score == -1)
+                {
+                    // Can't match
+                    return null;
+                }
 
-                var score = CalculateCandidateScoreByArguments(applyFunction0.Method, argumentExpresssions);
-
+                // Construct function apply expression.
                 var expr = new NespApplyFunctionExpression(
                     applyFunction0.Method, argumentExpresssions, untypedExpression.Source);
                 expr.SetScore(score);
@@ -219,7 +288,7 @@ namespace Nesp.Expressions
             // Only one expression.
             if (listExpressions.Length == 1)
             {
-                // Very low but verified score
+                // Very low but adaptable.
                 listExpressions[0].SetScore(0);
                 return listExpressions[0];
             }
@@ -234,6 +303,12 @@ namespace Nesp.Expressions
             }
         }
 
+        /// <summary>
+        /// Resolve by expression list.
+        /// </summary>
+        /// <param name="list">Expression list</param>
+        /// <param name="untypedExpression">Target untyped expression reference.</param>
+        /// <returns>Expression (resolved)</returns>
         internal NespExpression[] ResolveByList(NespExpression[] list, NespListExpression untypedExpression)
         {
             Debug.Assert(list.Length >= 1);
@@ -245,12 +320,12 @@ namespace Nesp.Expressions
 
             var filteredCandidatesScored = transposedResolvedExpressionLists
                 .Select(resolvedExpressionList => ConstructExpressionFromList(resolvedExpressionList, untypedExpression))
-                .Where(scored => scored.Score >= 0)
+                .Where(scored => scored != null)
                 .OrderByDescending(scored => scored.Score)
                 .ToArray();
             if (filteredCandidatesScored.Length >= 1)
             {
-                // Exactly matched
+                // All arguments exactly matched.
                 if (filteredCandidatesScored[0].Score == int.MaxValue)
                 {
                     return new [] { filteredCandidatesScored[0] };
@@ -264,11 +339,22 @@ namespace Nesp.Expressions
             throw new ArgumentException();
         }
 
+        /// <summary>
+        /// Construct expression from field information.
+        /// </summary>
+        /// <param name="field">Field information.</param>
+        /// <param name="untypedExpression">Target untyped expression reference.</param>
+        /// <returns>Expression (resolved)</returns>
+        /// <remarks>This method construct expression from field.
+        /// If field gives concrete value (Literal or marked initonly),
+        /// get real value at this point and construct constant expression.</remarks>
         private static NespExpression ConstructExpressionFromField(
             FieldInfo field, NespTokenExpression untypedExpression)
         {
+            // Field is literal or marked initonly.
             if (field.IsStatic && (field.IsLiteral || field.IsInitOnly))
             {
+                // Get real value.
                 var value = field.GetValue(null);
 
                 var type = field.FieldType;
@@ -306,6 +392,7 @@ namespace Nesp.Expressions
                 return new NespConstantExpression(value, untypedExpression.Source);
             }
 
+            // Field reference resolved at runtime.
             return new NespFieldExpression(field, untypedExpression.Source);
         }
 

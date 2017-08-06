@@ -28,8 +28,6 @@ namespace Nesp.Expressions
             this.Source = source;
         }
 
-        public sealed override bool IsResolved => false;
-
         public sealed override NespSourceInformation Source { get; }
 
         public object Value => this.GetValue();

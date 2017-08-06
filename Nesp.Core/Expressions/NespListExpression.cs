@@ -30,8 +30,8 @@ namespace Nesp.Expressions
             this.Source = source;
         }
 
-        public override Type Type => null;
         public override bool IsResolved => false;
+        public override Type Type => null;
 
         public override NespSourceInformation Source { get; }
 
