@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26430.14
-MinimumVisualStudioVersion = 10.0.40219.1
+MinimumVisualStudioVersion = 15.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nesp.NET4", "Nesp.NET4\Nesp.NET4.csproj", "{62A59A77-D13B-4370-AEF3-9811148EC2B0}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Nesp.Core", "Nesp.Core\Nesp.Core.csproj", "{4611AB6D-9405-4DEC-8691-583F7F691C35}"
@@ -12,6 +12,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{9A889616-D482-4D78-B723-C3F168E6AD96}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		appveyor.yml = appveyor.yml
 		LICENSE = LICENSE
 		README.md = README.md
 	EndProjectSection
@@ -21,6 +22,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Images", "Images", "{54CAE9
 		Images\Nesp.png = Images\Nesp.png
 		Images\Nesp512.png = Images\Nesp512.png
 		Images\NespRepl.png = Images\NespRepl.png
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{E780B37F-88C4-4146-9629-D7CD6E5FEFD2}"
+	ProjectSection(SolutionItems) = preProject
+		.nuget\NuGet.Config = .nuget\NuGet.Config
+		.nuget\nuget.exe = .nuget\nuget.exe
 	EndProjectSection
 EndProject
 Global

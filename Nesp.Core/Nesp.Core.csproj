@@ -3,7 +3,7 @@
   <Import Project="..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.props" Condition="Exists('..\packages\Antlr4.CodeGenerator.4.6.4\build\Antlr4.CodeGenerator.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
-    <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
+    <MinimumVisualStudioVersion>15.0</MinimumVisualStudioVersion>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{4611AB6D-9405-4DEC-8691-583F7F691C35}</ProjectGuid>
@@ -44,8 +44,14 @@
     </Antlr4>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Expressions\NespApplyFunctionExpression.cs" />
+    <Compile Include="Expressions\NespEnumExpression.cs" />
+    <Compile Include="Expressions\NespConstantExpression.cs" />
+    <Compile Include="Expressions\NespPropertyExpression.cs" />
+    <Compile Include="Expressions\NespFieldExpression.cs" />
     <Compile Include="Expressions\NespCharExpression.cs" />
     <Compile Include="Expressions\NespBoolExpression.cs" />
+    <Compile Include="Expressions\NespMetadataResolverContext.cs" />
     <Compile Include="Expressions\NespTokenExpression.cs" />
     <Compile Include="Expressions\NespUnitExpression.cs" />
     <Compile Include="Expressions\NespListExpression.cs" />

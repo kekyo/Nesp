@@ -17,21 +17,26 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System.Linq;
+using System.Reflection;
+
+using Nesp.Internals;
+
 namespace Nesp.Expressions
 {
-    public sealed class NespBoolExpression : NespTokenExpression<bool>
+    public sealed class NespApplyFunctionExpression : NespTypedTokenExpression
     {
-        internal NespBoolExpression(bool value, NespTokenInformation token)
+        internal NespApplyFunctionExpression(MethodInfo method, NespTokenInformation token)
             : base(token)
         {
-            this.Value = value;
+            this.Method = method;
         }
 
-        public override bool Value { get; }
+        public MethodInfo Method { get; }
 
         public override string ToString()
         {
-            return $"{this.Value}";
+            return $"{NespUtilities.GetReservedReadableTypeName(this.Method.DeclaringType)}.{this.Method.Name}({string.Join(",", this.Method.GetParameters().Select(parameter => NespUtilities.GetReservedReadableTypeName(parameter.ParameterType)))})";
         }
     }
 }

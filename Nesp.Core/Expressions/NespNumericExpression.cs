@@ -23,8 +23,8 @@ namespace Nesp.Expressions
 {
     public sealed class NespNumericExpression : NespTokenExpression<object>
     {
-        internal NespNumericExpression(object value, int line, int column)
-            : base(line, column)
+        internal NespNumericExpression(object value, NespTokenInformation token)
+            : base(token)
         {
             this.Value = value;
         }
@@ -33,7 +33,7 @@ namespace Nesp.Expressions
 
         public override string ToString()
         {
-            return $"{this.Value}:{NespUtilities.GetReservedReadableTypeName(this.Value.GetType())}";
+            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
         }
     }
 }

@@ -19,7 +19,6 @@
 
 using System;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using Antlr4.Runtime;
 using NUnit.Framework;
@@ -415,79 +414,6 @@ namespace Nesp
         }
         #endregion
 
-        //#region Id
-        //[Test]
-        //public void FieldIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.DBNull.Value");
-        //    var constExpr = (ConstantExpression)expr;
-        //    Assert.AreEqual(DBNull.Value, constExpr.Value);
-        //}
-
-        //[Test]
-        //public void EnumIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.DateTimeKind.Local");
-        //    var constExpr = (ConstantExpression)expr;
-        //    Assert.AreEqual(DateTimeKind.Local, constExpr.Value);
-        //}
-
-        //[Test]
-        //public void PropertyIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.IntPtr.Size");
-        //    var memberExpr = (MemberExpression)expr;
-        //    var pi = (PropertyInfo)memberExpr.Member;
-        //    Assert.IsNull(memberExpr.Expression);
-        //    Assert.AreEqual(typeof(IntPtr), pi.DeclaringType);
-        //    Assert.AreEqual(typeof(int), pi.PropertyType);
-        //    Assert.AreEqual("Size", pi.Name);
-        //}
-
-        //[Test]
-        //public void MethodIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.Guid.NewGuid");
-        //    var methodCallExpr = (MethodCallExpression)expr;
-        //    var mi = methodCallExpr.Method;
-        //    Assert.IsNull(methodCallExpr.Object);
-        //    Assert.AreEqual(typeof(Guid), mi.DeclaringType);
-        //    Assert.AreEqual(typeof(Guid), mi.ReturnType);
-        //    Assert.AreEqual("NewGuid", mi.Name);
-        //}
-
-        //[Test]
-        //public void MethodWithArgsIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.String.Format \"ABC{0}DEF\" 123");
-        //    var methodCallExpr = (MethodCallExpression)expr;
-        //    var mi = methodCallExpr.Method;
-        //    Assert.IsNull(methodCallExpr.Object);
-        //    Assert.AreEqual(typeof(string), mi.DeclaringType);
-        //    Assert.AreEqual(typeof(string), mi.ReturnType);
-        //    Assert.IsTrue(
-        //        new[] { typeof(string), typeof(object) }
-        //        .SequenceEqual(mi.GetParameters().Select(pi => pi.ParameterType)));
-        //    Assert.IsTrue(
-        //        new[] { typeof(string), typeof(object) }
-        //            .SequenceEqual(methodCallExpr.Arguments.Select(arg => arg.Type)));
-        //    Assert.IsTrue(
-        //        new object[] { "ABC{0}DEF", (byte)123 }
-        //        .SequenceEqual(new[] {
-        //            ((ConstantExpression)methodCallExpr.Arguments[0]).Value,
-        //            ((ConstantExpression)((UnaryExpression)methodCallExpr.Arguments[1]).Operand).Value }));
-        //    Assert.AreEqual("Format", mi.Name);
-        //}
-
-        //[Test]
-        //public void ReservedIdTest()
-        //{
-        //    var expr = ParseAndVisit("int.MinValue");
-        //    var constExpr = (ConstantExpression)expr;
-        //    Assert.AreEqual(int.MinValue, constExpr.Value);
-        //}
-        //#endregion
-
         #region List
         [Test]
         public void NoValuesListTest()
@@ -529,47 +455,5 @@ namespace Nesp
                         ((NespTokenExpression)iexpr).Value)));
         }
         #endregion
-
-        //#region Compilation
-        //[Test]
-        //public void CompileFieldIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.DBNull.Value");
-        //    var lambda = Expression.Lambda<Func<DBNull>>(expr, false, Enumerable.Empty<ParameterExpression>());
-        //    var compiled = lambda.Compile();
-        //    var value = compiled();
-        //    Assert.AreEqual(DBNull.Value, value);
-        //}
-
-        //[Test]
-        //public void CompileEnumIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.DateTimeKind.Local");
-        //    var lambda = Expression.Lambda<Func<DateTimeKind>>(expr, false, Enumerable.Empty<ParameterExpression>());
-        //    var compiled = lambda.Compile();
-        //    var value = compiled();
-        //    Assert.AreEqual(DateTimeKind.Local, value);
-        //}
-
-        //[Test]
-        //public void CompilePropertyIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.IntPtr.Size");
-        //    var lambda = Expression.Lambda<Func<int>>(expr, false, Enumerable.Empty<ParameterExpression>());
-        //    var compiled = lambda.Compile();
-        //    var size = compiled();
-        //    Assert.AreEqual(IntPtr.Size, size);
-        //}
-
-        //[Test]
-        //public void CompileMethodIdTest()
-        //{
-        //    var expr = ParseAndVisit("System.Guid.NewGuid");
-        //    var lambda = Expression.Lambda<Func<Guid>>(expr, false, Enumerable.Empty<ParameterExpression>());
-        //    var compiled = lambda.Compile();
-        //    var value = compiled();
-        //    Assert.IsFalse(value.Equals(Guid.Empty));
-        //}
-        //#endregion
     }
 }

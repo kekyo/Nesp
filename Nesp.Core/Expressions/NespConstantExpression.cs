@@ -17,21 +17,23 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using Nesp.Internals;
+
 namespace Nesp.Expressions
 {
-    public sealed class NespBoolExpression : NespTokenExpression<bool>
+    public sealed class NespConstantExpression : NespTokenExpression<object>
     {
-        internal NespBoolExpression(bool value, NespTokenInformation token)
+        internal NespConstantExpression(object value, NespTokenInformation token)
             : base(token)
         {
             this.Value = value;
         }
 
-        public override bool Value { get; }
+        public override object Value { get; }
 
         public override string ToString()
         {
-            return $"{this.Value}";
+            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
         }
     }
 }

@@ -21,8 +21,8 @@ namespace Nesp.Expressions
 {
     public sealed class NespUnitExpression : NespTokenExpression<Unit>
     {
-        internal NespUnitExpression(int line, int column)
-            : base(line, column)
+        internal NespUnitExpression(NespTokenInformation token)
+            : base(token)
         {
         }
 

@@ -109,6 +109,11 @@ namespace Nesp.Internals
         private static readonly Type delegateType = typeof(Delegate);
         private static readonly TypeInfo delegateTypeInfo = delegateType.GetTypeInfo();
 
+        public static string GetReadableTypeName(Type type)
+        {
+            return GetReadableTypeName(type, GetReadableTypeName);
+        }
+
         public static string GetReservedReadableTypeName(Type type)
         {
             if (ReservedTypeNames.TryGetValue(type, out var typeName))
@@ -136,6 +141,18 @@ namespace Nesp.Internals
                 return $"{getTypeName(elementType)}[{new string(Enumerable.Range(0, type.GetArrayRank() - 1).Select(index => ',').ToArray())}]";
             }
 
+            // Generic parameter
+            if (type.IsGenericParameter)
+            {
+                return type.Name;
+            }
+
+            // Nested type
+            if (type.IsNested)
+            {
+                return $"{getTypeName(type.DeclaringType)}.{type.Name}";
+            }
+
             // Delegate (Func<>)
             var typeInfo = type.GetTypeInfo();
             if ((typeInfo.IsAbstract == false)
@@ -146,12 +163,6 @@ namespace Nesp.Internals
                 var parameterTypes = string.Join(" -> ", parameters.Select(parameter => getTypeName(parameter.ParameterType)));
                 parameterTypes = (parameterTypes.Length >= 1) ? parameterTypes : getTypeName(unitType);
                 return $"{string.Join(" -> ", parameterTypes)} -> {getTypeName(invokeMethod.ReturnType)}";
-            }
-
-            // Generic parameter
-            if (typeInfo.IsGenericParameter)
-            {
-                return type.Name;
             }
 
             // TODO: Generic type
@@ -183,6 +194,16 @@ namespace Nesp.Internals
             {
                 return value.ToString();
             }
+        }
+
+        public static string FormatReadableString(object value)
+        {
+            return FormatReadableString(value, FormatReadableString);
+        }
+
+        public static string FormatReservedReadableString(object value)
+        {
+            return FormatReadableString(value, GetReservedReadableTypeName);
         }
 
         public static string FormatReadableString(object value, Func<Type, string> getTypeName)
