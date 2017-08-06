@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Reflection;
 using Nesp.Internals;
 
@@ -30,6 +31,7 @@ namespace Nesp.Expressions
             this.Field = field;
         }
 
+        public override Type Type => this.Field.FieldType;
         public FieldInfo Field { get; }
 
         public override string ToString()

@@ -124,5 +124,54 @@ namespace Nesp.Internals
                 }
             }
         }
+
+        public bool Equals(CandidatesDictionary<T> rhs)
+        {
+            if (object.ReferenceEquals(original, rhs.original) == false)
+            {
+                if ((original == null) || (rhs.original == null))
+                {
+                    return false;
+                }
+                if (original.Count != rhs.original.Count)
+                {
+                    return false;
+                }
+
+                if (original.All(entry =>
+                    rhs.original.TryGetValue(entry.Key, out var candidates) &&
+                    entry.Value.SequenceEqual(candidates)) == false)
+                {
+                    return false;
+                }
+            }
+
+            if (object.ReferenceEquals(inner, rhs.inner) == false)
+            {
+                if ((inner == null) || (rhs.inner == null))
+                {
+                    return false;
+                }
+                if (inner.Count != rhs.inner.Count)
+                {
+                    return false;
+                }
+
+                if (inner.All(entry =>
+                    rhs.inner.TryGetValue(entry.Key, out var candidates) &&
+                    entry.Value.SequenceEqual(candidates)) == false)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override bool Equals(object rhs)
+        {
+            var rhsDict = rhs as CandidatesDictionary<T>;
+            return rhsDict != null && this.Equals(rhsDict);
+        }
     }
 }

@@ -804,12 +804,17 @@ namespace Nesp
                 return "ABC";
             }
 
-            public static string GetString2(string value0)
+            public static string GetString2(object value0)
             {
                 return $"{value0}";
             }
 
             public static string GetString2(int value0)
+            {
+                return $"{value0}";
+            }
+
+            public static string GetString2(string value0)
             {
                 return $"{value0}";
             }

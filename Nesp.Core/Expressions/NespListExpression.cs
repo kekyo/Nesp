@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Diagnostics;
 using System.Linq;
 
@@ -30,6 +31,7 @@ namespace Nesp.Expressions
             this.List = list;
         }
 
+        public override Type Type => null;
         public override bool IsResolved => false;
 
         public override NespSourceInformation Source

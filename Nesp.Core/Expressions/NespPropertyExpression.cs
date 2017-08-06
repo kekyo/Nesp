@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Reflection;
 using Nesp.Internals;
 
@@ -30,6 +31,7 @@ namespace Nesp.Expressions
             this.Property = property;
         }
 
+        public override Type Type => this.Property.PropertyType;
         public PropertyInfo Property { get; }
 
         public override string ToString()

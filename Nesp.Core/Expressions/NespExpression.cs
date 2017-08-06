@@ -17,6 +17,8 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
+
 namespace Nesp.Expressions
 {
     public abstract class NespExpression
@@ -30,6 +32,8 @@ namespace Nesp.Expressions
 
         public abstract bool IsResolved { get; }
 
+        public abstract Type Type { get; }
+
         public abstract NespSourceInformation Source { get; }
 
         internal virtual NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
@@ -39,7 +43,7 @@ namespace Nesp.Expressions
 
         public NespExpression[] ResolveMetadata(NespMetadataResolverContext context)
         {
-            if (object.ReferenceEquals(context, cachedContext) == false)
+            if (context.EqualCondition(cachedContext) == false)
             {
                 cachedContext = context;
                 cachedExpressions = this.OnResolveMetadata(context);

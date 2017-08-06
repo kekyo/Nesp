@@ -17,6 +17,9 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
+using System.Reflection;
+
 namespace Nesp.Expressions
 {
     public abstract class NespTokenExpression : NespExpression
@@ -41,6 +44,8 @@ namespace Nesp.Expressions
             : base(source)
         {
         }
+
+        public override Type Type => typeof(T);
 
         internal override object GetValue()
         {

@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using Nesp.Internals;
 
 namespace Nesp.Expressions
@@ -29,6 +30,7 @@ namespace Nesp.Expressions
             this.Value = value;
         }
 
+        public override Type Type => this.Value.GetType();
         public override object Value { get; }
 
         public override string ToString()

@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using Nesp.Internals;
 
 namespace Nesp.Expressions
@@ -24,10 +25,18 @@ namespace Nesp.Expressions
     public sealed class NespConstantExpression : NespTokenExpression<object>
     {
         internal NespConstantExpression(object value, NespSourceInformation source)
+            : this(value.GetType(), value, source)
+        {
+        }
+
+        internal NespConstantExpression(Type type, object value, NespSourceInformation source)
             : base(source)
         {
+            this.Type = type;
             this.Value = value;
         }
+
+        public override Type Type { get; }
 
         public override object Value { get; }
 

@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Linq;
 using System.Reflection;
 
@@ -32,6 +33,8 @@ namespace Nesp.Expressions
             this.Method = method;
             this.Arguments = arguments;
         }
+
+        public override Type Type => this.Method.ReturnType;
 
         public MethodInfo Method { get; }
         public NespExpression[] Arguments { get; }

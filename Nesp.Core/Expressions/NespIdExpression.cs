@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Threading.Tasks;
 
 namespace Nesp.Expressions
@@ -29,8 +30,9 @@ namespace Nesp.Expressions
             this.Id = id;
         }
 
-        public string Id { get; }
+        public override Type Type => null;
 
+        public string Id { get; }
         public override string Value => this.Id;
 
         internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)

@@ -27,8 +27,11 @@ namespace Nesp.Expressions
         internal NespEnumExpression(Enum value, NespSourceInformation source)
             : base(source)
         {
+            this.Type = value.GetType();
             this.Value = value;
         }
+
+        public override Type Type { get; }
 
         public override Enum Value { get; }
 

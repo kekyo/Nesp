@@ -17,6 +17,8 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
+
 namespace Nesp.Expressions
 {
     public sealed class NespStringExpression : NespTokenExpression<string>
