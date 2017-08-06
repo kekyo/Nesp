@@ -898,6 +898,29 @@ namespace Nesp
             Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new [] { typeof(int) }));
             Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new object[] { 12345678 }));
         }
+
+        [Test]
+        public void MethodArgument1StringOverloadedCompletedIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.SimpleFunctionIdTestType.GetString2 \"abcdefg\"");
+
+            var context = new NespMetadataResolverContext();
+            context.AddCandidate(typeof(SimpleFunctionIdTestType));
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var functionExpr = (NespApplyFunctionExpression)typedExprs.Single();
+            var expected = typeof(SimpleFunctionIdTestType)
+                .GetMethods()
+                .First(method =>
+                    (method.Name == "GetString2") &&
+                    (method.GetParameters().Select(parameter => parameter.ParameterType).SequenceEqual(new[] { typeof(string) })));
+            Assert.AreEqual(expected, functionExpr.Method);
+            var argExprs = functionExpr.Arguments
+                .Select(iexpr => (NespStringExpression)iexpr)
+                .ToArray();
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new[] { typeof(string) }));
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new [] { "abcdefg" }));
+        }
         #endregion
 
 
