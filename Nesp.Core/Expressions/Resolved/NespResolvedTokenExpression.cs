@@ -17,34 +17,14 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using Nesp.Internals;
-
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespConstantExpression : NespTokenExpression<object>
+    public abstract class NespResolvedTokenExpression : NespExpression
     {
-        internal NespConstantExpression(object value, NespSourceInformation source)
-            : this(value.GetType(), value, source)
+        internal NespResolvedTokenExpression()
         {
         }
 
-        internal NespConstantExpression(Type type, object value, NespSourceInformation source)
-            : base(source)
-        {
-            this.Type = type;
-            this.Value = value;
-        }
-
-        public override bool IsResolved => true;
-
-        public override Type Type { get; }
-
-        public override object Value { get; }
-
-        public override string ToString()
-        {
-            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
-        }
+        public sealed override bool IsResolved => true;
     }
 }

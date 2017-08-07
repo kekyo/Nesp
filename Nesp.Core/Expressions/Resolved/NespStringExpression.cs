@@ -17,11 +17,11 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespBoolExpression : NespTokenExpression<bool>
+    public sealed class NespStringExpression : NespTokenExpression<string>
     {
-        internal NespBoolExpression(bool value, NespSourceInformation source)
+        internal NespStringExpression(string value, NespSourceInformation source)
             : base(source)
         {
             this.Value = value;
@@ -29,11 +29,11 @@ namespace Nesp.Expressions
 
         public override bool IsResolved => true;
 
-        public override bool Value { get; }
+        public override string Value { get; }
 
         public override string ToString()
         {
-            return $"{this.Value}";
+            return $"\"{this.Value}\"";
         }
     }
 }

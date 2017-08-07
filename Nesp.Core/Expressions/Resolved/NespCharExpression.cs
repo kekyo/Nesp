@@ -17,7 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
     public sealed class NespCharExpression : NespTokenExpression<char>
     {

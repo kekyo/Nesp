@@ -21,13 +21,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Threading.Tasks;
 using Antlr4.Runtime;
 using NUnit.Framework;
 
 using Nesp.Extensions;
 using Nesp.Internals;
 using Nesp.Expressions;
+using Nesp.Expressions.Resolved;
 
 namespace Nesp
 {
@@ -824,9 +824,14 @@ namespace Nesp
                 return "ABC";
             }
 
-            public static string GetString2(params object[] args)
+            public static string GetString2(params int[] args)
             {
                 return string.Join(",", args);
+            }
+
+            public static string GetString2(int arg0, params long[] args)
+            {
+                return arg0 + "," + string.Join(",", args);
             }
         }
 
@@ -920,6 +925,52 @@ namespace Nesp
                 .ToArray();
             Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new[] { typeof(string) }));
             Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new [] { "abcdefg" }));
+        }
+
+        [Test]
+        public void MethodParamArgumentsInt32OverloadedCompletedIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.SimpleFunctionIdTestType.GetString2 12345678 23456789");
+
+            var context = new NespMetadataResolverContext();
+            context.AddCandidate(typeof(SimpleFunctionIdTestType));
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var functionExpr = (NespApplyFunctionExpression)typedExprs.Single();
+            var expected = typeof(SimpleFunctionIdTestType)
+                .GetMethods()
+                .First(method =>
+                    (method.Name == "GetString2") &&
+                    (method.GetParameters().Select(parameter => parameter.ParameterType).SequenceEqual(new[] { typeof(int[]) })));
+            Assert.AreEqual(expected, functionExpr.Method);
+            var argExprs = functionExpr.Arguments
+                .Select(iexpr => (NespNumericExpression)iexpr)
+                .ToArray();
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new[] { typeof(int), typeof(int) }));
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new object[] { 12345678, 23456789 }));
+        }
+
+        [Test]
+        public void MethodParamArgumentsInt32AndLongOverloadedCompletedIdTest()
+        {
+            var untypedExpr = ParseAndVisit("Nesp.NespExpressionTests.SimpleFunctionIdTestType.GetString2 12345678 2345678901234567");
+
+            var context = new NespMetadataResolverContext();
+            context.AddCandidate(typeof(SimpleFunctionIdTestType));
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var functionExpr = (NespApplyFunctionExpression)typedExprs.Single();
+            var expected = typeof(SimpleFunctionIdTestType)
+                .GetMethods()
+                .First(method =>
+                    (method.Name == "GetString2") &&
+                    (method.GetParameters().Select(parameter => parameter.ParameterType).SequenceEqual(new[] { typeof(int), typeof(long[]) })));
+            Assert.AreEqual(expected, functionExpr.Method);
+            var argExprs = functionExpr.Arguments
+                .Select(iexpr => (NespNumericExpression)iexpr)
+                .ToArray();
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new[] { typeof(int), typeof(long) }));
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new object[] { 12345678, 2345678901234567 }));
         }
         #endregion
 

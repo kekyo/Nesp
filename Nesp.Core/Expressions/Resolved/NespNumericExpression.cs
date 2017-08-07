@@ -17,27 +17,27 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+using System;
+using Nesp.Internals;
+
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespUnitExpression : NespTokenExpression<Unit>
+    public sealed class NespNumericExpression : NespTokenExpression<object>
     {
-        internal NespUnitExpression(NespSourceInformation source)
+        internal NespNumericExpression(object value, NespSourceInformation source)
             : base(source)
         {
+            this.Value = value;
         }
 
         public override bool IsResolved => true;
 
-        internal override object GetValue()
-        {
-            return Unit.Value;
-        }
-
-        public override Unit Value => new Unit();
+        public override Type Type => this.Value.GetType();
+        public override object Value { get; }
 
         public override string ToString()
         {
-            return ":unit";
+            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
         }
     }
 }

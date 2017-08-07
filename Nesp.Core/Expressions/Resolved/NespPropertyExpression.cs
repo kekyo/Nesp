@@ -18,32 +18,27 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Reflection;
+using Nesp.Internals;
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespIdExpression : NespTokenExpression<string>
+    public sealed class NespPropertyExpression : NespResolvedTokenExpression
     {
-        internal NespIdExpression(string id, NespSourceInformation source)
-            : base(source)
+        internal NespPropertyExpression(PropertyInfo property, NespSourceInformation source)
         {
-            this.Id = id;
+            this.Property = property;
+            this.Source = source;
         }
 
-        public override bool IsResolved => false;
+        public override Type Type => this.Property.PropertyType;
+        public override NespSourceInformation Source { get; }
 
-        public override Type Type => null;
-
-        public string Id { get; }
-        public override string Value => this.Id;
-
-        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
-        {
-            return context.ResolveById(this.Id, this);
-        }
+        public PropertyInfo Property { get; }
 
         public override string ToString()
         {
-            return $"[{this.Id}]";
+            return $"[{NespUtilities.GetReservedReadableTypeName(this.Property.DeclaringType)}.{this.Property.Name}]:property";
         }
     }
 }

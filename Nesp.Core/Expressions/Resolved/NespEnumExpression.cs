@@ -20,20 +20,21 @@
 using System;
 using Nesp.Internals;
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespNumericExpression : NespTokenExpression<object>
+    public sealed class NespEnumExpression : NespTokenExpression<Enum>
     {
-        internal NespNumericExpression(object value, NespSourceInformation source)
+        internal NespEnumExpression(Enum value, NespSourceInformation source)
             : base(source)
         {
+            this.Type = value.GetType();
             this.Value = value;
         }
 
         public override bool IsResolved => true;
 
-        public override Type Type => this.Value.GetType();
-        public override object Value { get; }
+        public override Type Type { get; }
+        public override Enum Value { get; }
 
         public override string ToString()
         {

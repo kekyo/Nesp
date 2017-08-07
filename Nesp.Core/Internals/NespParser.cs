@@ -25,6 +25,8 @@ using System.Linq.Expressions;
 using Antlr4.Runtime;
 
 using Nesp.Expressions;
+using Nesp.Expressions.Abstracts;
+using Nesp.Expressions.Resolved;
 using Nesp.Extensions;
 
 namespace Nesp.Internals

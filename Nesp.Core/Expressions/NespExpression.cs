@@ -28,7 +28,6 @@ namespace Nesp.Expressions
 
         internal NespExpression()
         {
-            this.Score = -2;    // Not resolved.
         }
 
         public abstract bool IsResolved { get; }
@@ -37,9 +36,9 @@ namespace Nesp.Expressions
 
         public abstract NespSourceInformation Source { get; }
 
-        internal int Score { get; private set; }
+        internal ulong Score { get; private set; }
 
-        internal void SetScore(int score)
+        internal void SetScore(ulong score)
         {
             this.Score = score;
         }

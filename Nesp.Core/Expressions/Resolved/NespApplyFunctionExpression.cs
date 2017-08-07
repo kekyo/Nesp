@@ -18,27 +18,31 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Linq;
 using System.Reflection;
+
 using Nesp.Internals;
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespPropertyExpression : NespResolvedTokenExpression
+    public sealed class NespApplyFunctionExpression : NespResolvedTokenExpression
     {
-        internal NespPropertyExpression(PropertyInfo property, NespSourceInformation source)
+        internal NespApplyFunctionExpression(MethodInfo method, NespExpression[] arguments, NespSourceInformation source)
         {
-            this.Property = property;
+            this.Method = method;
+            this.Arguments = arguments;
             this.Source = source;
         }
 
-        public override Type Type => this.Property.PropertyType;
+        public override Type Type => this.Method.ReturnType;
         public override NespSourceInformation Source { get; }
 
-        public PropertyInfo Property { get; }
+        public MethodInfo Method { get; }
+        public NespExpression[] Arguments { get; }
 
         public override string ToString()
         {
-            return $"[{NespUtilities.GetReservedReadableTypeName(this.Property.DeclaringType)}.{this.Property.Name}]:property";
+            return $"{NespUtilities.GetReservedReadableTypeName(this.Method.DeclaringType)}.{this.Method.Name}({string.Join(",", this.Method.GetParameters().Select(parameter => NespUtilities.GetReservedReadableTypeName(parameter.ParameterType)))})";
         }
     }
 }

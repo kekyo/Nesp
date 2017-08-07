@@ -17,28 +17,23 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using Nesp.Internals;
-
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespEnumExpression : NespTokenExpression<Enum>
+    public sealed class NespBoolExpression : NespTokenExpression<bool>
     {
-        internal NespEnumExpression(Enum value, NespSourceInformation source)
+        internal NespBoolExpression(bool value, NespSourceInformation source)
             : base(source)
         {
-            this.Type = value.GetType();
             this.Value = value;
         }
 
         public override bool IsResolved => true;
 
-        public override Type Type { get; }
-        public override Enum Value { get; }
+        public override bool Value { get; }
 
         public override string ToString()
         {
-            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
+            return $"{this.Value}";
         }
     }
 }

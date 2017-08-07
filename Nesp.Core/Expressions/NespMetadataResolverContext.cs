@@ -23,7 +23,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
-
+using Nesp.Expressions.Abstracts;
+using Nesp.Expressions.Resolved;
 using Nesp.Internals;
 
 namespace Nesp.Expressions
@@ -187,38 +188,37 @@ namespace Nesp.Expressions
         /// </summary>
         /// <param name="method">Target method</param>
         /// <param name="argumentResolvedExpressions">Target expressions (require resolved)</param>
-        /// <returns>Adaptable score (-1: cannot use, 0 >= better for large amount value, int.MaxValue: exactly matched)</returns>
-        private static int CalculateAdaptableScoreByArguments(
+        /// <returns>Adaptable score (null: cannot use, 0 >= better for large amount value, int.MaxValue: exactly matched)</returns>
+        private static ulong? CalculateAdaptableScoreByArguments(
             MethodInfo method, NespExpression[] argumentResolvedExpressions)
         {
             Debug.Assert(argumentResolvedExpressions.All(iexpr => iexpr.IsResolved));
+            Debug.Assert(argumentResolvedExpressions.Length <= 31);
 
-            // TODO: param array
-            var parameterTypes = method.GetParameters()
-                .Select(parameter => parameter.ParameterType)
-                .ToArray();
-            if (parameterTypes.Length != argumentResolvedExpressions.Length)
+            var parameters = method.GetParameters();
+            if (parameters.Length > argumentResolvedExpressions.Length)
             {
                 // Argument count mismatched.
-                return -1;
+                return null;
             }
 
+            // Step 1: Do match between first and last (or first of variable)
             var exactlyCount = 0;
-            var score = 0;
-            for (var parameterIndex = 0; parameterIndex < parameterTypes.Length; parameterIndex++)
+            var score = 0UL;
+            for (var index = 0; index < parameters.Length; index++)
             {
-                var expressionType = argumentResolvedExpressions[parameterIndex].Type;
+                var expressionType = argumentResolvedExpressions[index].Type;
                 if (expressionType == null)
                 {
                     // Don't match for expression will be resolving.
                     continue;
                 }
 
-                var parameterType = parameterTypes[parameterIndex];
+                var parameterType = parameters[index].ParameterType;
                 if (object.ReferenceEquals(parameterType, expressionType))
                 {
                     // Exactly match.
-                    score += 10000;
+                    score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
                     exactlyCount++;
                     continue;
                 }
@@ -229,17 +229,78 @@ namespace Nesp.Expressions
                 if (parameterTypeInfo.IsAssignableFrom(expressionTypeInfo))
                 {
                     // Argument can cast implicitly.
-                    score += 10;
+                    score += 2UL << ((argumentResolvedExpressions.Length - index) * 2);
+                    continue;
                 }
-                else
+
+                if (((index + 1) == parameters.Length)
+                    && (parameters[index].IsDefined(typeof(ParamArrayAttribute))))
                 {
+                    // TODO: Support seq<T>
+                    var elementType = parameterType.GetElementType();
+                    if (object.ReferenceEquals(elementType, expressionType))
+                    {
+                        // Exactly match in variable argument.
+                        score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
+                        exactlyCount++;
+                        continue;
+                    }
+
+                    // TODO: Generic type arguments
+                    var elementTypeInfo = elementType.GetTypeInfo();
+                    if (elementTypeInfo.IsAssignableFrom(expressionTypeInfo))
+                    {
+                        // Argument can cast implicitly.
+                        score += 2UL << ((argumentResolvedExpressions.Length - index) * 2);
+                        continue;
+                    }
+                }
+
+                // Can't match
+                return null;
+            }
+
+            // Step 2: Do match variables
+            var parameterLast = parameters.LastOrDefault();
+            if (parameterLast?.IsDefined(typeof(ParamArrayAttribute)) ?? false)
+            {
+                var elementType = parameters[parameters.Length - 1].ParameterType.GetElementType();
+                var elementTypeInfo = elementType.GetTypeInfo();
+
+                // Variable first is already verified.
+                for (var index = parameters.Length; index < argumentResolvedExpressions.Length; index++)
+                {
+                    var expressionType = argumentResolvedExpressions[index].Type;
+                    if (expressionType == null)
+                    {
+                        // Don't match for expression will be resolving.
+                        continue;
+                    }
+
+                    if (object.ReferenceEquals(elementType, expressionType))
+                    {
+                        // Exactly match.
+                        score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
+                        exactlyCount++;
+                        continue;
+                    }
+
+                    // TODO: Generic type arguments
+                    var expressionTypeInfo = expressionType.GetTypeInfo();
+                    if (elementTypeInfo.IsAssignableFrom(expressionTypeInfo))
+                    {
+                        // Argument can cast implicitly.
+                        score += 2UL << ((argumentResolvedExpressions.Length - index) * 2);
+                        continue;
+                    }
+
                     // Can't match
-                    return -1;
+                    return null;
                 }
             }
 
             // Maximum score gives if all arguments exactly matched.
-            return (exactlyCount >= parameterTypes.Length) ? int.MaxValue : score;
+            return (exactlyCount >= argumentResolvedExpressions.Length) ? ulong.MaxValue : score;
         }
 
         /// <summary>
@@ -272,7 +333,7 @@ namespace Nesp.Expressions
                     .Skip(1)
                     .ToArray();
                 var score = CalculateAdaptableScoreByArguments(applyFunction0.Method, argumentExpresssions);
-                if (score == -1)
+                if (score == null)
                 {
                     // Can't match
                     return null;
@@ -281,7 +342,7 @@ namespace Nesp.Expressions
                 // Construct function apply expression.
                 var expr = new NespApplyFunctionExpression(
                     applyFunction0.Method, argumentExpresssions, untypedExpression.Source);
-                expr.SetScore(score);
+                expr.SetScore(score.Value);
                 return expr;
             }
 
@@ -326,7 +387,7 @@ namespace Nesp.Expressions
             if (filteredCandidatesScored.Length >= 1)
             {
                 // All arguments exactly matched.
-                if (filteredCandidatesScored[0].Score == int.MaxValue)
+                if (filteredCandidatesScored[0].Score == ulong.MaxValue)
                 {
                     return new [] { filteredCandidatesScored[0] };
                 }

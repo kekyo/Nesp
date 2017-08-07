@@ -21,7 +21,7 @@ using System;
 using System.Diagnostics;
 using System.Linq;
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
     public sealed class NespResolvedListExpression : NespResolvedTokenExpression
     {

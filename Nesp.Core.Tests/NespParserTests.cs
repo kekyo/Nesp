@@ -26,6 +26,8 @@ using NUnit.Framework;
 using Nesp.Extensions;
 using Nesp.Internals;
 using Nesp.Expressions;
+using Nesp.Expressions.Abstracts;
+using Nesp.Expressions.Resolved;
 
 namespace Nesp
 {

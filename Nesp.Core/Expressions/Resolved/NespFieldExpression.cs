@@ -18,33 +18,27 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Linq;
+using System.Reflection;
+using Nesp.Internals;
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespListExpression : NespExpression
+    public sealed class NespFieldExpression : NespResolvedTokenExpression
     {
-        internal NespListExpression(NespExpression[] list, NespSourceInformation source)
+        internal NespFieldExpression(FieldInfo field, NespSourceInformation source)
         {
-            this.List = list;
+            this.Field = field;
             this.Source = source;
         }
 
-        public override bool IsResolved => false;
-        public override Type Type => null;
-
+        public override Type Type => this.Field.FieldType;
         public override NespSourceInformation Source { get; }
 
-        public NespExpression[] List { get; }
-
-        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
-        {
-            return context.ResolveByList(this.List, this);
-        }
+        public FieldInfo Field { get; }
 
         public override string ToString()
         {
-            return $"({string.Join(" ", this.List.Select(iexpr => iexpr.ToString()))})";
+            return $"[{NespUtilities.GetReservedReadableTypeName(this.Field.DeclaringType)}.{this.Field.Name}]:field";
         }
     }
 }

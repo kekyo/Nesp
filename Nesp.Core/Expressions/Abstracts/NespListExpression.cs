@@ -19,30 +19,32 @@
 
 using System;
 using System.Linq;
-using System.Reflection;
 
-using Nesp.Internals;
-
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Abstracts
 {
-    public sealed class NespApplyFunctionExpression : NespResolvedTokenExpression
+    public sealed class NespListExpression : NespExpression
     {
-        internal NespApplyFunctionExpression(MethodInfo method, NespExpression[] arguments, NespSourceInformation source)
+        internal NespListExpression(NespExpression[] list, NespSourceInformation source)
         {
-            this.Method = method;
-            this.Arguments = arguments;
+            this.List = list;
             this.Source = source;
         }
 
-        public override Type Type => this.Method.ReturnType;
+        public override bool IsResolved => false;
+        public override Type Type => null;
+
         public override NespSourceInformation Source { get; }
 
-        public MethodInfo Method { get; }
-        public NespExpression[] Arguments { get; }
+        public NespExpression[] List { get; }
+
+        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
+        {
+            return context.ResolveByList(this.List, this);
+        }
 
         public override string ToString()
         {
-            return $"{NespUtilities.GetReservedReadableTypeName(this.Method.DeclaringType)}.{this.Method.Name}({string.Join(",", this.Method.GetParameters().Select(parameter => NespUtilities.GetReservedReadableTypeName(parameter.ParameterType)))})";
+            return $"({string.Join(" ", this.List.Select(iexpr => iexpr.ToString()))})";
         }
     }
 }

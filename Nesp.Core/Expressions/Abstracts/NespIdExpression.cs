@@ -19,23 +19,31 @@
 
 using System;
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Abstracts
 {
-    public sealed class NespStringExpression : NespTokenExpression<string>
+    public sealed class NespIdExpression : NespTokenExpression<string>
     {
-        internal NespStringExpression(string value, NespSourceInformation source)
+        internal NespIdExpression(string id, NespSourceInformation source)
             : base(source)
         {
-            this.Value = value;
+            this.Id = id;
         }
 
-        public override bool IsResolved => true;
+        public override bool IsResolved => false;
 
-        public override string Value { get; }
+        public override Type Type => null;
+
+        public string Id { get; }
+        public override string Value => this.Id;
+
+        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
+        {
+            return context.ResolveById(this.Id, this);
+        }
 
         public override string ToString()
         {
-            return $"\"{this.Value}\"";
+            return $"[{this.Id}]";
         }
     }
 }
