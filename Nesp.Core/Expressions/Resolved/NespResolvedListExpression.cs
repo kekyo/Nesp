@@ -27,7 +27,6 @@ namespace Nesp.Expressions.Resolved
     {
         internal NespResolvedListExpression(NespExpression[] list, Type type)
         {
-            Debug.Assert(list.Length >= 1);
             this.List = list;
             this.Type = type;
         }

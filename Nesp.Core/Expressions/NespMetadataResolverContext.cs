@@ -151,32 +151,27 @@ namespace Nesp.Expressions
             //   [71]: { [a02], [a11], [a22], [a33] }   // string GetString(a02, a11, a22, a33)
 
             var results = new List<NespExpression[]>();
-            var targetIndex = new int[list.Length];
-            while (true)
+            var indexes = new int[list.Length];
+            var index = 0;
+            while (index < list.Length)
             {
                 var exprs = new NespExpression[list.Length];
                 for (var listIndex = 0; listIndex < list.Length; listIndex++)
                 {
                     var iexprs = list[listIndex];
-                    exprs[listIndex] = iexprs[targetIndex[listIndex]];
+                    exprs[listIndex] = iexprs[indexes[listIndex]];
                 }
 
                 results.Add(exprs);
 
-                var index = 0;
-                for (; index < list.Length; index++)
+                for (index = 0; index < list.Length; index++)
                 {
-                    targetIndex[index]++;
-                    if (targetIndex[index] < list[index].Length)
+                    indexes[index]++;
+                    if (indexes[index] < list[index].Length)
                     {
                         break;
                     }
-                    targetIndex[index] = 0;
-                }
-
-                if (index >= list.Length)
-                {
-                    break;
+                    indexes[index] = 0;
                 }
             }
 
@@ -372,8 +367,6 @@ namespace Nesp.Expressions
         /// <returns>Expression (resolved)</returns>
         internal NespExpression[] ResolveByList(NespExpression[] list, NespListExpression untypedExpression)
         {
-            Debug.Assert(list.Length >= 1);
-
             var transposedResolvedExpressionLists = TransposeLists(
                 list
                 .Select(iexpr => iexpr.ResolveMetadata(this))
@@ -389,15 +382,22 @@ namespace Nesp.Expressions
                 // All arguments exactly matched.
                 if (filteredCandidatesScored[0].Score == ulong.MaxValue)
                 {
-                    return new [] { filteredCandidatesScored[0] };
+                    return new[] {filteredCandidatesScored[0]};
                 }
                 else
                 {
                     return filteredCandidatesScored;
                 }
             }
-
-            throw new ArgumentException();
+            else
+            {
+                // TODO: List type.
+                var type = typeof(object[]);
+                return new NespExpression[]
+                {
+                    new NespResolvedListExpression(filteredCandidatesScored, type)
+                };
+            }
         }
 
         /// <summary>

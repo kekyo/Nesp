@@ -53,7 +53,7 @@ namespace Nesp
             var parser = new NespParser(new MemberBinder());
             parser.AddMembers(NespBaseExtension.CreateMemberProducer());
             parser.AddMembers(NespStandardExtension.CreateMemberProducer());
-            return parser.Visit(grammarParser.list());
+            return parser.Visit(grammarParser.repl());
         }
 
         #region Id (Field)
@@ -647,47 +647,107 @@ namespace Nesp
         //}
         //#endregion
 
-        //#region List
-        //[Test]
-        //public void NoValuesListTest()
-        //{
-        //    var expr = ParseAndVisit("");
-        //    var unitExpr = (NespUnitExpression)expr;
-        //    Assert.IsNotNull(unitExpr);
-        //}
+        #region List
+        [Test]
+        public void NoValuesListTest()
+        {
+            var untypedExpr = ParseAndVisit("");
 
-        //[Test]
-        //public void ListWithNumericValuesTest()
-        //{
-        //    var expr = ParseAndVisit("123 456.789 12345ul \"abc\"");
-        //    var listExpr = (NespListExpression)expr;
-        //    Assert.IsTrue(
-        //        new object[] { (byte)123, 456.789, 12345UL, "abc" }
-        //            .SequenceEqual(listExpr.List.Select(iexpr =>
-        //                ((NespTokenExpression)iexpr).Value)));
-        //}
-        //#endregion
+            var context = new NespMetadataResolverContext();
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
-        //#region Expression
-        //[Test]
-        //public void NoValuesExpressionTest()
-        //{
-        //    var expr = ParseAndVisit("()");
-        //    var unitExpr = (NespUnitExpression)expr;
-        //    Assert.IsNotNull(unitExpr);
-        //}
+            var listExpr = (NespResolvedListExpression)typedExprs.Single();
+            Assert.IsNotNull(listExpr);
+            Assert.AreEqual(0, listExpr.List.Length);
+        }
 
-        //[Test]
-        //public void ExpressionWithValuesTest()
-        //{
-        //    var expr = ParseAndVisit("(123 456.789 12345ul \"abc\")");
-        //    var listExpr = (NespListExpression)expr;
-        //    Assert.IsTrue(
-        //        new object[] { (byte)123, 456.789, 12345UL, "abc" }
-        //            .SequenceEqual(listExpr.List.Select(iexpr =>
-        //                ((NespTokenExpression)iexpr).Value)));
-        //}
-        //#endregion
+        [Test]
+        public void ListWithNumericValuesTest()
+        {
+            var untypedExpr = ParseAndVisit("123 456.789 12345ul \"abc\"");
+
+            var context = new NespMetadataResolverContext();
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var listExpr = (NespResolvedListExpression)typedExprs.Single();
+            Assert.IsTrue(
+                new object[] { (byte)123, 456.789, 12345UL, "abc" }
+                    .SequenceEqual(listExpr.List.Select(iexpr =>
+                        ((NespTokenExpression)iexpr).Value)));
+        }
+
+        [Test]
+        public void ListWithExpressionTest()
+        {
+            var untypedExpr = ParseAndVisit("123 (456.789 'z') 12345ul \"abc\"");
+
+            var context = new NespMetadataResolverContext();
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var listExpr = (NespResolvedListExpression)typedExprs.Single();
+            Assert.AreEqual(4, listExpr.List.Length);
+            Assert.AreEqual((byte)123, ((NespTokenExpression)listExpr.List[0]).Value);
+
+            var nestedExpr = (NespResolvedListExpression)listExpr.List[1];
+            Assert.AreEqual(2, nestedExpr.List.Length);
+            Assert.AreEqual(456.789, ((NespTokenExpression)nestedExpr.List[0]).Value);
+            Assert.AreEqual('z', ((NespTokenExpression)nestedExpr.List[1]).Value);
+
+            Assert.AreEqual(12345UL, ((NespTokenExpression)listExpr.List[2]).Value);
+            Assert.AreEqual("abc", ((NespTokenExpression)listExpr.List[3]).Value);
+        }
+        #endregion
+
+        #region Expression
+        [Test]
+        public void NoValuesExpressionTest()
+        {
+            var untypedExpr = ParseAndVisit("()");
+
+            var context = new NespMetadataResolverContext();
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var listExpr = (NespResolvedListExpression)typedExprs.Single();
+            Assert.IsNotNull(listExpr);
+            Assert.AreEqual(0, listExpr.List.Length);
+        }
+
+        [Test]
+        public void ExpressionWithNumericValuesTest()
+        {
+            var untypedExpr = ParseAndVisit("(123 456.789 12345ul \"abc\")");
+
+            var context = new NespMetadataResolverContext();
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var listExpr = (NespResolvedListExpression)typedExprs.Single();
+            Assert.IsTrue(
+                new object[] { (byte)123, 456.789, 12345UL, "abc" }
+                    .SequenceEqual(listExpr.List.Select(iexpr =>
+                        ((NespTokenExpression)iexpr).Value)));
+        }
+
+        [Test]
+        public void ExpressionWithExpressionTest()
+        {
+            var untypedExpr = ParseAndVisit("(123 (456.789 'z') 12345ul \"abc\")");
+
+            var context = new NespMetadataResolverContext();
+            var typedExprs = untypedExpr.ResolveMetadata(context);
+
+            var listExpr = (NespResolvedListExpression)typedExprs.Single();
+            Assert.AreEqual(4, listExpr.List.Length);
+            Assert.AreEqual((byte)123, ((NespTokenExpression)listExpr.List[0]).Value);
+
+            var nestedExpr = (NespResolvedListExpression)listExpr.List[1];
+            Assert.AreEqual(2, nestedExpr.List.Length);
+            Assert.AreEqual(456.789, ((NespTokenExpression)nestedExpr.List[0]).Value);
+            Assert.AreEqual('z', ((NespTokenExpression)nestedExpr.List[1]).Value);
+
+            Assert.AreEqual(12345UL, ((NespTokenExpression)listExpr.List[2]).Value);
+            Assert.AreEqual("abc", ((NespTokenExpression)listExpr.List[3]).Value);
+        }
+        #endregion
 
         //#region Compilation
         //[Test]
