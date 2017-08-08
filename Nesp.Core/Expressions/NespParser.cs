@@ -24,12 +24,12 @@ using System.Linq;
 using System.Linq.Expressions;
 using Antlr4.Runtime;
 
-using Nesp.Expressions;
 using Nesp.Expressions.Abstracts;
 using Nesp.Expressions.Resolved;
 using Nesp.Extensions;
+using Nesp.Internals;
 
-namespace Nesp.Internals
+namespace Nesp.Expressions
 {
     internal sealed class NespParser : NespGrammarBaseVisitor<NespExpression>
     {

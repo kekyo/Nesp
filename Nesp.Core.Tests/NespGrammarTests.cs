@@ -345,5 +345,35 @@ namespace Nesp
             Assert.AreEqual("(expression ( (list (numeric 123456) (expression ( (list (id abc.def) (numeric +123.456)) ))) ))", actual);
         }
         #endregion
+
+        #region Repl
+        [Test]
+        public void ReplOneValueTest()
+        {
+            var actual = Parse("(123456)", p => p.repl());
+            Assert.AreEqual("(repl (expression ( (list (numeric 123456)) )))", actual);
+        }
+
+        [Test]
+        public void ReplTwoValuesTest()
+        {
+            var actual = Parse("(123456 abc.def)", p => p.repl());
+            Assert.AreEqual("(repl (expression ( (list (numeric 123456) (id abc.def)) )))", actual);
+        }
+
+        [Test]
+        public void ReplNestedValuesTest1()
+        {
+            var actual = Parse("(123456 (abc.def -123.456))", p => p.repl());
+            Assert.AreEqual("(repl (expression ( (list (numeric 123456) (expression ( (list (id abc.def) (numeric -123.456)) ))) )))", actual);
+        }
+
+        [Test]
+        public void ReplNestedValuesTest2()
+        {
+            var actual = Parse("(123456 (abc.def +123.456))", p => p.repl());
+            Assert.AreEqual("(repl (expression ( (list (numeric 123456) (expression ( (list (id abc.def) (numeric +123.456)) ))) )))", actual);
+        }
+        #endregion
     }
 }

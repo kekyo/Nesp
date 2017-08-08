@@ -79,7 +79,7 @@
     <Compile Include="Unit.cs" />
     <Compile Include="NespEngine.cs" />
     <Compile Include="INespMemberBinder.cs" />
-    <Compile Include="Internals\NespParser.cs" />
+    <Compile Include="Expressions\NespParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
