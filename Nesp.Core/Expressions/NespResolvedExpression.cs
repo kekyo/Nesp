@@ -17,14 +17,26 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions.Resolved
+using System;
+
+namespace Nesp.Expressions
 {
-    public abstract class NespResolvedTokenExpression : NespExpression
+    public abstract class NespResolvedExpression : NespExpression
     {
-        internal NespResolvedTokenExpression()
+        internal NespResolvedExpression(NespSourceInformation source)
+            : base(source)
         {
         }
 
         public sealed override bool IsResolved => true;
+
+        public abstract Type Type { get; }
+
+        internal ulong Score { get; private set; }
+
+        internal void SetScore(ulong score)
+        {
+            this.Score = score;
+        }
     }
 }

@@ -17,38 +17,31 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-
 namespace Nesp.Expressions
 {
-    public abstract class NespTokenExpression : NespExpression
+    public abstract class NespAbstractExpression : NespExpression
     {
-        internal NespTokenExpression(NespSourceInformation source)
-        {
-            this.Source = source;
-        }
+        private NespMetadataResolverContext cachedContext;
+        private NespResolvedExpression[] cachedExpressions;
 
-        public sealed override NespSourceInformation Source { get; }
-
-        public object Value => this.GetValue();
-
-        internal abstract object GetValue();
-    }
-
-    public abstract class NespTokenExpression<T> : NespTokenExpression
-    {
-        internal NespTokenExpression(NespSourceInformation source)
+        internal NespAbstractExpression(NespSourceInformation source)
             : base(source)
         {
         }
 
-        public override Type Type => typeof(T);
+        public sealed override bool IsResolved => false;
 
-        internal override object GetValue()
+        internal abstract NespResolvedExpression[] OnResolveMetadata(NespMetadataResolverContext context);
+
+        public NespResolvedExpression[] ResolveMetadata(NespMetadataResolverContext context)
         {
-            return this.Value;
-        }
+            if (context.EqualCondition(cachedContext) == false)
+            {
+                cachedContext = context;
+                cachedExpressions = this.OnResolveMetadata(context);
+            }
 
-        public new abstract T Value { get; }
+            return cachedExpressions;
+        }
     }
 }

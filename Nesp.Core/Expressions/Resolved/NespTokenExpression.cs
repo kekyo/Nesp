@@ -18,26 +18,35 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Reflection;
-using Nesp.Internals;
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespPropertyExpression : NespResolvedExpression
+    public abstract class NespTokenExpression : NespResolvedExpression
     {
-        internal NespPropertyExpression(PropertyInfo property, NespSourceInformation source)
+        internal NespTokenExpression(NespSourceInformation source)
             : base(source)
         {
-            this.Property = property;
         }
 
-        public override Type Type => this.Property.PropertyType;
+        public object Value => this.GetValue();
 
-        public PropertyInfo Property { get; }
+        internal abstract object GetValue();
+    }
 
-        public override string ToString()
+    public abstract class NespTokenExpression<T> : NespTokenExpression
+    {
+        internal NespTokenExpression(NespSourceInformation source)
+            : base(source)
         {
-            return $"[{NespUtilities.GetReservedReadableTypeName(this.Property.DeclaringType)}.{this.Property.Name}]:property";
         }
+
+        public override Type Type => typeof(T);
+
+        internal override object GetValue()
+        {
+            return this.Value;
+        }
+
+        public new abstract T Value { get; }
     }
 }

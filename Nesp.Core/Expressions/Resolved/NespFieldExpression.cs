@@ -23,16 +23,15 @@ using Nesp.Internals;
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespFieldExpression : NespResolvedTokenExpression
+    public sealed class NespFieldExpression : NespResolvedExpression
     {
         internal NespFieldExpression(FieldInfo field, NespSourceInformation source)
+            : base(source)
         {
             this.Field = field;
-            this.Source = source;
         }
 
         public override Type Type => this.Field.FieldType;
-        public override NespSourceInformation Source { get; }
 
         public FieldInfo Field { get; }
 

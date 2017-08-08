@@ -17,11 +17,9 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-
 namespace Nesp.Expressions.Abstracts
 {
-    public sealed class NespIdExpression : NespTokenExpression<string>
+    public sealed class NespIdExpression : NespAbstractExpression
     {
         internal NespIdExpression(string id, NespSourceInformation source)
             : base(source)
@@ -29,14 +27,9 @@ namespace Nesp.Expressions.Abstracts
             this.Id = id;
         }
 
-        public override bool IsResolved => false;
-
-        public override Type Type => null;
-
         public string Id { get; }
-        public override string Value => this.Id;
 
-        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
+        internal override NespResolvedExpression[] OnResolveMetadata(NespMetadataResolverContext context)
         {
             return context.ResolveById(this.Id, this);
         }

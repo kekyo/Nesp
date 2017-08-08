@@ -421,7 +421,6 @@ namespace Nesp
         public void NoValuesListTest()
         {
             var expr = ParseAndVisit("");
-            Assert.IsNull(expr.Type);
             Assert.AreEqual(0, expr.List.Length);
         }
 
@@ -441,7 +440,6 @@ namespace Nesp
         public void NoValuesExpressionTest()
         {
             var expr = ParseAndVisit("()");
-            Assert.IsNull(expr.Type);
             Assert.AreEqual(0, expr.List.Length);
         }
 

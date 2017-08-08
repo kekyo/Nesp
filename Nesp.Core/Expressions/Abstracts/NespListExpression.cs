@@ -17,27 +17,21 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
 using System.Linq;
 
 namespace Nesp.Expressions.Abstracts
 {
-    public sealed class NespListExpression : NespExpression
+    public sealed class NespListExpression : NespAbstractExpression
     {
         internal NespListExpression(NespExpression[] list, NespSourceInformation source)
+            : base(source)
         {
             this.List = list;
-            this.Source = source;
         }
-
-        public override bool IsResolved => false;
-        public override Type Type => null;
-
-        public override NespSourceInformation Source { get; }
 
         public NespExpression[] List { get; }
 
-        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
+        internal override NespResolvedExpression[] OnResolveMetadata(NespMetadataResolverContext context)
         {
             return context.ResolveByList(this.List, this);
         }

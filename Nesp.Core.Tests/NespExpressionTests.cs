@@ -43,7 +43,7 @@ namespace Nesp
             }
         }
 
-        private NespExpression ParseAndVisit(string replLine)
+        private NespAbstractExpression ParseAndVisit(string replLine)
         {
             var inputStream = new AntlrInputStream(replLine);
             var lexer = new NespGrammarLexer(inputStream);
@@ -53,7 +53,7 @@ namespace Nesp
             var parser = new NespParser(new MemberBinder());
             parser.AddMembers(NespBaseExtension.CreateMemberProducer());
             parser.AddMembers(NespStandardExtension.CreateMemberProducer());
-            return parser.Visit(grammarParser.repl());
+            return (NespAbstractExpression)parser.Visit(grammarParser.repl());
         }
 
         #region Id (Field)

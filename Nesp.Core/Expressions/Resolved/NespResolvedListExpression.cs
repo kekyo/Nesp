@@ -18,14 +18,14 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using System.Diagnostics;
 using System.Linq;
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespResolvedListExpression : NespResolvedTokenExpression
+    public sealed class NespResolvedListExpression : NespResolvedExpression
     {
-        internal NespResolvedListExpression(NespExpression[] list, Type type)
+        internal NespResolvedListExpression(NespExpression[] list, Type type, NespSourceInformation source)
+            : base(source)
         {
             this.List = list;
             this.Type = type;
@@ -33,23 +33,7 @@ namespace Nesp.Expressions.Resolved
 
         public override Type Type { get; }
 
-        public override NespSourceInformation Source
-        {
-            get
-            {
-                var start = this.List[0].Source;
-                var end = this.List[this.List.Length - 1].Source;
-
-                return new NespSourceInformation(start.StartLine, start.StartColumn, end.StartLine, end.EndColumn);
-            }
-        }
-
         public NespExpression[] List { get; }
-
-        internal override NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
-        {
-            throw new InvalidOperationException();
-        }
 
         public override string ToString()
         {

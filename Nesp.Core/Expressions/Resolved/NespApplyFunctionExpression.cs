@@ -25,17 +25,16 @@ using Nesp.Internals;
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespApplyFunctionExpression : NespResolvedTokenExpression
+    public sealed class NespApplyFunctionExpression : NespResolvedExpression
     {
         internal NespApplyFunctionExpression(MethodInfo method, NespExpression[] arguments, NespSourceInformation source)
+            : base(source)
         {
             this.Method = method;
             this.Arguments = arguments;
-            this.Source = source;
         }
 
         public override Type Type => this.Method.ReturnType;
-        public override NespSourceInformation Source { get; }
 
         public MethodInfo Method { get; }
         public NespExpression[] Arguments { get; }

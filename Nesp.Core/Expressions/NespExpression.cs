@@ -17,46 +17,17 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-
 namespace Nesp.Expressions
 {
     public abstract class NespExpression
     {
-        private NespMetadataResolverContext cachedContext;
-        private NespExpression[] cachedExpressions;
-
-        internal NespExpression()
+        internal NespExpression(NespSourceInformation source)
         {
+            this.Source = source;
         }
 
         public abstract bool IsResolved { get; }
 
-        public abstract Type Type { get; }
-
-        public abstract NespSourceInformation Source { get; }
-
-        internal ulong Score { get; private set; }
-
-        internal void SetScore(ulong score)
-        {
-            this.Score = score;
-        }
-
-        internal virtual NespExpression[] OnResolveMetadata(NespMetadataResolverContext context)
-        {
-            return new [] { this };
-        }
-
-        public NespExpression[] ResolveMetadata(NespMetadataResolverContext context)
-        {
-            if (context.EqualCondition(cachedContext) == false)
-            {
-                cachedContext = context;
-                cachedExpressions = this.OnResolveMetadata(context);
-            }
-
-            return cachedExpressions;
-        }
+        public NespSourceInformation Source { get; }
     }
 }
