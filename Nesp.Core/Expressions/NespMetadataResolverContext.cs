@@ -157,7 +157,8 @@ namespace Nesp.Expressions
                 for (var listIndex = 0; listIndex < list.Length; listIndex++)
                 {
                     var iexprs = list[listIndex];
-                    exprs[listIndex] = iexprs[indexes[listIndex]];
+                    var iexpr = iexprs[indexes[listIndex]];
+                    exprs[listIndex] = iexpr;
                 }
 
                 yield return exprs;
@@ -185,6 +186,7 @@ namespace Nesp.Expressions
         {
             Debug.Assert(argumentResolvedExpressions.Length <= 31);
 
+            // Lack for arguments.
             var parameters = method.GetParameters();
             if (parameters.Length > argumentResolvedExpressions.Length)
             {
@@ -288,6 +290,7 @@ namespace Nesp.Expressions
                     return null;
                 }
             }
+            // Too many arguments.
             else if (parameters.Length < argumentResolvedExpressions.Length)
             {
                 // Argument count mismatched.
@@ -342,6 +345,49 @@ namespace Nesp.Expressions
                 return expr;
             }
 
+            // Define lambda:
+            //   Target: (a0 a1 a2 a3)
+            //            |  |  |  |
+            //            |  |  |  a30: bodyExpression
+            //            |  |  a20: parameterList (Each unique instance)
+            //            |  a10: symbolName
+            //            a00: 'define'
+            var defineExpr0 = listExpressions.FirstOrDefault() as NespSymbolExpression;
+            if (defineExpr0?.Symbol == "define")
+            {
+                // TODO: Bind expression
+
+                if (listExpressions.Length == 4)
+                {
+                    // Get symbol name, parameters and body.
+                    var symbolNameExpression = listExpressions[1] as NespSymbolExpression;
+                    var parametersExpression = listExpressions[2] as NespResolvedListExpression;
+                    var bodyExpression = listExpressions[3];
+
+                    if ((symbolNameExpression != null)
+                        && (parametersExpression != null)
+                        && (bodyExpression != null))
+                    {
+                        var parameterExpressions = parametersExpression.List
+                            .Select(iexpr => iexpr as NespParameterExpression)
+                            .ToArray();
+                        if ((parameterExpressions.Length == 0)
+                            || (parameterExpressions.All(iexpr => iexpr != null)))
+                        {
+                            // Construct lambda expression.
+
+                            // TODO: Lookup allocated parameter expressions.
+                            var lambdaExpression = new NespDefineLambdaExpression(
+                                symbolNameExpression.Symbol, bodyExpression, parameterExpressions,
+                                untypedExpression.Source);
+
+                            lambdaExpression.SetScore(bodyExpression.Score);
+                            return lambdaExpression;
+                        }
+                    }
+                }
+            }
+
             // If requested unwrap and single list
             if (unwrapListIfSingle && (listExpressions.Length == 1))
             {
@@ -368,20 +414,9 @@ namespace Nesp.Expressions
         /// <returns>Expression (resolved)</returns>
         internal NespResolvedExpression[] ResolveByList(NespExpression[] list, NespListExpression untypedExpression)
         {
-            // TODO:
-            //if (list.Length == 4)
-            //{
-            //    var defineIdExpression = list[0] as NespIdExpression;
-            //    var lambdaNameExpression = list[1] as NespIdExpression;
-            //    var parametersExpression = list[2];
-            //    var expression = list[3] as NespIdExpression;
-            //    if (defineIdExpression.Id == "define")
-            //    var defineExpression = new NespDefineLambdaExpression(defineIdExpression.Source);
-            //    var 
-            //}
-
             // TODO: Insert handler for expression extension.
 
+            // Expression: "" (nothing)
             // Resolved result will be unit expression if list contains only a value.
             if (list.Length == 0)
             {
@@ -420,6 +455,7 @@ namespace Nesp.Expressions
         {
             // TODO: Insert handler for expression extension.
 
+            // Expression: "()"
             if (list.Length == 0)
             {
                 // TODO: List type.
@@ -542,7 +578,8 @@ namespace Nesp.Expressions
                     .ToArray();
             }
 
-            throw new ArgumentException();
+            // Return temporary UNRESOLVED symbol expression.
+            return new NespResolvedExpression[] {new NespSymbolExpression(id, untypedExpression.Source)};
         }
         #endregion
     }

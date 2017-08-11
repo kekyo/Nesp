@@ -119,7 +119,7 @@ bb11b743-f5fe-4d68-bbe3-22e05606b3a5 : guid
 TODO:
 
 ```
-> let fooValue (+ 123 456)
+> define fooValue (+ 123 456)
 fooValue : int
 > fooValue
 579 : int
@@ -130,8 +130,8 @@ fooValue : int
 TODO:
 
 ```
-> let intParse (str) (int.Parse str)
-intParse : string -> string
+> define intParseAndAdd (str value) (+ (int.Parse str) value)
+intParse : string -> int -> int
 > intParse "12345"
 12345 : int
 ```

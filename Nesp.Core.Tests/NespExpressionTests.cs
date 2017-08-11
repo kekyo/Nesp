@@ -749,27 +749,30 @@ namespace Nesp
         #endregion
 
         #region Lambda
-        public static string LambdaTestGetString()
+
+        public static class LambdaTestType
         {
-            return "ABC";
+            public static string GetString()
+            {
+                return "ABC";
+            }
         }
 
-        //[Test]
-        //public void DefineEmptyArgumentListLambdaTest()
-        //{
-        //    var untypedExpr = ParseAndVisit("define getString () Nesp.NespExpressionTests.LambdaTestGetString");
+        [Test]
+        public void DefineEmptyArgumentListLambdaTest()
+        {
+            var untypedExpr = ParseAndVisit("define getString () Nesp.NespExpressionTests.LambdaTestType.GetString");
 
-        //    var context = new NespMetadataResolverContext();
-        //    context.AddCandidate(typeof(object).Assembly);
-        //    var typedExprs = untypedExpr.ResolveMetadata(context);
+            var context = new NespMetadataResolverContext();
+            context.AddCandidate(typeof(LambdaTestType));
+            var typedExprs = untypedExpr.ResolveMetadata(context);
 
-        //    var lambdaExpr = (NespDefineLambdaExpression)typedExprs.Single();
-        //    Assert.AreEqual(typeof(string), lambdaExpr.Type);
-        //    Assert.IsTrue(new[] { "a", "b" }
-        //        .SequenceEqual(lambdaExpr.Parameters.Select(pexpr => pexpr.Name)));
-        //    var bodyExpr = (NespApplyFunctionExpression)lambdaExpr;
-        //    Assert.AreEqual(this.GetType().GetMethod("LambdaTestGetString"), bodyExpr.Method);
-        //}
+            var lambdaExpr = (NespDefineLambdaExpression)typedExprs.Single();
+            Assert.AreEqual(typeof(string), lambdaExpr.Type);
+            Assert.AreEqual(0, lambdaExpr.Parameters.Length);
+            var bodyExpr = (NespApplyFunctionExpression)lambdaExpr.Body;
+            Assert.AreEqual(typeof(LambdaTestType).GetMethod("GetString"), bodyExpr.Method);
+        }
         #endregion
 
         //#region Compilation

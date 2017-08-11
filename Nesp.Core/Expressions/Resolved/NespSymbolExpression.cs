@@ -21,27 +21,25 @@ using System;
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespDefineLambdaExpression : NespResolvedExpression
+    /// <summary>
+    /// This is UNRESOLVED symbol id expression.
+    /// </summary>
+    /// <remarks>This expression temporary usage, will correct another expression by resolver.</remarks>
+    public sealed class NespSymbolExpression : NespResolvedExpression
     {
-        internal NespDefineLambdaExpression(
-            string name, NespResolvedExpression body, NespParameterExpression[] parameters, NespSourceInformation source)
+        internal NespSymbolExpression(string symbol, NespSourceInformation source)
             : base(source)
         {
-            this.Name = name;
-            this.Body = body;
-            this.Parameters = parameters;
+            this.Symbol = symbol;
         }
 
-        public override Type Type => this.Body.Type;
+        public override Type Type => null;
 
-        public string Name { get; }
-        public NespResolvedExpression Body { get; }
-        public NespParameterExpression[] Parameters { get; }
+        public string Symbol { get; }
 
         public override string ToString()
         {
-            var parameters = string.Join(",", (object[])this.Parameters);
-            return $"define {this.Name} ({parameters}) ({this.Body})";
+            return $"{this.Symbol}";
         }
     }
 }

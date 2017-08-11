@@ -60,6 +60,7 @@
     <Compile Include="Expressions\Resolved\NespBoolExpression.cs" />
     <Compile Include="Expressions\NespMetadataResolverContext.cs" />
     <Compile Include="Expressions\NespSourceInformation.cs" />
+    <Compile Include="Expressions\Resolved\NespSymbolExpression.cs" />
     <Compile Include="Expressions\Resolved\NespTokenExpression.cs" />
     <Compile Include="Expressions\Resolved\NespUnitExpression.cs" />
     <Compile Include="Expressions\Abstracts\NespListExpression.cs" />
