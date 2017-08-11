@@ -71,16 +71,16 @@ namespace Nesp.Internals
         {
             this.Unique();
 
-            if (inner.TryGetValue(key, out var last) == false)
+            if (inner.TryGetValue(key, out var values) == false)
             {
                 var newCandidates = new[] { candidate };
                 inner.Add(key, newCandidates);
             }
             else
             {
-                var newCandidates = new T[last.Length + 1];
-                Array.Copy(last, newCandidates, last.Length);
-                newCandidates[last.Length] = candidate;
+                var newCandidates = new T[values.Length + 1];
+                Array.Copy(values, newCandidates, values.Length);
+                newCandidates[values.Length] = candidate;
                 inner[key] = newCandidates;
             }
         }
@@ -89,17 +89,32 @@ namespace Nesp.Internals
         {
             this.Unique();
 
-            if (inner.TryGetValue(key, out var last) == false)
+            if (inner.TryGetValue(key, out var values) == false)
             {
                 inner.Add(key, candidates);
             }
             else
             {
-                var newCandidates = new T[last.Length + candidates.Length];
-                Array.Copy(last, newCandidates, last.Length);
-                Array.Copy(candidates, 0, newCandidates, last.Length, candidates.Length);
+                var newCandidates = new T[values.Length + candidates.Length];
+                Array.Copy(values, newCandidates, values.Length);
+                Array.Copy(candidates, 0, newCandidates, values.Length, candidates.Length);
                 inner[key] = newCandidates;
             }
+        }
+
+        public T RemoveCandidateLatest(string key)
+        {
+            this.Unique();
+
+            if (inner.TryGetValue(key, out var values) && (values.Length >= 1))
+            {
+                var newCandidates = new T[values.Length - 1];
+                Array.Copy(values, newCandidates, newCandidates.Length);
+                inner[key] = newCandidates;
+                return values[values.Length - 1];
+            }
+
+            return default(T);
         }
 
         public T[] this[string key]

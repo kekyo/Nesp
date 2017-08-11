@@ -18,29 +18,31 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+
 using Nesp.Internals;
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespParameterExpression : NespResolvedExpression
+    public sealed class NespParameterExpression : NespSymbolExpression
     {
-        public NespParameterExpression(string name, Type annotationType, NespSourceInformation source)
-            : base(source)
+        internal NespParameterExpression(string symbol, Type annotatedType, NespSourceInformation source)
+            : base(symbol, source)
         {
-            this.Type = annotationType;
-            this.Name = name;
+            this.Type = annotatedType;
         }
 
         public override Type Type { get; }
 
-        public string Name { get; }
-
         public override string ToString()
         {
-            var typeName = (this.Type != null)
-                ? (":" + NespUtilities.GetReadableTypeName(this.Type))
-                : string.Empty;
-            return $"{this.Name}{typeName}";
+            if (this.Type != null)
+            {
+                return $"{this.Symbol}:{NespUtilities.GetReadableTypeName(this.Type)}";
+            }
+            else
+            {
+                return $"{this.Symbol}";
+            }
         }
     }
 }

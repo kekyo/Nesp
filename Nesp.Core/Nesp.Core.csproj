@@ -48,11 +48,11 @@
     <Compile Include="Expressions\Abstracts\NespAbstractListExpression.cs" />
     <Compile Include="Expressions\NespAbstractExpression.cs" />
     <Compile Include="Expressions\NespResolvedExpression.cs" />
-    <Compile Include="Expressions\Resolved\NespParameterExpression.cs" />
     <Compile Include="Expressions\Resolved\NespDefineLambdaExpression.cs" />
     <Compile Include="Expressions\Resolved\NespApplyFunctionExpression.cs" />
     <Compile Include="Expressions\Resolved\NespEnumExpression.cs" />
     <Compile Include="Expressions\Resolved\NespConstantExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespSymbolExpression.cs" />
     <Compile Include="Expressions\Resolved\NespResolvedListExpression.cs" />
     <Compile Include="Expressions\Resolved\NespPropertyExpression.cs" />
     <Compile Include="Expressions\Resolved\NespFieldExpression.cs" />
@@ -60,7 +60,8 @@
     <Compile Include="Expressions\Resolved\NespBoolExpression.cs" />
     <Compile Include="Expressions\NespMetadataResolverContext.cs" />
     <Compile Include="Expressions\NespSourceInformation.cs" />
-    <Compile Include="Expressions\Resolved\NespSymbolExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespParameterExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespReferenceSymbolExpression.cs" />
     <Compile Include="Expressions\Resolved\NespTokenExpression.cs" />
     <Compile Include="Expressions\Resolved\NespUnitExpression.cs" />
     <Compile Include="Expressions\Abstracts\NespListExpression.cs" />

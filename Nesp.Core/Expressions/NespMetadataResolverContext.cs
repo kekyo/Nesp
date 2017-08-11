@@ -37,6 +37,7 @@ namespace Nesp.Expressions
         private readonly CandidatesDictionary<FieldInfo> fields = new CandidatesDictionary<FieldInfo>();
         private readonly CandidatesDictionary<PropertyInfo> properties = new CandidatesDictionary<PropertyInfo>();
         private readonly CandidatesDictionary<MethodInfo> methods = new CandidatesDictionary<MethodInfo>();
+        private readonly CandidatesDictionary<NespReferenceSymbolExpression> symbols = new CandidatesDictionary<NespReferenceSymbolExpression>();
 
         public NespMetadataResolverContext()
         {
@@ -305,10 +306,10 @@ namespace Nesp.Expressions
         /// Construct expression from list expressions.
         /// </summary>
         /// <param name="listExpressions">List contained expressions.</param>
-        /// <param name="unwrapListIfSingle">Require unwrap list if list contains only a value.</param>
+        /// <param name="unwrapListIfSingle">Require unwrap list if list contains only a expression.</param>
         /// <param name="untypedExpression">Target untyped expression reference.</param>
         /// <returns>Expression (resolved)</returns>
-        private static NespResolvedExpression ConstructExpressionFromList(
+        private NespResolvedExpression ConstructExpressionFromList(
             NespResolvedExpression[] listExpressions, bool unwrapListIfSingle, NespAbstractListExpression untypedExpression)
         {
             // List expressions are:
@@ -328,10 +329,10 @@ namespace Nesp.Expressions
             if (applyFunction0 != null)
             {
                 // Calculate adaptable score.
-                var argumentExpresssions = listExpressions
+                var argumentExpressions = listExpressions
                     .Skip(1)
                     .ToArray();
-                var score = CalculateAdaptableScoreByArguments(applyFunction0.Method, argumentExpresssions);
+                var score = CalculateAdaptableScoreByArguments(applyFunction0.Method, argumentExpressions);
                 if (score == null)
                 {
                     // Can't match
@@ -340,7 +341,7 @@ namespace Nesp.Expressions
 
                 // Construct function apply expression.
                 var expr = new NespApplyFunctionExpression(
-                    applyFunction0.Method, argumentExpresssions, untypedExpression.Source);
+                    applyFunction0.Method, argumentExpressions, untypedExpression.Source);
                 expr.SetScore(score.Value);
                 return expr;
             }
@@ -352,7 +353,7 @@ namespace Nesp.Expressions
             //            |  |  a20: parameterList (Each unique instance)
             //            |  a10: symbolName
             //            a00: 'define'
-            var defineExpr0 = listExpressions.FirstOrDefault() as NespSymbolExpression;
+            var defineExpr0 = listExpressions.FirstOrDefault() as NespReferenceSymbolExpression;
             if (defineExpr0?.Symbol == "define")
             {
                 // TODO: Bind expression
@@ -360,7 +361,7 @@ namespace Nesp.Expressions
                 if (listExpressions.Length == 4)
                 {
                     // Get symbol name, parameters and body.
-                    var symbolNameExpression = listExpressions[1] as NespSymbolExpression;
+                    var symbolNameExpression = listExpressions[1] as NespReferenceSymbolExpression;
                     var parametersExpression = listExpressions[2] as NespResolvedListExpression;
                     var bodyExpression = listExpressions[3];
 
@@ -368,15 +369,27 @@ namespace Nesp.Expressions
                         && (parametersExpression != null)
                         && (bodyExpression != null))
                     {
-                        var parameterExpressions = parametersExpression.List
-                            .Select(iexpr => iexpr as NespParameterExpression)
+                        var preParameterExpressions = parametersExpression.List
+                            .Select(iexpr => iexpr as NespReferenceSymbolExpression)
                             .ToArray();
-                        if ((parameterExpressions.Length == 0)
-                            || (parameterExpressions.All(iexpr => iexpr != null)))
+                        if ((preParameterExpressions.Length == 0)
+                            || (preParameterExpressions.All(iexpr => iexpr != null)))
                         {
-                            // Construct lambda expression.
+                            // Convert to truely parameter expressions.
+                            var parameterExpressions = preParameterExpressions
+                                .Select(pexpr => new NespParameterExpression(pexpr.Symbol, pexpr.Type, pexpr.Source))
+                                .ToArray();
 
-                            // TODO: Lookup allocated parameter expressions.
+                            // Deshadowing by parameters.
+                            foreach (var pexpr in parameterExpressions)
+                            {
+                                var rsexpr = symbols.RemoveCandidateLatest(pexpr.Symbol);
+                                rsexpr?.SetRelated(pexpr);
+                            }
+
+                            // TODO: Undefined parameter symbols.
+
+                            // Construct lambda expression.
                             var lambdaExpression = new NespDefineLambdaExpression(
                                 symbolNameExpression.Symbol, bodyExpression, parameterExpressions,
                                 untypedExpression.Source);
@@ -388,10 +401,10 @@ namespace Nesp.Expressions
                 }
             }
 
-            // If requested unwrap and single list
+            // If requested unwrap and list is single.
             if (unwrapListIfSingle && (listExpressions.Length == 1))
             {
-                // Turn to a value.
+                // Turn to a expression.
                 return listExpressions[0];
             }
             else
@@ -399,8 +412,7 @@ namespace Nesp.Expressions
                 // Construct list expression.
                 // TODO: List type.
                 var type = typeof(object[]);
-                var expr = new NespResolvedListExpression(
-                    listExpressions, type, untypedExpression.Source);
+                var expr = new NespResolvedListExpression(listExpressions, type, untypedExpression.Source);
                 expr.SetScore(0);
                 return expr;
             }
@@ -417,6 +429,7 @@ namespace Nesp.Expressions
             // TODO: Insert handler for expression extension.
 
             // Expression: "" (nothing)
+            // This pattern is only top level expression (body --> list).
             // Resolved result will be unit expression if list contains only a value.
             if (list.Length == 0)
             {
@@ -428,11 +441,14 @@ namespace Nesp.Expressions
                 .ToArray());
 
             // Unwrap if list contains only a value.
+            // TODO: Require collect ability for mismatched expression (For use intellisense)
             var filteredCandidatesScored = transposedResolvedExpressionLists
                 .Select(resolvedExpressionList => ConstructExpressionFromList(resolvedExpressionList, true, untypedExpression))
                 .Where(scored => scored != null)
                 .OrderByDescending(scored => scored.Score)
                 .ToArray();
+
+            // TODO: If results are empty --> invalid exprs.
 
             // If all expressions exactly resolved (not contains generic types), first expression is best result.
             if (filteredCandidatesScored.All(iexpr => iexpr.Type != null))
@@ -456,6 +472,7 @@ namespace Nesp.Expressions
             // TODO: Insert handler for expression extension.
 
             // Expression: "()"
+            // Resolved result will be empty list expression.
             if (list.Length == 0)
             {
                 // TODO: List type.
@@ -471,11 +488,14 @@ namespace Nesp.Expressions
                 .ToArray());
 
             // Always constract list (or apply function).
+            // TODO: Require collect ability for mismatched expression (For use intellisense)
             var filteredCandidatesScored = transposedResolvedExpressionLists
                 .Select(resolvedExpressionList => ConstructExpressionFromList(resolvedExpressionList, false, untypedExpression))
                 .Where(scored => scored != null)
                 .OrderByDescending(scored => scored.Score)
                 .ToArray();
+
+            // TODO: If results are empty --> invalid exprs.
 
             // If all expressions exactly resolved (not contains generic types), first expression is best result.
             if (filteredCandidatesScored.All(iexpr => iexpr.Type != null))
@@ -549,6 +569,8 @@ namespace Nesp.Expressions
 
         internal NespResolvedExpression[] ResolveById(string id, NespIdExpression untypedExpression)
         {
+            // TODO: Reexamination priority of members and symbols.
+
             var fieldInfos = fields[id];
             if (fieldInfos.Length >= 1)
             {
@@ -578,8 +600,22 @@ namespace Nesp.Expressions
                     .ToArray();
             }
 
-            // Return temporary UNRESOLVED symbol expression.
-            return new NespResolvedExpression[] {new NespSymbolExpression(id, untypedExpression.Source)};
+            var symbolExpression = new NespReferenceSymbolExpression(id, untypedExpression.Source);
+            var sexprs = symbols[id];
+            if (sexprs.Length >= 1)
+            {
+                // Set related (original) expression.
+                // This works will effect at lambda expression.
+                symbolExpression.SetRelated(sexprs[0]);
+            }
+            else
+            {
+                // New symbol created.
+                // It's maybe parameter expression.
+                symbols.AddCandidate(id, symbolExpression);
+            }
+
+            return new NespResolvedExpression[] { symbolExpression };
         }
         #endregion
     }

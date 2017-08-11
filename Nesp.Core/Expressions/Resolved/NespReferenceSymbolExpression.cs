@@ -17,16 +17,36 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
+using System.Diagnostics;
+
 namespace Nesp.Expressions.Resolved
 {
-    public abstract class NespSymbolExpression : NespResolvedExpression
+    /// <summary>
+    /// This is a expression for symbol id maybe parameter or bound expression.
+    /// </summary>
+    /// <remarks>This expression temporary usage, will correct another expression by resolver.</remarks>
+    public sealed class NespReferenceSymbolExpression : NespSymbolExpression
     {
-        internal NespSymbolExpression(string symbol, NespSourceInformation source)
-            : base(source)
+        internal NespReferenceSymbolExpression(string symbol, NespSourceInformation source)
+            : base(symbol, source)
         {
-            this.Symbol = symbol;
         }
 
-        public string Symbol { get; }
+        public override Type Type => this.Related?.Type;
+
+        public NespSymbolExpression Related { get; private set; }
+
+        internal void SetRelated(NespSymbolExpression related)
+        {
+            Debug.Assert(related.Symbol == this.Symbol);
+
+            this.Related = related;
+        }
+
+        public override string ToString()
+        {
+            return $"{this.Symbol}";
+        }
     }
 }
