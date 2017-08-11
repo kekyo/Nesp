@@ -44,8 +44,11 @@
     </Antlr4>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Expressions\Abstracts\NespBracketedListExpression.cs" />
     <Compile Include="Expressions\NespAbstractExpression.cs" />
     <Compile Include="Expressions\NespResolvedExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespParameterExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespDefineLambdaExpression.cs" />
     <Compile Include="Expressions\Resolved\NespApplyFunctionExpression.cs" />
     <Compile Include="Expressions\Resolved\NespEnumExpression.cs" />
     <Compile Include="Expressions\Resolved\NespConstantExpression.cs" />

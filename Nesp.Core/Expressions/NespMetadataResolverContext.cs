@@ -34,16 +34,12 @@ namespace Nesp.Expressions
     {
         private static readonly NespExpression[] emptyExpressions = new NespExpression[0];
 
-        private readonly object[] locks = Enumerable.Range(0, 3).Select(index => new object()).ToArray();
-
         private readonly CandidatesDictionary<FieldInfo> fields = new CandidatesDictionary<FieldInfo>();
         private readonly CandidatesDictionary<PropertyInfo> properties = new CandidatesDictionary<PropertyInfo>();
         private readonly CandidatesDictionary<MethodInfo> methods = new CandidatesDictionary<MethodInfo>();
 
         public NespMetadataResolverContext()
         {
-            // TODO: Remove
-            this.AddCandidate(typeof(object).GetTypeInfo().Assembly);
         }
 
         public void AddCandidate(Assembly assembly)
@@ -66,7 +62,7 @@ namespace Nesp.Expressions
         {
             var typeName = NespUtilities.GetReadableTypeName(typeInfo.AsType());
 
-            lock (locks[0])
+            lock (fields)
             {
                 foreach (var field in typeInfo.DeclaredFields
                     .Where(field => field.IsPublic && (!typeInfo.IsEnum || !field.IsSpecialName)))
@@ -77,7 +73,7 @@ namespace Nesp.Expressions
             }
 
             var propertyMethods = new HashSet<MethodInfo>();
-            lock (locks[1])
+            lock (properties)
             {
                 foreach (var property in typeInfo.DeclaredProperties
                     .Where(property => property.CanRead && property.GetMethod.IsPublic))
@@ -90,7 +86,7 @@ namespace Nesp.Expressions
                 }
             }
 
-            lock (locks[2])
+            lock (methods)
             {
                 foreach (var method in typeInfo.DeclaredMethods
                     .Where(method => method.IsPublic && (propertyMethods.Contains(method) == false)))
@@ -119,7 +115,7 @@ namespace Nesp.Expressions
         /// <param name="list">Expression lists</param>
         /// <returns>Transposed expression lists</returns>
         /// <remarks>This method compute transpose for expression list.</remarks>
-        private static TExpression[][] TransposeLists<TExpression>(TExpression[][] list)
+        private static IEnumerable<TExpression[]> TransposeLists<TExpression>(TExpression[][] list)
             where TExpression : NespExpression
         {
             // From list (These expression lists are candidate argument expressions):
@@ -152,7 +148,6 @@ namespace Nesp.Expressions
             //   [70]: { [a01], [a11], [a22], [a33] }   // string GetString(a01, a11, a22, a33)
             //   [71]: { [a02], [a11], [a22], [a33] }   // string GetString(a02, a11, a22, a33)
 
-            var results = new List<TExpression[]>();
             var indexes = new int[list.Length];
             var index = 0;
             while (index < list.Length)
@@ -164,7 +159,7 @@ namespace Nesp.Expressions
                     exprs[listIndex] = iexprs[indexes[listIndex]];
                 }
 
-                results.Add(exprs);
+                yield return exprs;
 
                 for (index = 0; index < list.Length; index++)
                 {
@@ -176,8 +171,6 @@ namespace Nesp.Expressions
                     indexes[index] = 0;
                 }
             }
-
-            return results.ToArray();
         }
 
         /// <summary>
@@ -189,7 +182,6 @@ namespace Nesp.Expressions
         private static ulong? CalculateAdaptableScoreByArguments(
             MethodInfo method, NespResolvedExpression[] argumentResolvedExpressions)
         {
-            Debug.Assert(argumentResolvedExpressions.All(iexpr => iexpr.IsResolved));
             Debug.Assert(argumentResolvedExpressions.Length <= 31);
 
             var parameters = method.GetParameters();
@@ -295,6 +287,11 @@ namespace Nesp.Expressions
                     return null;
                 }
             }
+            else if (parameters.Length < argumentResolvedExpressions.Length)
+            {
+                // Argument count mismatched.
+                return null;
+            }
 
             // Maximum score gives if all arguments exactly matched.
             return (exactlyCount >= argumentResolvedExpressions.Length) ? ulong.MaxValue : score;
@@ -304,10 +301,11 @@ namespace Nesp.Expressions
         /// Construct expression from list expressions.
         /// </summary>
         /// <param name="listExpressions">List contained expressions.</param>
+        /// <param name="unwrapListIfSingle">Require unwrap list if list contains only a value.</param>
         /// <param name="untypedExpression">Target untyped expression reference.</param>
         /// <returns>Expression (resolved)</returns>
         private static NespResolvedExpression ConstructExpressionFromList(
-            NespResolvedExpression[] listExpressions, NespListExpression untypedExpression)
+            NespResolvedExpression[] listExpressions, bool unwrapListIfSingle, NespListExpression untypedExpression)
         {
             // List expressions are:
             //   Target: (a0 a1 a2 a3)
@@ -322,7 +320,7 @@ namespace Nesp.Expressions
             //            |  |  a20
             //            |  a10
             //            a00: Foo.GetString(int, char, double)
-            var applyFunction0 = listExpressions[0] as NespApplyFunctionExpression;
+            var applyFunction0 = listExpressions.FirstOrDefault() as NespApplyFunctionExpression;
             if (applyFunction0 != null)
             {
                 // Calculate adaptable score.
@@ -343,11 +341,10 @@ namespace Nesp.Expressions
                 return expr;
             }
 
-            // Only one expression.
-            if (listExpressions.Length == 1)
+            // If requested unwrap and single list
+            if (unwrapListIfSingle && (listExpressions.Length == 1))
             {
-                // Very low but adaptable.
-                listExpressions[0].SetScore(0);
+                // Turn to a value.
                 return listExpressions[0];
             }
             else
@@ -355,7 +352,8 @@ namespace Nesp.Expressions
                 // Construct list expression.
                 // TODO: List type.
                 var type = typeof(object[]);
-                var expr = new NespResolvedListExpression(listExpressions, type, untypedExpression.Source);
+                var expr = new NespResolvedListExpression(
+                    listExpressions, type, untypedExpression.Source);
                 expr.SetScore(0);
                 return expr;
             }
@@ -369,36 +367,87 @@ namespace Nesp.Expressions
         /// <returns>Expression (resolved)</returns>
         internal NespResolvedExpression[] ResolveByList(NespExpression[] list, NespListExpression untypedExpression)
         {
-            var transposedResolvedExpressionLists = TransposeLists(
-                list
+            // TODO:
+            //if (list.Length == 4)
+            //{
+            //    var defineIdExpression = list[0] as NespIdExpression;
+            //    var lambdaNameExpression = list[1] as NespIdExpression;
+            //    var parametersExpression = list[2];
+            //    var expression = list[3] as NespIdExpression;
+            //    if (defineIdExpression.Id == "define")
+            //    var defineExpression = new NespDefineLambdaExpression(defineIdExpression.Source);
+            //    var 
+            //}
+
+            // TODO: Insert handler for expression extension.
+
+            // Resolved result will be unit expression if list contains only a value.
+            if (list.Length == 0)
+            {
+                return new NespResolvedExpression[] { new NespUnitExpression(untypedExpression.Source) };
+            }
+
+            var transposedResolvedExpressionLists = TransposeLists(list
                 .Select(iexpr => iexpr.IsResolved ? new[] { (NespResolvedExpression)iexpr } : ((NespAbstractExpression)iexpr).ResolveMetadata(this))
                 .ToArray());
 
+            // Unwrap if list contains only a value.
             var filteredCandidatesScored = transposedResolvedExpressionLists
-                .Select(resolvedExpressionList => ConstructExpressionFromList(resolvedExpressionList, untypedExpression))
+                .Select(resolvedExpressionList => ConstructExpressionFromList(resolvedExpressionList, true, untypedExpression))
                 .Where(scored => scored != null)
                 .OrderByDescending(scored => scored.Score)
                 .ToArray();
-            if (filteredCandidatesScored.Length >= 1)
+
+            // If all expressions exactly resolved (not contains generic types), first expression is best result.
+            if (filteredCandidatesScored.All(iexpr => iexpr.Type != null))
             {
-                // All arguments exactly matched.
-                if (filteredCandidatesScored[0].Score == ulong.MaxValue)
-                {
-                    return new[] {filteredCandidatesScored[0]};
-                }
-                else
-                {
-                    return filteredCandidatesScored;
-                }
+                return new[] { filteredCandidatesScored[0] };
             }
             else
+            {
+                return filteredCandidatesScored;
+            }
+        }
+
+        /// <summary>
+        /// Resolve by expression list.
+        /// </summary>
+        /// <param name="list">Expression list</param>
+        /// <param name="untypedExpression">Target untyped expression reference.</param>
+        /// <returns>Expression (resolved)</returns>
+        internal NespResolvedExpression[] ResolveByBracketedList(NespExpression[] list, NespBracketedListExpression untypedExpression)
+        {
+            // TODO: Insert handler for expression extension.
+
+            if (list.Length == 0)
             {
                 // TODO: List type.
                 var type = typeof(object[]);
                 return new NespResolvedExpression[]
                 {
-                    new NespResolvedListExpression(filteredCandidatesScored, type, untypedExpression.Source)
+                    new NespResolvedListExpression(new NespExpression[0], type, untypedExpression.Source)
                 };
+            }
+
+            var transposedResolvedExpressionLists = TransposeLists(list
+                .Select(iexpr => iexpr.IsResolved ? new[] { (NespResolvedExpression)iexpr } : ((NespAbstractExpression)iexpr).ResolveMetadata(this))
+                .ToArray());
+
+            // Always constract list (or apply function).
+            var filteredCandidatesScored = transposedResolvedExpressionLists
+                .Select(resolvedExpressionList => ConstructExpressionFromList(resolvedExpressionList, false, untypedExpression))
+                .Where(scored => scored != null)
+                .OrderByDescending(scored => scored.Score)
+                .ToArray();
+
+            // If all expressions exactly resolved (not contains generic types), first expression is best result.
+            if (filteredCandidatesScored.All(iexpr => iexpr.Type != null))
+            {
+                return new[] { filteredCandidatesScored[0] };
+            }
+            else
+            {
+                return filteredCandidatesScored;
             }
         }
 

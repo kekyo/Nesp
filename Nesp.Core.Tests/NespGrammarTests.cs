@@ -316,63 +316,63 @@ namespace Nesp
         }
         #endregion
 
-        #region Expression
+        #region Bracketed list
         [Test]
         public void ExpressionOneValueTest()
         {
-            var actual = Parse("(123456)", p => p.expression());
-            Assert.AreEqual("(expression ( (list (numeric 123456)) ))", actual);
+            var actual = Parse("(123456)", p => p.bracketed());
+            Assert.AreEqual("(bracketed ( (list (numeric 123456)) ))", actual);
         }
 
         [Test]
         public void ExpressionTwoValuesTest()
         {
-            var actual = Parse("(123456 abc.def)", p => p.expression());
-            Assert.AreEqual("(expression ( (list (numeric 123456) (id abc.def)) ))", actual);
+            var actual = Parse("(123456 abc.def)", p => p.bracketed());
+            Assert.AreEqual("(bracketed ( (list (numeric 123456) (id abc.def)) ))", actual);
         }
 
         [Test]
         public void ExpressionNestedValuesTest1()
         {
-            var actual = Parse("(123456 (abc.def -123.456))", p => p.expression());
-            Assert.AreEqual("(expression ( (list (numeric 123456) (expression ( (list (id abc.def) (numeric -123.456)) ))) ))", actual);
+            var actual = Parse("(123456 (abc.def -123.456))", p => p.bracketed());
+            Assert.AreEqual("(bracketed ( (list (numeric 123456) (bracketed ( (list (id abc.def) (numeric -123.456)) ))) ))", actual);
         }
 
         [Test]
         public void ExpressionNestedValuesTest2()
         {
-            var actual = Parse("(123456 (abc.def +123.456))", p => p.expression());
-            Assert.AreEqual("(expression ( (list (numeric 123456) (expression ( (list (id abc.def) (numeric +123.456)) ))) ))", actual);
+            var actual = Parse("(123456 (abc.def +123.456))", p => p.bracketed());
+            Assert.AreEqual("(bracketed ( (list (numeric 123456) (bracketed ( (list (id abc.def) (numeric +123.456)) ))) ))", actual);
         }
         #endregion
 
-        #region Repl
+        #region Body
         [Test]
-        public void ReplOneValueTest()
+        public void BodyOneValueTest()
         {
-            var actual = Parse("(123456)", p => p.repl());
-            Assert.AreEqual("(repl (expression ( (list (numeric 123456)) )))", actual);
+            var actual = Parse("(123456)", p => p.body());
+            Assert.AreEqual("(body (bracketed ( (list (numeric 123456)) )))", actual);
         }
 
         [Test]
-        public void ReplTwoValuesTest()
+        public void BodyTwoValuesTest()
         {
-            var actual = Parse("(123456 abc.def)", p => p.repl());
-            Assert.AreEqual("(repl (expression ( (list (numeric 123456) (id abc.def)) )))", actual);
+            var actual = Parse("(123456 abc.def)", p => p.body());
+            Assert.AreEqual("(body (bracketed ( (list (numeric 123456) (id abc.def)) )))", actual);
         }
 
         [Test]
-        public void ReplNestedValuesTest1()
+        public void BodyNestedValuesTest1()
         {
-            var actual = Parse("(123456 (abc.def -123.456))", p => p.repl());
-            Assert.AreEqual("(repl (expression ( (list (numeric 123456) (expression ( (list (id abc.def) (numeric -123.456)) ))) )))", actual);
+            var actual = Parse("(123456 (abc.def -123.456))", p => p.body());
+            Assert.AreEqual("(body (bracketed ( (list (numeric 123456) (bracketed ( (list (id abc.def) (numeric -123.456)) ))) )))", actual);
         }
 
         [Test]
-        public void ReplNestedValuesTest2()
+        public void BodyNestedValuesTest2()
         {
-            var actual = Parse("(123456 (abc.def +123.456))", p => p.repl());
-            Assert.AreEqual("(repl (expression ( (list (numeric 123456) (expression ( (list (id abc.def) (numeric +123.456)) ))) )))", actual);
+            var actual = Parse("(123456 (abc.def +123.456))", p => p.body());
+            Assert.AreEqual("(body (bracketed ( (list (numeric 123456) (bracketed ( (list (id abc.def) (numeric +123.456)) ))) )))", actual);
         }
         #endregion
     }

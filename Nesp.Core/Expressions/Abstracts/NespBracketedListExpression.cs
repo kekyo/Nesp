@@ -21,24 +21,21 @@ using System.Linq;
 
 namespace Nesp.Expressions.Abstracts
 {
-    public class NespListExpression : NespAbstractExpression
+    public sealed class NespBracketedListExpression : NespListExpression
     {
-        internal NespListExpression(NespExpression[] list, NespSourceInformation source)
-            : base(source)
+        internal NespBracketedListExpression(NespExpression[] list, NespSourceInformation source)
+            : base(list, source)
         {
-            this.List = list;
         }
-
-        public NespExpression[] List { get; }
 
         internal override NespResolvedExpression[] OnResolveMetadata(NespMetadataResolverContext context)
         {
-            return context.ResolveByList(this.List, this);
+            return context.ResolveByBracketedList(this.List, this);
         }
 
         public override string ToString()
         {
-            return $"{string.Join(" ", this.List.Select(iexpr => iexpr.ToString()))}";
+            return $"({string.Join(" ", this.List.Select(iexpr => iexpr.ToString()))})";
         }
     }
 }

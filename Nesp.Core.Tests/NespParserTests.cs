@@ -53,7 +53,7 @@ namespace Nesp
             var parser = new NespParser(new MemberBinder());
             parser.AddMembers(NespBaseExtension.CreateMemberProducer());
             parser.AddMembers(NespStandardExtension.CreateMemberProducer());
-            return (NespListExpression)parser.Visit(grammarParser.repl());
+            return (NespListExpression)parser.Visit(grammarParser.body());
         }
 
         #region Numeric

@@ -53,7 +53,7 @@ namespace Nesp
             var parser = new NespParser(new MemberBinder());
             parser.AddMembers(NespBaseExtension.CreateMemberProducer());
             parser.AddMembers(NespStandardExtension.CreateMemberProducer());
-            return (NespAbstractExpression)parser.Visit(grammarParser.repl());
+            return (NespAbstractExpression)parser.Visit(grammarParser.body());
         }
 
         #region Id (Field)
@@ -656,9 +656,8 @@ namespace Nesp
             var context = new NespMetadataResolverContext();
             var typedExprs = untypedExpr.ResolveMetadata(context);
 
-            var listExpr = (NespResolvedListExpression)typedExprs.Single();
-            Assert.IsNotNull(listExpr);
-            Assert.AreEqual(0, listExpr.List.Length);
+            var unitExpr = (NespUnitExpression)typedExprs.Single();
+            Assert.IsNotNull(unitExpr);
         }
 
         [Test]
@@ -747,6 +746,30 @@ namespace Nesp
             Assert.AreEqual(12345UL, ((NespTokenExpression)listExpr.List[2]).Value);
             Assert.AreEqual("abc", ((NespTokenExpression)listExpr.List[3]).Value);
         }
+        #endregion
+
+        #region Lambda
+        public static string LambdaTestGetString()
+        {
+            return "ABC";
+        }
+
+        //[Test]
+        //public void DefineEmptyArgumentListLambdaTest()
+        //{
+        //    var untypedExpr = ParseAndVisit("define getString () Nesp.NespExpressionTests.LambdaTestGetString");
+
+        //    var context = new NespMetadataResolverContext();
+        //    context.AddCandidate(typeof(object).Assembly);
+        //    var typedExprs = untypedExpr.ResolveMetadata(context);
+
+        //    var lambdaExpr = (NespDefineLambdaExpression)typedExprs.Single();
+        //    Assert.AreEqual(typeof(string), lambdaExpr.Type);
+        //    Assert.IsTrue(new[] { "a", "b" }
+        //        .SequenceEqual(lambdaExpr.Parameters.Select(pexpr => pexpr.Name)));
+        //    var bodyExpr = (NespApplyFunctionExpression)lambdaExpr;
+        //    Assert.AreEqual(this.GetType().GetMethod("LambdaTestGetString"), bodyExpr.Method);
+        //}
         #endregion
 
         //#region Compilation

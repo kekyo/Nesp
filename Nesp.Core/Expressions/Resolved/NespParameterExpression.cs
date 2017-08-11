@@ -17,28 +17,30 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Linq;
+using System;
+using Nesp.Internals;
 
-namespace Nesp.Expressions.Abstracts
+namespace Nesp.Expressions.Resolved
 {
-    public class NespListExpression : NespAbstractExpression
+    public sealed class NespParameterExpression : NespResolvedExpression
     {
-        internal NespListExpression(NespExpression[] list, NespSourceInformation source)
+        public NespParameterExpression(string name, Type annotationType, NespSourceInformation source)
             : base(source)
         {
-            this.List = list;
+            this.Type = annotationType;
+            this.Name = name;
         }
 
-        public NespExpression[] List { get; }
+        public override Type Type { get; }
 
-        internal override NespResolvedExpression[] OnResolveMetadata(NespMetadataResolverContext context)
-        {
-            return context.ResolveByList(this.List, this);
-        }
+        public string Name { get; }
 
         public override string ToString()
         {
-            return $"{string.Join(" ", this.List.Select(iexpr => iexpr.ToString()))}";
+            var typeName = (this.Type != null)
+                ? (":" + NespUtilities.GetReadableTypeName(this.Type))
+                : string.Empty;
+            return $"{this.Name}{typeName}";
         }
     }
 }

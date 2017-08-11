@@ -90,16 +90,20 @@ namespace Nesp.Expressions
                 stop.Column + (stop.StopIndex - stop.StartIndex));
         }
 
-        public override NespExpression VisitRepl(NespGrammarParser.ReplContext context)
+        public override NespExpression VisitBody(NespGrammarParser.BodyContext context)
         {
             var childContext = context.GetChild(0);
             return this.Visit(childContext);
         }
 
-        public override NespExpression VisitExpression(NespGrammarParser.ExpressionContext context)
+        public override NespExpression VisitBracketed(NespGrammarParser.BracketedContext context)
         {
             var listContext = (NespGrammarParser.ListContext)context.GetChild(1);
-            return this.Visit(listContext);
+
+            var source = GetSourceInformation(context);
+            var list = listContext.GetChildren().Select(this.Visit).ToArray();
+
+            return new NespBracketedListExpression(list, source);
         }
 
         public override NespExpression VisitList(NespGrammarParser.ListContext context)

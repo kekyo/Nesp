@@ -17,28 +17,34 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Linq;
+using System;
 
-namespace Nesp.Expressions.Abstracts
+namespace Nesp.Expressions.Resolved
 {
-    public class NespListExpression : NespAbstractExpression
+    public sealed class NespDefineLambdaExpression : NespResolvedExpression
     {
-        internal NespListExpression(NespExpression[] list, NespSourceInformation source)
+        internal NespDefineLambdaExpression(NespSourceInformation source)
             : base(source)
         {
-            this.List = list;
         }
 
-        public NespExpression[] List { get; }
+        public override Type Type => this.Body.Type;
 
-        internal override NespResolvedExpression[] OnResolveMetadata(NespMetadataResolverContext context)
+        public string Name { get; private set; }
+        public NespResolvedExpression Body { get; private set; }
+        public NespParameterExpression[] Parameters { get; private set; }
+
+        internal void SetLambdaMetadata(string name, NespResolvedExpression body, NespParameterExpression[] parameters)
         {
-            return context.ResolveByList(this.List, this);
+            this.Name = name;
+            this.Body = body;
+            this.Parameters = parameters;
         }
 
         public override string ToString()
         {
-            return $"{string.Join(" ", this.List.Select(iexpr => iexpr.ToString()))}";
+            var parameters = string.Join(",", (object[])this.Parameters);
+            return $"define {this.Name} ({parameters}) ({this.Body})";
         }
     }
 }
