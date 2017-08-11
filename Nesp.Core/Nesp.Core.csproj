@@ -45,6 +45,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Expressions\Abstracts\NespBracketedListExpression.cs" />
+    <Compile Include="Expressions\Abstracts\NespAbstractListExpression.cs" />
     <Compile Include="Expressions\NespAbstractExpression.cs" />
     <Compile Include="Expressions\NespResolvedExpression.cs" />
     <Compile Include="Expressions\Resolved\NespParameterExpression.cs" />

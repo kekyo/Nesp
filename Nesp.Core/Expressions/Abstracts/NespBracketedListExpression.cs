@@ -21,7 +21,7 @@ using System.Linq;
 
 namespace Nesp.Expressions.Abstracts
 {
-    public sealed class NespBracketedListExpression : NespListExpression
+    public sealed class NespBracketedListExpression : NespAbstractListExpression
     {
         internal NespBracketedListExpression(NespExpression[] list, NespSourceInformation source)
             : base(list, source)

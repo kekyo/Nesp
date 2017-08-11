@@ -109,6 +109,7 @@ namespace Nesp.Expressions
                    && (this.methods.Equals(cachedContext.methods));
         }
 
+        #region List
         /// <summary>
         /// Transpose expression lists.
         /// </summary>
@@ -305,7 +306,7 @@ namespace Nesp.Expressions
         /// <param name="untypedExpression">Target untyped expression reference.</param>
         /// <returns>Expression (resolved)</returns>
         private static NespResolvedExpression ConstructExpressionFromList(
-            NespResolvedExpression[] listExpressions, bool unwrapListIfSingle, NespListExpression untypedExpression)
+            NespResolvedExpression[] listExpressions, bool unwrapListIfSingle, NespAbstractListExpression untypedExpression)
         {
             // List expressions are:
             //   Target: (a0 a1 a2 a3)
@@ -450,7 +451,9 @@ namespace Nesp.Expressions
                 return filteredCandidatesScored;
             }
         }
+        #endregion
 
+        #region Id
         /// <summary>
         /// Construct expression from field information.
         /// </summary>
@@ -541,5 +544,6 @@ namespace Nesp.Expressions
 
             throw new ArgumentException();
         }
+        #endregion
     }
 }
