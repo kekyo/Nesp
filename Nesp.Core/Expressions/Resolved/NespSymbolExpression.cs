@@ -17,16 +17,51 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
+using System.Diagnostics;
+
+using Nesp.Internals;
+
 namespace Nesp.Expressions.Resolved
 {
     public abstract class NespSymbolExpression : NespResolvedExpression
     {
+        private Type type;
+
         internal NespSymbolExpression(string symbol, NespSourceInformation source)
+            : this(symbol, null, source)
+        {
+        }
+
+        internal NespSymbolExpression(string symbol, Type annotatedType, NespSourceInformation source)
             : base(source)
         {
             this.Symbol = symbol;
+            this.type = annotatedType;
         }
 
+        public override Type FixedType => type;
+
         public string Symbol { get; }
+
+        internal void InferenceByType(Type type)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(this.type == null);
+
+            this.type = type;
+        }
+
+        public override string ToString()
+        {
+            if (type != null)
+            {
+                return $"{this.Symbol}:{NespUtilities.GetReadableTypeName(type)}";
+            }
+            else
+            {
+                return $"{this.Symbol}:?";
+            }
+        }
     }
 }

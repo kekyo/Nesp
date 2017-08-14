@@ -34,7 +34,7 @@ namespace Nesp.Expressions.Resolved
             this.Arguments = arguments;
         }
 
-        public override Type Type => this.Method.ReturnType;
+        public override Type FixedType => this.Method.ReturnType;
 
         public MethodInfo Method { get; }
         public NespExpression[] Arguments { get; }

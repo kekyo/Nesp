@@ -27,11 +27,11 @@ namespace Nesp.Expressions.Resolved
         internal NespEnumExpression(Enum value, NespSourceInformation source)
             : base(source)
         {
-            this.Type = value.GetType();
+            this.FixedType = value.GetType();
             this.Value = value;
         }
 
-        public override Type Type { get; }
+        public override Type FixedType { get; }
         public override Enum Value { get; }
 
         public override string ToString()

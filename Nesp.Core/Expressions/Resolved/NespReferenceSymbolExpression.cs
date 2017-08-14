@@ -33,8 +33,6 @@ namespace Nesp.Expressions.Resolved
         {
         }
 
-        public override Type Type => this.Related?.Type;
-
         public NespSymbolExpression Related { get; private set; }
 
         internal void SetRelated(NespSymbolExpression related)
@@ -42,6 +40,11 @@ namespace Nesp.Expressions.Resolved
             Debug.Assert(related.Symbol == this.Symbol);
 
             this.Related = related;
+        }
+
+        internal NespReferenceSymbolExpression Clone()
+        {
+            return new NespReferenceSymbolExpression(this.Symbol, this.Source);
         }
 
         public override string ToString()

@@ -32,11 +32,11 @@ namespace Nesp.Expressions.Resolved
         internal NespConstantExpression(Type type, object value, NespSourceInformation source)
             : base(source)
         {
-            this.Type = type;
+            this.FixedType = type;
             this.Value = value;
         }
 
-        public override Type Type { get; }
+        public override Type FixedType { get; }
 
         public override object Value { get; }
 

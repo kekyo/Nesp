@@ -31,7 +31,7 @@ namespace Nesp.Expressions.Resolved
             this.Field = field;
         }
 
-        public override Type Type => this.Field.FieldType;
+        public override Type FixedType => this.Field.FieldType;
 
         public FieldInfo Field { get; }
 

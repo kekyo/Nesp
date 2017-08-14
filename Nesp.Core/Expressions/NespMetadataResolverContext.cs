@@ -180,7 +180,7 @@ namespace Nesp.Expressions
         /// Calculate how adaptable do apply this method's parametes and expressions.
         /// </summary>
         /// <param name="method">Target method</param>
-        /// <param name="argumentResolvedExpressions">Target expressions (require resolved)</param>
+        /// <param name="argumentResolvedExpressions">Target expressions (require resolved, will be update)</param>
         /// <returns>Adaptable score (null: cannot use, 0 >= better for large amount value, int.MaxValue: exactly matched)</returns>
         private static ulong? CalculateAdaptableScoreByArguments(
             MethodInfo method, NespResolvedExpression[] argumentResolvedExpressions)
@@ -196,23 +196,45 @@ namespace Nesp.Expressions
             }
 
             // Step 1: Do match between first and last (or first of variable)
-            var exactlyCount = 0;
+            var totalExactlyCount = 0;
             var score = 0UL;
             for (var index = 0; index < parameters.Length; index++)
             {
-                var expressionType = argumentResolvedExpressions[index].Type;
+                var parameterType = parameters[index].ParameterType;
+                var argumentResolvedExpression = argumentResolvedExpressions[index];
+                var expressionType = argumentResolvedExpression.FixedType;
                 if (expressionType == null)
                 {
-                    // Don't match for expression will be resolving.
-                    continue;
+                    // Type inference by method parameter[index]
+                    var referenceSymbolExpression = argumentResolvedExpression as NespReferenceSymbolExpression;
+                    if (referenceSymbolExpression != null)
+                    {
+                        expressionType = parameterType;
+
+                        // Clone instance and update list.
+                        // Because type inference has to effect only this resolving.
+                        referenceSymbolExpression = referenceSymbolExpression.Clone();
+                        argumentResolvedExpressions[index] = argumentResolvedExpression;
+
+                        // Inference.
+                        referenceSymbolExpression.InferenceByType(expressionType);
+
+                        // Exactly match, but not fixed.
+                        score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
+                        continue;
+                    }
+                    else
+                    {
+                        // Don't match for expression will be resolving.
+                        continue;
+                    }
                 }
 
-                var parameterType = parameters[index].ParameterType;
                 if (object.ReferenceEquals(parameterType, expressionType))
                 {
                     // Exactly match.
                     score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
-                    exactlyCount++;
+                    totalExactlyCount++;
                     continue;
                 }
 
@@ -235,7 +257,7 @@ namespace Nesp.Expressions
                     {
                         // Exactly match in variable argument.
                         score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
-                        exactlyCount++;
+                        totalExactlyCount++;
                         continue;
                     }
 
@@ -263,18 +285,33 @@ namespace Nesp.Expressions
                 // Variable first is already verified.
                 for (var index = parameters.Length; index < argumentResolvedExpressions.Length; index++)
                 {
-                    var expressionType = argumentResolvedExpressions[index].Type;
+                    var argumentResolvedExpression = argumentResolvedExpressions[index];
+                    var expressionType = argumentResolvedExpression.FixedType;
                     if (expressionType == null)
                     {
-                        // Don't match for expression will be resolving.
-                        continue;
+                        // Type inference by method parameter[index]
+                        var referenceSymbolExpression = argumentResolvedExpression as NespReferenceSymbolExpression;
+                        if (referenceSymbolExpression != null)
+                        {
+                            expressionType = elementType;
+                            referenceSymbolExpression.InferenceByType(expressionType);
+
+                            // Exactly match, but not fixed.
+                            score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
+                            continue;
+                        }
+                        else
+                        {
+                            // Don't match for expression will be resolving.
+                            continue;
+                        }
                     }
 
                     if (object.ReferenceEquals(elementType, expressionType))
                     {
                         // Exactly match.
                         score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
-                        exactlyCount++;
+                        totalExactlyCount++;
                         continue;
                     }
 
@@ -299,7 +336,7 @@ namespace Nesp.Expressions
             }
 
             // Maximum score gives if all arguments exactly matched.
-            return (exactlyCount >= argumentResolvedExpressions.Length) ? ulong.MaxValue : score;
+            return (totalExactlyCount >= argumentResolvedExpressions.Length) ? ulong.MaxValue : score;
         }
 
         /// <summary>
@@ -377,7 +414,7 @@ namespace Nesp.Expressions
                         {
                             // Convert to truely parameter expressions.
                             var parameterExpressions = preParameterExpressions
-                                .Select(pexpr => new NespParameterExpression(pexpr.Symbol, pexpr.Type, pexpr.Source))
+                                .Select(pexpr => new NespParameterExpression(pexpr.Symbol, pexpr.FixedType, pexpr.Source))
                                 .ToArray();
 
                             // Deshadowing by parameters.
@@ -450,8 +487,8 @@ namespace Nesp.Expressions
 
             // TODO: If results are empty --> invalid exprs.
 
-            // If all expressions exactly resolved (not contains generic types), first expression is best result.
-            if (filteredCandidatesScored.All(iexpr => iexpr.Type != null))
+            // If first expression is exactly mathched
+            if (filteredCandidatesScored.FirstOrDefault()?.Score == ulong.MaxValue)
             {
                 return new[] { filteredCandidatesScored[0] };
             }
@@ -497,8 +534,8 @@ namespace Nesp.Expressions
 
             // TODO: If results are empty --> invalid exprs.
 
-            // If all expressions exactly resolved (not contains generic types), first expression is best result.
-            if (filteredCandidatesScored.All(iexpr => iexpr.Type != null))
+            // If first expression is exactly mathched
+            if (filteredCandidatesScored.FirstOrDefault()?.Score == ulong.MaxValue)
             {
                 return new[] { filteredCandidatesScored[0] };
             }
@@ -600,6 +637,7 @@ namespace Nesp.Expressions
                     .ToArray();
             }
 
+            // TODO: Handle type annotation
             var symbolExpression = new NespReferenceSymbolExpression(id, untypedExpression.Source);
             var sexprs = symbols[id];
             if (sexprs.Length >= 1)

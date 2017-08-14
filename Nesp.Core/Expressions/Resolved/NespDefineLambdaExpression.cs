@@ -32,7 +32,7 @@ namespace Nesp.Expressions.Resolved
             this.Parameters = parameters;
         }
 
-        public override Type Type => this.Body.Type;
+        public override Type FixedType => this.Body.FixedType;
 
         public string Name { get; }
         public NespResolvedExpression Body { get; }

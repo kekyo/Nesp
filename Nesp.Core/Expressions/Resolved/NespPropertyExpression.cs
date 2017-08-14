@@ -31,7 +31,7 @@ namespace Nesp.Expressions.Resolved
             this.Property = property;
         }
 
-        public override Type Type => this.Property.PropertyType;
+        public override Type FixedType => this.Property.PropertyType;
 
         public PropertyInfo Property { get; }
 

@@ -30,7 +30,7 @@ namespace Nesp.Expressions
 
         public sealed override bool IsResolved => true;
 
-        public abstract Type Type { get; }
+        public abstract Type FixedType { get; }
 
         internal ulong Score { get; private set; }
 

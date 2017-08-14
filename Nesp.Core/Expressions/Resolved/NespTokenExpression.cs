@@ -40,7 +40,7 @@ namespace Nesp.Expressions.Resolved
         {
         }
 
-        public override Type Type => typeof(T);
+        public override Type FixedType => typeof(T);
 
         internal override object GetValue()
         {

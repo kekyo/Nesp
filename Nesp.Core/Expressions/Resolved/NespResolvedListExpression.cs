@@ -28,10 +28,10 @@ namespace Nesp.Expressions.Resolved
             : base(source)
         {
             this.List = list;
-            this.Type = type;
+            this.FixedType = type;
         }
 
-        public override Type Type { get; }
+        public override Type FixedType { get; }
 
         public NespExpression[] List { get; }
 

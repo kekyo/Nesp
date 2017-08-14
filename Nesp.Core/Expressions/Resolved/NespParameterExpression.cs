@@ -19,30 +19,13 @@
 
 using System;
 
-using Nesp.Internals;
-
 namespace Nesp.Expressions.Resolved
 {
     public sealed class NespParameterExpression : NespSymbolExpression
     {
         internal NespParameterExpression(string symbol, Type annotatedType, NespSourceInformation source)
-            : base(symbol, source)
+            : base(symbol, annotatedType, source)
         {
-            this.Type = annotatedType;
-        }
-
-        public override Type Type { get; }
-
-        public override string ToString()
-        {
-            if (this.Type != null)
-            {
-                return $"{this.Symbol}:{NespUtilities.GetReadableTypeName(this.Type)}";
-            }
-            else
-            {
-                return $"{this.Symbol}";
-            }
         }
     }
 }
