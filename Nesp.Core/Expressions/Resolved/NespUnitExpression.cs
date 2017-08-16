@@ -17,24 +17,25 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Reflection;
-using Nesp.Internals;
-
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespFieldExpression : NespTypedTokenExpression
+    public sealed class NespUnitExpression : NespTokenExpression<Unit>
     {
-        internal NespFieldExpression(FieldInfo field, NespTokenInformation token)
-            : base(token)
+        internal NespUnitExpression(NespSourceInformation source)
+            : base(source)
         {
-            this.Field = field;
         }
 
-        public FieldInfo Field { get; }
+        internal override object GetValue()
+        {
+            return Unit.Value;
+        }
+
+        public override Unit Value => new Unit();
 
         public override string ToString()
         {
-            return $"[{NespUtilities.GetReservedReadableTypeName(this.Field.DeclaringType)}.{this.Field.Name}]:field";
+            return ":unit";
         }
     }
 }

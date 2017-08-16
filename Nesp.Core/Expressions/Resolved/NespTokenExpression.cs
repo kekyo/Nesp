@@ -17,37 +17,16 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+using System;
+
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespTokenInformation
+    public abstract class NespTokenExpression : NespResolvedExpression
     {
-        public readonly int StartLine;
-        public readonly int StartColumn;
-        public readonly int EndLine;
-        public readonly int EndColumn;
-
-        public NespTokenInformation(int startLine, int startColumn, int endLine, int endColumn)
+        internal NespTokenExpression(NespSourceInformation source)
+            : base(source)
         {
-            this.StartLine = startLine;
-            this.StartColumn = startColumn;
-            this.EndLine = endLine;
-            this.EndColumn = endColumn;
         }
-
-        public override string ToString()
-        {
-            return $"({this.StartLine},{this.StartColumn}) - ({this.EndLine},{this.EndColumn})";
-        }
-    }
-
-    public abstract class NespTokenExpression : NespExpression
-    {
-        internal NespTokenExpression(NespTokenInformation token)
-        {
-            this.Token = token;
-        }
-
-        public NespTokenInformation Token { get; }
 
         public object Value => this.GetValue();
 
@@ -56,10 +35,12 @@ namespace Nesp.Expressions
 
     public abstract class NespTokenExpression<T> : NespTokenExpression
     {
-        internal NespTokenExpression(NespTokenInformation token)
-            : base(token)
+        internal NespTokenExpression(NespSourceInformation source)
+            : base(source)
         {
         }
+
+        public override Type FixedType => typeof(T);
 
         internal override object GetValue()
         {
@@ -67,15 +48,5 @@ namespace Nesp.Expressions
         }
 
         public new abstract T Value { get; }
-    }
-
-    public abstract class NespTypedTokenExpression : NespExpression
-    {
-        internal NespTypedTokenExpression(NespTokenInformation token)
-        {
-            this.Token = token;
-        }
-
-        public NespTokenInformation Token { get; }
     }
 }

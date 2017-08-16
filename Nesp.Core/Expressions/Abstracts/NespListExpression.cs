@@ -18,25 +18,24 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System.Linq;
-using System.Reflection;
 
-using Nesp.Internals;
-
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Abstracts
 {
-    public sealed class NespApplyFunctionExpression : NespTypedTokenExpression
+    public class NespListExpression : NespAbstractListExpression
     {
-        internal NespApplyFunctionExpression(MethodInfo method, NespTokenInformation token)
-            : base(token)
+        internal NespListExpression(NespExpression[] list, NespSourceInformation source)
+            : base(list, source)
         {
-            this.Method = method;
         }
 
-        public MethodInfo Method { get; }
+        internal override NespResolvedExpression[] OnResolveMetadata(NespMetadataResolverContext context)
+        {
+            return context.ResolveByList(this.List, this);
+        }
 
         public override string ToString()
         {
-            return $"{NespUtilities.GetReservedReadableTypeName(this.Method.DeclaringType)}.{this.Method.Name}({string.Join(",", this.Method.GetParameters().Select(parameter => NespUtilities.GetReservedReadableTypeName(parameter.ParameterType)))})";
+            return $"{string.Join(" ", this.List.Select(iexpr => iexpr.ToString()))}";
         }
     }
 }

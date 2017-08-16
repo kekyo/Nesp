@@ -17,17 +17,26 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Abstracts
 {
-    public abstract class NespExpression
+    public sealed class NespIdExpression : NespAbstractExpression
     {
-        internal NespExpression(NespSourceInformation source)
+        internal NespIdExpression(string id, NespSourceInformation source)
+            : base(source)
         {
-            this.Source = source;
+            this.Id = id;
         }
 
-        public abstract bool IsResolved { get; }
+        public string Id { get; }
 
-        public NespSourceInformation Source { get; }
+        internal override NespResolvedExpression[] OnResolveMetadata(NespMetadataResolverContext context)
+        {
+            return context.ResolveById(this.Id, this);
+        }
+
+        public override string ToString()
+        {
+            return $"[{this.Id}]";
+        }
     }
 }

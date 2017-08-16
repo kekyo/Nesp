@@ -17,25 +17,21 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespUnitExpression : NespTokenExpression<Unit>
+    public sealed class NespCharExpression : NespTokenExpression<char>
     {
-        internal NespUnitExpression(NespTokenInformation token)
-            : base(token)
+        internal NespCharExpression(char value, NespSourceInformation source)
+            : base(source)
         {
+            this.Value = value;
         }
 
-        internal override object GetValue()
-        {
-            return Unit.Value;
-        }
-
-        public override Unit Value => new Unit();
+        public override char Value { get; }
 
         public override string ToString()
         {
-            return ":unit";
+            return $"'{this.Value}'";
         }
     }
 }

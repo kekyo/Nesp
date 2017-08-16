@@ -17,23 +17,26 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using Nesp.Internals;
+using System;
 
 namespace Nesp.Expressions
 {
-    public sealed class NespConstantExpression : NespTokenExpression<object>
+    public abstract class NespResolvedExpression : NespExpression
     {
-        internal NespConstantExpression(object value, NespTokenInformation token)
-            : base(token)
+        internal NespResolvedExpression(NespSourceInformation source)
+            : base(source)
         {
-            this.Value = value;
         }
 
-        public override object Value { get; }
+        public sealed override bool IsResolved => true;
 
-        public override string ToString()
+        public abstract Type FixedType { get; }
+
+        internal ulong Score { get; private set; }
+
+        internal void SetScore(ulong score)
         {
-            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
+            this.Score = score;
         }
     }
 }

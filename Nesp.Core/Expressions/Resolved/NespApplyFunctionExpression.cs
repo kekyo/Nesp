@@ -17,30 +17,31 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Threading.Tasks;
+using System;
+using System.Linq;
+using System.Reflection;
 
-namespace Nesp.Expressions
+using Nesp.Internals;
+
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespIdExpression : NespTokenExpression<string>
+    public sealed class NespApplyFunctionExpression : NespResolvedExpression
     {
-        internal NespIdExpression(string id, NespTokenInformation token)
-            : base(token)
+        internal NespApplyFunctionExpression(MethodInfo method, NespExpression[] arguments, NespSourceInformation source)
+            : base(source)
         {
-            this.Id = id;
+            this.Method = method;
+            this.Arguments = arguments;
         }
 
-        public string Id { get; }
+        public override Type FixedType => this.Method.ReturnType;
 
-        public override string Value => this.Id;
-
-        internal override Task<NespExpression[]> OnResolveMetadataAsync(NespMetadataResolverContext context)
-        {
-            return context.ResolveIdAsync(this.Id, this);
-        }
+        public MethodInfo Method { get; }
+        public NespExpression[] Arguments { get; }
 
         public override string ToString()
         {
-            return $"[{this.Id}]";
+            return $"{NespUtilities.GetReservedReadableTypeName(this.Method.DeclaringType)}.{this.Method.Name}({string.Join(",", this.Method.GetParameters().Select(parameter => NespUtilities.GetReservedReadableTypeName(parameter.ParameterType)))})";
         }
     }
 }

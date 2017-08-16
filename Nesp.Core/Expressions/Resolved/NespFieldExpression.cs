@@ -17,17 +17,27 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+using System;
+using System.Reflection;
+using Nesp.Internals;
+
+namespace Nesp.Expressions.Resolved
 {
-    public abstract class NespExpression
+    public sealed class NespFieldExpression : NespResolvedExpression
     {
-        internal NespExpression(NespSourceInformation source)
+        internal NespFieldExpression(FieldInfo field, NespSourceInformation source)
+            : base(source)
         {
-            this.Source = source;
+            this.Field = field;
         }
 
-        public abstract bool IsResolved { get; }
+        public override Type FixedType => this.Field.FieldType;
 
-        public NespSourceInformation Source { get; }
+        public FieldInfo Field { get; }
+
+        public override string ToString()
+        {
+            return $"[{NespUtilities.GetReservedReadableTypeName(this.Field.DeclaringType)}.{this.Field.Name}]:field";
+        }
     }
 }

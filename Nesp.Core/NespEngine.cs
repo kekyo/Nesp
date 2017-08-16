@@ -19,7 +19,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
@@ -30,22 +29,14 @@ using Nesp.Internals;
 
 namespace Nesp
 {
-    public enum NespExpressionType
-    {
-        Repl,
-        Strict
-    }
-
     public sealed class NespEngine
     {
         private readonly NespParser parser;
         private readonly Dictionary<string, Func<object>> cachedFuncs =
             new Dictionary<string, Func<object>>();
-        private readonly NespExpressionType type;
 
-        public NespEngine(NespExpressionType type, INespMemberBinder binder)
+        public NespEngine(INespMemberBinder binder)
         {
-            this.type = type;
             this.parser = new NespParser(binder);
         }
 
@@ -82,9 +73,8 @@ namespace Nesp
             var commonTokenStream = new CommonTokenStream(lexer);
             var grammarParser = new NespGrammarParser(commonTokenStream);
 
-            var context = (type == NespExpressionType.Repl)
-                ? (IParseTree)grammarParser.list()          // Take from list
-                : (IParseTree)grammarParser.expression();   // Take from expression
+            // Take from body rule.
+            var context = (IParseTree)grammarParser.body();
 
             NespExpression expr;
             lock (parser)

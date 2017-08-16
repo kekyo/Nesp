@@ -17,30 +17,51 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace Nesp.Expressions
+using Nesp.Internals;
+
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespListExpression : NespExpression
+    public abstract class NespSymbolExpression : NespResolvedExpression
     {
-        internal NespListExpression(NespExpression[] list)
+        private Type type;
+
+        internal NespSymbolExpression(string symbol, NespSourceInformation source)
+            : this(symbol, null, source)
         {
-            Debug.Assert(list.Length >= 1);
-            this.List = list;
         }
 
-        public NespExpression[] List { get; }
-
-        internal override Task<NespExpression[]> OnResolveMetadataAsync(NespMetadataResolverContext context)
+        internal NespSymbolExpression(string symbol, Type annotatedType, NespSourceInformation source)
+            : base(source)
         {
-            return context.ResolveListAsync(this.List, this);
+            this.Symbol = symbol;
+            this.type = annotatedType;
+        }
+
+        public override Type FixedType => type;
+
+        public string Symbol { get; }
+
+        internal void InferenceByType(Type type)
+        {
+            Debug.Assert(type != null);
+            Debug.Assert(this.type == null);
+
+            this.type = type;
         }
 
         public override string ToString()
         {
-            return $"({string.Join(" ", this.List.Select(iexpr => iexpr.ToString()))})";
+            if (type != null)
+            {
+                return $"{this.Symbol}:{NespUtilities.GetReadableTypeName(type)}";
+            }
+            else
+            {
+                return $"{this.Symbol}:?";
+            }
         }
     }
 }

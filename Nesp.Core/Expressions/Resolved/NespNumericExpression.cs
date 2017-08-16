@@ -17,21 +17,25 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+using System;
+using Nesp.Internals;
+
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespBoolExpression : NespTokenExpression<bool>
+    public sealed class NespNumericExpression : NespTokenExpression<object>
     {
-        internal NespBoolExpression(bool value, NespTokenInformation token)
-            : base(token)
+        internal NespNumericExpression(object value, NespSourceInformation source)
+            : base(source)
         {
             this.Value = value;
         }
 
-        public override bool Value { get; }
+        public override Type FixedType => this.Value.GetType();
+        public override object Value { get; }
 
         public override string ToString()
         {
-            return $"{this.Value}";
+            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
         }
     }
 }

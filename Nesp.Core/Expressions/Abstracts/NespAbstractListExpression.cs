@@ -17,21 +17,16 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Abstracts
 {
-    public sealed class NespStringExpression : NespTokenExpression<string>
+    public abstract class NespAbstractListExpression : NespAbstractExpression
     {
-        internal NespStringExpression(string value, NespTokenInformation token)
-            : base(token)
+        internal NespAbstractListExpression(NespExpression[] list, NespSourceInformation source)
+            : base(source)
         {
-            this.Value = value;
+            this.List = list;
         }
 
-        public override string Value { get; }
-
-        public override string ToString()
-        {
-            return $"\"{this.Value}\"";
-        }
+        public NespExpression[] List { get; }
     }
 }

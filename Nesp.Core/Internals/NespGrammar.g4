@@ -19,8 +19,9 @@
 
 grammar NespGrammar;
 
-expression : BRACKETLEFT WHITESPACE? list WHITESPACE? BRACKETRIGHT ;
-list : (expression | string | char | numeric | id)? (WHITESPACE? (expression | string | char | numeric | id))* ;
+body : bracketed | list ;
+bracketed : BRACKETLEFT WHITESPACE? list WHITESPACE? BRACKETRIGHT ;
+list : (bracketed | string | char | numeric | id)? (WHITESPACE? (bracketed | string | char | numeric | id))* ;
 string : STRING ;
 char : CHAR ;
 numeric : NUMERIC ;

@@ -17,24 +17,32 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Reflection;
+using System;
 using Nesp.Internals;
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespPropertyExpression : NespTypedTokenExpression
+    public sealed class NespConstantExpression : NespTokenExpression<object>
     {
-        internal NespPropertyExpression(PropertyInfo property, NespTokenInformation token)
-            : base(token)
+        internal NespConstantExpression(object value, NespSourceInformation source)
+            : this(value.GetType(), value, source)
         {
-            this.Property = property;
         }
 
-        public PropertyInfo Property { get; }
+        internal NespConstantExpression(Type type, object value, NespSourceInformation source)
+            : base(source)
+        {
+            this.FixedType = type;
+            this.Value = value;
+        }
+
+        public override Type FixedType { get; }
+
+        public override object Value { get; }
 
         public override string ToString()
         {
-            return $"[{NespUtilities.GetReservedReadableTypeName(this.Property.DeclaringType)}.{this.Property.Name}]:property";
+            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
         }
     }
 }

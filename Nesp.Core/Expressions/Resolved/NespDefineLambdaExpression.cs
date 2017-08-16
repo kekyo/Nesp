@@ -17,17 +17,31 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+using System;
+
+namespace Nesp.Expressions.Resolved
 {
-    public abstract class NespExpression
+    public sealed class NespDefineLambdaExpression : NespResolvedExpression
     {
-        internal NespExpression(NespSourceInformation source)
+        internal NespDefineLambdaExpression(
+            string name, NespResolvedExpression body, NespParameterExpression[] parameters, NespSourceInformation source)
+            : base(source)
         {
-            this.Source = source;
+            this.Name = name;
+            this.Body = body;
+            this.Parameters = parameters;
         }
 
-        public abstract bool IsResolved { get; }
+        public override Type FixedType => this.Body.FixedType;
 
-        public NespSourceInformation Source { get; }
+        public string Name { get; }
+        public NespResolvedExpression Body { get; }
+        public NespParameterExpression[] Parameters { get; }
+
+        public override string ToString()
+        {
+            var parameters = string.Join(",", (object[])this.Parameters);
+            return $"define {this.Name} ({parameters}) ({this.Body})";
+        }
     }
 }

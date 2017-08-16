@@ -17,17 +17,21 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+namespace Nesp.Expressions.Resolved
 {
-    public abstract class NespExpression
+    public sealed class NespStringExpression : NespTokenExpression<string>
     {
-        internal NespExpression(NespSourceInformation source)
+        internal NespStringExpression(string value, NespSourceInformation source)
+            : base(source)
         {
-            this.Source = source;
+            this.Value = value;
         }
 
-        public abstract bool IsResolved { get; }
+        public override string Value { get; }
 
-        public NespSourceInformation Source { get; }
+        public override string ToString()
+        {
+            return $"\"{this.Value}\"";
+        }
     }
 }

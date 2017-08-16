@@ -20,6 +20,7 @@
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
+
 using Nesp.Extensions;
 
 namespace Nesp
@@ -43,7 +44,7 @@ namespace Nesp
             Console.Write("Loading ...");
 
             var memberBinder = new MemberBinder();
-            var engine = new NespEngine(NespExpressionType.Repl, memberBinder);
+            var engine = new NespEngine(memberBinder);
 
             await engine.AddExtensionAsync(NespBaseExtension.Instance);
             await Task.WhenAll(

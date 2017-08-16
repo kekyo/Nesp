@@ -17,21 +17,26 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Nesp.Expressions
+using System;
+using Nesp.Internals;
+
+namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespCharExpression : NespTokenExpression<char>
+    public sealed class NespEnumExpression : NespTokenExpression<Enum>
     {
-        internal NespCharExpression(char value, NespTokenInformation token)
-            : base(token)
+        internal NespEnumExpression(Enum value, NespSourceInformation source)
+            : base(source)
         {
+            this.FixedType = value.GetType();
             this.Value = value;
         }
 
-        public override char Value { get; }
+        public override Type FixedType { get; }
+        public override Enum Value { get; }
 
         public override string ToString()
         {
-            return $"'{this.Value}'";
+            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
         }
     }
 }

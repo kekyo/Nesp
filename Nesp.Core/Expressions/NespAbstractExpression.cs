@@ -17,24 +17,31 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using Nesp.Internals;
-
 namespace Nesp.Expressions
 {
-    public sealed class NespEnumExpression : NespTokenExpression<Enum>
+    public abstract class NespAbstractExpression : NespExpression
     {
-        internal NespEnumExpression(Enum value, NespTokenInformation token)
-            : base(token)
+        private NespMetadataResolverContext cachedContext;
+        private NespResolvedExpression[] cachedExpressions;
+
+        internal NespAbstractExpression(NespSourceInformation source)
+            : base(source)
         {
-            this.Value = value;
         }
 
-        public override Enum Value { get; }
+        public sealed override bool IsResolved => false;
 
-        public override string ToString()
+        internal abstract NespResolvedExpression[] OnResolveMetadata(NespMetadataResolverContext context);
+
+        public NespResolvedExpression[] ResolveMetadata(NespMetadataResolverContext context)
         {
-            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
+            if (context.EqualCondition(cachedContext) == false)
+            {
+                cachedContext = context;
+                cachedExpressions = this.OnResolveMetadata(context);
+            }
+
+            return cachedExpressions;
         }
     }
 }

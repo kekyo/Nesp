@@ -19,15 +19,24 @@
 
 namespace Nesp.Expressions
 {
-    public abstract class NespExpression
+    public sealed class NespSourceInformation
     {
-        internal NespExpression(NespSourceInformation source)
+        public readonly int StartLine;
+        public readonly int StartColumn;
+        public readonly int EndLine;
+        public readonly int EndColumn;
+
+        public NespSourceInformation(int startLine, int startColumn, int endLine, int endColumn)
         {
-            this.Source = source;
+            this.StartLine = startLine;
+            this.StartColumn = startColumn;
+            this.EndLine = endLine;
+            this.EndColumn = endColumn;
         }
 
-        public abstract bool IsResolved { get; }
-
-        public NespSourceInformation Source { get; }
+        public override string ToString()
+        {
+            return $"({this.StartLine},{this.StartColumn}) - ({this.EndLine},{this.EndColumn})";
+        }
     }
 }

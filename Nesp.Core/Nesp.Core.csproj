@@ -44,20 +44,30 @@
     </Antlr4>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Expressions\NespApplyFunctionExpression.cs" />
-    <Compile Include="Expressions\NespEnumExpression.cs" />
-    <Compile Include="Expressions\NespConstantExpression.cs" />
-    <Compile Include="Expressions\NespPropertyExpression.cs" />
-    <Compile Include="Expressions\NespFieldExpression.cs" />
-    <Compile Include="Expressions\NespCharExpression.cs" />
-    <Compile Include="Expressions\NespBoolExpression.cs" />
+    <Compile Include="Expressions\Abstracts\NespBracketedListExpression.cs" />
+    <Compile Include="Expressions\Abstracts\NespAbstractListExpression.cs" />
+    <Compile Include="Expressions\NespAbstractExpression.cs" />
+    <Compile Include="Expressions\NespResolvedExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespDefineLambdaExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespApplyFunctionExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespEnumExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespConstantExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespSymbolExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespResolvedListExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespPropertyExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespFieldExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespCharExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespBoolExpression.cs" />
     <Compile Include="Expressions\NespMetadataResolverContext.cs" />
-    <Compile Include="Expressions\NespTokenExpression.cs" />
-    <Compile Include="Expressions\NespUnitExpression.cs" />
-    <Compile Include="Expressions\NespListExpression.cs" />
-    <Compile Include="Expressions\NespStringExpression.cs" />
-    <Compile Include="Expressions\NespIdExpression.cs" />
-    <Compile Include="Expressions\NespNumericExpression.cs" />
+    <Compile Include="Expressions\NespSourceInformation.cs" />
+    <Compile Include="Expressions\Resolved\NespParameterExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespReferenceSymbolExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespTokenExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespUnitExpression.cs" />
+    <Compile Include="Expressions\Abstracts\NespListExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespStringExpression.cs" />
+    <Compile Include="Expressions\Abstracts\NespIdExpression.cs" />
+    <Compile Include="Expressions\Resolved\NespNumericExpression.cs" />
     <Compile Include="Expressions\NespExpression.cs" />
     <Compile Include="Extensions\IMemberProducer.cs" />
     <Compile Include="Extensions\MemberExtractor.cs" />
@@ -76,7 +86,7 @@
     <Compile Include="Unit.cs" />
     <Compile Include="NespEngine.cs" />
     <Compile Include="INespMemberBinder.cs" />
-    <Compile Include="Internals\NespParser.cs" />
+    <Compile Include="Expressions\NespParser.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
