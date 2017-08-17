@@ -39,7 +39,7 @@ namespace Nesp.Metadatas
         public bool IsConstant =>
             field.IsStatic
             && (field.IsLiteral || field.IsInitOnly)
-            && !(this.FieldType is NespGenericParameterTypeInformation);
+            && !(this.FieldType is NespPolymorphicTypeInformation);
 
         public object GetConstantValue()
         {

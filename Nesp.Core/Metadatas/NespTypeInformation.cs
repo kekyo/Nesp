@@ -17,10 +17,9 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-
+using Antlr4.Runtime.Atn;
 using Nesp.Internals;
 
 namespace Nesp.Metadatas
@@ -35,24 +34,77 @@ namespace Nesp.Metadatas
 
         public abstract string Name { get; }
 
-        public abstract bool IsEnum { get; }
+        public abstract bool IsPrimitiveType { get; }
+
+        public abstract bool IsBasicType { get; }
+
+        public abstract bool IsEnumType { get; }
+
+        public abstract NespTypeInformation GetBaseType(NespMetadataContext context);
+
+        public abstract bool IsGenericType { get; }
+
+        public abstract NespTypeInformation[] GetPolymorphicParameters(NespMetadataContext context);
+
+        public abstract bool IsValueTypeConstraint { get; }
+
+        public abstract bool IsReferenceConstraint { get; }
+
+        public abstract bool IsDefaultConstractorConstraint { get; }
+
+        public abstract NespTypeInformation[] GetPolymorphicParameterConstraints(NespMetadataContext context);
 
         public abstract bool IsAssignableFrom(NespTypeInformation type);
 
-        public static NespGenericParameterTypeInformation CreateGenericParameter(string name)
+        public NespTypeInformation CalculateNarrowing(NespTypeInformation targetType, NespMetadataContext context)
         {
-            return new NespGenericParameterTypeInformation(name);
+            var thisDeriveTypes = this
+                .Traverse(type => type.GetBaseType(context))
+                .Reverse();
+            var targetDeriveTypes = targetType
+                .Traverse(type => type.GetBaseType(context))
+                .Reverse();
+            var zipped = thisDeriveTypes
+                .UnbalancedZip(targetDeriveTypes, (t, n) => new { t, n })
+                .ToArray();
+
+            var balanced = zipped.LastOrDefault(entry => entry.t == entry.n);
+            if (balanced != null)
+            {
+                return balanced.t;
+            }
+
+            var last = zipped.Last();
+            return (last.t != null) ? last.t : last.n;
+        }
+
+        public abstract bool Equals(NespTypeInformation obj);
+
+        public override bool Equals(object obj)
+        {
+            return this.Equals(obj as NespTypeInformation);
+        }
+
+        public static bool operator ==(NespTypeInformation lhs, NespTypeInformation rhs)
+        {
+            return !(lhs == null) && lhs.Equals(rhs);
+        }
+
+        public static bool operator !=(NespTypeInformation lhs, NespTypeInformation rhs)
+        {
+            return !(lhs == rhs);
         }
     }
 
     public sealed class NespRuntimeTypeInformation : NespTypeInformation
     {
+        private static readonly TypeInfo stringTypeInfo = typeof(string).GetTypeInfo();
+        private static readonly TypeInfo decimalTypeInfo = typeof(decimal).GetTypeInfo();
+
         private readonly TypeInfo typeInfo;
 
         internal NespRuntimeTypeInformation(TypeInfo typeInfo)
         {
-            Debug.Assert(typeInfo.IsGenericParameter == false);
-
             this.typeInfo = typeInfo;
         }
 
@@ -60,7 +112,45 @@ namespace Nesp.Metadatas
 
         public override string Name => this.FullName.Split('.').Last();
 
-        public override bool IsEnum => typeInfo.IsEnum;
+        public override bool IsPrimitiveType => typeInfo.IsPrimitive;
+
+        public override bool IsBasicType => typeInfo.IsPrimitive
+            || (typeInfo == stringTypeInfo)
+            || (typeInfo == decimalTypeInfo);
+
+        public override bool IsEnumType => typeInfo.IsEnum;
+
+        public override NespTypeInformation GetBaseType(NespMetadataContext context)
+        {
+            var baseType = typeInfo.BaseType;
+            var baseTypeInfo = baseType?.GetTypeInfo();
+            return (baseTypeInfo != null) ? context.FromType(baseTypeInfo) : null;
+        }
+
+        public override bool IsGenericType => typeInfo.IsGenericType;
+
+        public override NespTypeInformation[] GetPolymorphicParameters(NespMetadataContext context)
+        {
+            return typeInfo.GenericTypeParameters
+                .Select(type => context.FromType(type.GetTypeInfo()))
+                .ToArray();
+        }
+
+        public override bool IsValueTypeConstraint =>
+            (typeInfo.GenericParameterAttributes & GenericParameterAttributes.NotNullableValueTypeConstraint) == GenericParameterAttributes.NotNullableValueTypeConstraint;
+
+        public override bool IsReferenceConstraint =>
+            (typeInfo.GenericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint) == GenericParameterAttributes.ReferenceTypeConstraint;
+
+        public override bool IsDefaultConstractorConstraint =>
+            (typeInfo.GenericParameterAttributes & GenericParameterAttributes.DefaultConstructorConstraint) == GenericParameterAttributes.DefaultConstructorConstraint;
+
+        public override NespTypeInformation[] GetPolymorphicParameterConstraints(NespMetadataContext context)
+        {
+            return typeInfo.GetGenericParameterConstraints()
+                .Select(type => context.FromType(type.GetTypeInfo()))
+                .ToArray();
+        }
 
         public override bool IsAssignableFrom(NespTypeInformation type)
         {
@@ -76,15 +166,34 @@ namespace Nesp.Metadatas
             }
         }
 
+        public bool Equals(NespRuntimeTypeInformation rhs)
+        {
+            if (object.ReferenceEquals(this, rhs))
+            {
+                return true;
+            }
+            return rhs?.typeInfo.Equals(typeInfo) ?? false;
+        }
+
+        public override bool Equals(NespTypeInformation obj)
+        {
+            return this.Equals(obj as NespRuntimeTypeInformation);
+        }
+
+        public override int GetHashCode()
+        {
+            return typeInfo.GetHashCode();
+        }
+
         public override string ToString()
         {
             return NespUtilities.GetReservedReadableTypeName(typeInfo);
         }
     }
 
-    public sealed class NespGenericParameterTypeInformation : NespTypeInformation
+    public sealed class NespPolymorphicTypeInformation : NespTypeInformation
     {
-        internal NespGenericParameterTypeInformation(string name)
+        internal NespPolymorphicTypeInformation(string name)
         {
             this.Name = name;
         }
@@ -93,12 +202,55 @@ namespace Nesp.Metadatas
 
         public override string Name { get; }
 
-        public override bool IsEnum => false; // TODO: Apply constraints
+        public override bool IsPrimitiveType => false;
+
+        public override bool IsBasicType => false;
+
+        public override bool IsEnumType => false; // TODO: Apply constraints
+
+        public override NespTypeInformation GetBaseType(NespMetadataContext context)
+        {
+            // TODO:
+            return null;
+        }
+
+        public override bool IsGenericType => true;
+
+        public override NespTypeInformation[] GetPolymorphicParameters(NespMetadataContext context)
+        {
+            return null;
+        }
+
+        public override bool IsValueTypeConstraint => false;
+
+        public override bool IsReferenceConstraint => false;
+
+        public override bool IsDefaultConstractorConstraint => false;
+
+        public override NespTypeInformation[] GetPolymorphicParameterConstraints(NespMetadataContext context)
+        {
+            return null;
+        }
 
         public override bool IsAssignableFrom(NespTypeInformation type)
         {
             // TODO: Implement assignable
             return false;
+        }
+
+        public bool Equals(NespPolymorphicTypeInformation rhs)
+        {
+            if (object.ReferenceEquals(this, rhs))
+            {
+                return true;
+            }
+            // TODO: Implement assignable
+            return false;
+        }
+
+        public override bool Equals(NespTypeInformation obj)
+        {
+            return this.Equals(obj as NespPolymorphicTypeInformation);
         }
 
         public override string ToString()

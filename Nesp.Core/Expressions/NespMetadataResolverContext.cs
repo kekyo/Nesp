@@ -588,7 +588,7 @@ namespace Nesp.Expressions
                     return factory(value, untypedExpression.Source);
                 }
 
-                if (type.IsEnum)
+                if (type.IsEnumType)
                 {
                     return new NespEnumExpression(type, (Enum)value, untypedExpression.Source);
                 }

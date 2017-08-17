@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="NespExpressionTests.cs" />
+    <Compile Include="NespMetadataTests.cs" />
     <Compile Include="NespParserTests.cs" />
     <Compile Include="NespGrammarTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

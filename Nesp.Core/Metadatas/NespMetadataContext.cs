@@ -100,10 +100,7 @@ namespace Nesp.Metadatas
         {
             if (runtimeTypes.TryGetValue(runtimeTypeInfo, out var type) == false)
             {
-                type = runtimeTypeInfo.IsGenericParameter
-                    ? (NespTypeInformation)new NespGenericParameterTypeInformation(runtimeTypeInfo.Name)    // TODO: Give generic type informations
-                    : (NespTypeInformation)new NespRuntimeTypeInformation(runtimeTypeInfo);
-
+                type = new NespRuntimeTypeInformation(runtimeTypeInfo);
                 runtimeTypes.Add(runtimeTypeInfo, type);
             }
             return type;
