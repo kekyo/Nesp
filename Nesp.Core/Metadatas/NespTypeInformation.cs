@@ -19,13 +19,18 @@
 
 using System.Linq;
 using System.Reflection;
-using Antlr4.Runtime.Atn;
+
 using Nesp.Internals;
+
+#pragma warning disable 659
+#pragma warning disable 661
 
 namespace Nesp.Metadatas
 {
     public abstract class NespTypeInformation
     {
+        private static readonly NespTypeInformation objectType = NespMetadataContext.UnsafeFromType<object>();
+
         internal NespTypeInformation()
         {
         }
@@ -42,6 +47,8 @@ namespace Nesp.Metadatas
 
         public abstract NespTypeInformation GetBaseType(NespMetadataContext context);
 
+        public abstract NespTypeInformation[] GetInterfaces(NespMetadataContext context);
+
         public abstract bool IsGenericType { get; }
 
         public abstract NespTypeInformation[] GetPolymorphicParameters(NespMetadataContext context);
@@ -56,26 +63,39 @@ namespace Nesp.Metadatas
 
         public abstract bool IsAssignableFrom(NespTypeInformation type);
 
+        private NespTypeInformation InternalGetBaseType(NespMetadataContext context)
+        {
+            var type = this.GetBaseType(context);
+            return (type != objectType) ? type : null;
+        }
+
         public NespTypeInformation CalculateNarrowing(NespTypeInformation targetType, NespMetadataContext context)
         {
-            var thisDeriveTypes = this
-                .Traverse(type => type.GetBaseType(context))
-                .Reverse();
-            var targetDeriveTypes = targetType
-                .Traverse(type => type.GetBaseType(context))
-                .Reverse();
-            var zipped = thisDeriveTypes
-                .UnbalancedZip(targetDeriveTypes, (t, n) => new { t, n })
-                .ToArray();
-
-            var balanced = zipped.LastOrDefault(entry => entry.t == entry.n);
-            if (balanced != null)
+            if (this.IsAssignableFrom(targetType))
             {
-                return balanced.t;
+                return targetType;
+            }
+            if (targetType.IsAssignableFrom(this))
+            {
+                return this;
             }
 
-            var last = zipped.Last();
-            return (last.t != null) ? last.t : last.n;
+            var thisDeriveTypes = this
+                .Traverse(type => type.InternalGetBaseType(context))
+                .Reverse();
+            var targetDeriveTypes = targetType
+                .Traverse(type => type.InternalGetBaseType(context))
+                .Reverse();
+            var narrowTypes = thisDeriveTypes
+                .Zip(targetDeriveTypes, (thisDeriveType, targetDerive) => new { thisDeriveType, targetDerive })
+                .LastOrDefault(entry => entry.thisDeriveType == entry.targetDerive);
+
+            if (narrowTypes != null)
+            {
+                return narrowTypes.thisDeriveType;
+            }
+
+            return objectType;
         }
 
         public abstract bool Equals(NespTypeInformation obj);
@@ -85,14 +105,23 @@ namespace Nesp.Metadatas
             return this.Equals(obj as NespTypeInformation);
         }
 
+        private static bool Equals(NespTypeInformation lhs, NespTypeInformation rhs)
+        {
+            if (object.ReferenceEquals(lhs, rhs))
+            {
+                return true;
+            }
+            return lhs?.Equals(rhs) ?? false;
+        }
+
         public static bool operator ==(NespTypeInformation lhs, NespTypeInformation rhs)
         {
-            return !(lhs == null) && lhs.Equals(rhs);
+            return Equals(lhs, rhs);
         }
 
         public static bool operator !=(NespTypeInformation lhs, NespTypeInformation rhs)
         {
-            return !(lhs == rhs);
+            return !Equals(lhs, rhs);
         }
     }
 
@@ -125,6 +154,13 @@ namespace Nesp.Metadatas
             var baseType = typeInfo.BaseType;
             var baseTypeInfo = baseType?.GetTypeInfo();
             return (baseTypeInfo != null) ? context.FromType(baseTypeInfo) : null;
+        }
+
+        public override NespTypeInformation[] GetInterfaces(NespMetadataContext context)
+        {
+            return typeInfo.ImplementedInterfaces
+                .Select(type => context.FromType(type.GetTypeInfo()))
+                .ToArray();
         }
 
         public override bool IsGenericType => typeInfo.IsGenericType;
@@ -209,6 +245,12 @@ namespace Nesp.Metadatas
         public override bool IsEnumType => false; // TODO: Apply constraints
 
         public override NespTypeInformation GetBaseType(NespMetadataContext context)
+        {
+            // TODO:
+            return null;
+        }
+
+        public override NespTypeInformation[] GetInterfaces(NespMetadataContext context)
         {
             // TODO:
             return null;

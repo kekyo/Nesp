@@ -18,6 +18,7 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -203,9 +204,11 @@ namespace Nesp
             var test0Type = new NespRuntimeTypeInformation(typeof(SelectBranchedBaseType0TestType).GetTypeInfo());
             var test1Type = new NespRuntimeTypeInformation(typeof(SelectBranchedBaseType1TestType).GetTypeInfo());
 
-            var result = test0Type.CalculateNarrowing(test1Type, context);
+            var result0 = test0Type.CalculateNarrowing(test1Type, context);
+            Assert.AreEqual(test1Type, result0);
 
-            Assert.AreEqual(test1Type, result);
+            var result1 = test1Type.CalculateNarrowing(test0Type, context);
+            Assert.AreEqual(test1Type, result1);
         }
 
         [Test]
@@ -217,9 +220,74 @@ namespace Nesp
             var test21Type = new NespRuntimeTypeInformation(typeof(SelectBranchedBaseType21TestType).GetTypeInfo());
             var test22Type = new NespRuntimeTypeInformation(typeof(SelectBranchedBaseType22TestType).GetTypeInfo());
 
-            var result = test21Type.CalculateNarrowing(test22Type, context);
+            var result0 = test21Type.CalculateNarrowing(test22Type, context);
+            Assert.AreEqual(test1Type, result0);
 
-            Assert.AreEqual(test1Type, result);
+            var result1 = test22Type.CalculateNarrowing(test21Type, context);
+            Assert.AreEqual(test1Type, result1);
+        }
+
+        [Test]
+        public void SelectCompletelyAnotherTypeForCalculateNarrowingTest()
+        {
+            var context = new NespMetadataContext();
+
+            var objectType = new NespRuntimeTypeInformation(typeof(object).GetTypeInfo());
+            var stringType = new NespRuntimeTypeInformation(typeof(string).GetTypeInfo());
+            var test22Type = new NespRuntimeTypeInformation(typeof(SelectBranchedBaseType22TestType).GetTypeInfo());
+
+            var result0 = stringType.CalculateNarrowing(test22Type, context);
+            Assert.AreEqual(objectType, result0);
+
+            var result1 = test22Type.CalculateNarrowing(stringType, context);
+            Assert.AreEqual(objectType, result1);
+        }
+
+        [Test]
+        public void SelectCompletelyAnotherInterfaceTypeForCalculateNarrowingTest()
+        {
+            var context = new NespMetadataContext();
+
+            var objectType = new NespRuntimeTypeInformation(typeof(object).GetTypeInfo());
+            var enumerableType = new NespRuntimeTypeInformation(typeof(IEnumerable).GetTypeInfo());
+            var test22Type = new NespRuntimeTypeInformation(typeof(SelectBranchedBaseType22TestType).GetTypeInfo());
+
+            var result0 = enumerableType.CalculateNarrowing(test22Type, context);
+            Assert.AreEqual(objectType, result0);
+
+            var result1 = test22Type.CalculateNarrowing(enumerableType, context);
+            Assert.AreEqual(objectType, result1);
+        }
+
+        [Test]
+        public void SelectInterfaceTypeForCalculateNarrowingTest()
+        {
+            var context = new NespMetadataContext();
+
+            var enumerableCharType = new NespRuntimeTypeInformation(typeof(IEnumerable<char>).GetTypeInfo());
+            var stringType = new NespRuntimeTypeInformation(typeof(string).GetTypeInfo());
+
+            var result0 = enumerableCharType.CalculateNarrowing(stringType, context);
+            Assert.AreEqual(stringType, result0);
+
+            var result1 = stringType.CalculateNarrowing(enumerableCharType, context);
+            Assert.AreEqual(stringType, result1);
+        }
+
+        [Test]
+        public void SelectSharedInterfaceTypeForCalculateNarrowingTest()
+        {
+            var context = new NespMetadataContext();
+
+            var enumerableCharType = new NespRuntimeTypeInformation(typeof(IEnumerable<char>).GetTypeInfo());
+            var listCharType = new NespRuntimeTypeInformation(typeof(List<char>).GetTypeInfo());
+            var stringType = new NespRuntimeTypeInformation(typeof(string).GetTypeInfo());
+
+            var result0 = listCharType.CalculateNarrowing(stringType, context);
+            Assert.AreEqual(enumerableCharType, result0);
+
+            var result1 = stringType.CalculateNarrowing(listCharType, context);
+            Assert.AreEqual(enumerableCharType, result1);
         }
         #endregion
     }

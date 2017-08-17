@@ -21,6 +21,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+#pragma warning disable 659
+
 namespace Nesp.Internals
 {
     internal sealed class CandidatesDictionary<T>
