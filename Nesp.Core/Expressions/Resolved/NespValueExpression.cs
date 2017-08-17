@@ -17,36 +17,18 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
+using Nesp.Metadatas;
 
 namespace Nesp.Expressions.Resolved
 {
-    public abstract class NespTokenExpression : NespResolvedExpression
+    public sealed class NespValueExpression : NespConstantExpression
     {
-        internal NespTokenExpression(NespSourceInformation source)
-            : base(source)
+        internal NespValueExpression(NespTypeInformation type, object value, NespSourceInformation source)
+            : base(value, source)
         {
+            this.Type = type;
         }
 
-        public object Value => this.GetValue();
-
-        internal abstract object GetValue();
-    }
-
-    public abstract class NespTokenExpression<T> : NespTokenExpression
-    {
-        internal NespTokenExpression(NespSourceInformation source)
-            : base(source)
-        {
-        }
-
-        public override Type FixedType => typeof(T);
-
-        internal override object GetValue()
-        {
-            return this.Value;
-        }
-
-        public new abstract T Value { get; }
+        public override NespTypeInformation Type { get; }
     }
 }

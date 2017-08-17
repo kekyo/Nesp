@@ -19,15 +19,12 @@
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespBoolExpression : NespTokenExpression<bool>
+    public sealed class NespBoolExpression : NespStandardTypeConstantExpression<bool>
     {
         internal NespBoolExpression(bool value, NespSourceInformation source)
-            : base(source)
+            : base(value, source)
         {
-            this.Value = value;
         }
-
-        public override bool Value { get; }
 
         public override string ToString()
         {

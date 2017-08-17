@@ -19,19 +19,11 @@
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespCharExpression : NespTokenExpression<char>
+    public sealed class NespCharExpression : NespStandardTypeConstantExpression<char>
     {
         internal NespCharExpression(char value, NespSourceInformation source)
-            : base(source)
+            : base(value, source)
         {
-            this.Value = value;
-        }
-
-        public override char Value { get; }
-
-        public override string ToString()
-        {
-            return $"'{this.Value}'";
         }
     }
 }

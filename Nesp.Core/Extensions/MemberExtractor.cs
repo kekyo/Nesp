@@ -33,13 +33,8 @@ namespace Nesp.Extensions
         {
         }
 
-        public MemberExtractor(params Type[] types)
-            : this((IEnumerable<Type>)types)
-        {
-        }
-
-        public MemberExtractor(IEnumerable<Type> types)
-            : this(types.Select(typeInfo => typeInfo.GetTypeInfo()))
+        public MemberExtractor(params TypeInfo[] types)
+            : this((IEnumerable<TypeInfo>)types)
         {
         }
 
@@ -55,7 +50,7 @@ namespace Nesp.Extensions
                  group typeInfo by typeName)
                 .ToDictionary(
                     g => g.Key,
-                    g => g.Distinct().Select(typeInfo => typeInfo.AsType()).ToArray());
+                    g => g.Distinct().ToArray());
 
             this.FieldsByName =
                 (from typeInfo in classOrValueTypeInfos
@@ -94,7 +89,7 @@ namespace Nesp.Extensions
                     g => g.Distinct().ToArray());
         }
 
-        private static string GetReadableTypeName(Type type)
+        private static string GetReadableTypeName(TypeInfo type)
         {
             return NespUtilities.GetReadableTypeName(type, GetReadableTypeName);
         }
@@ -104,7 +99,7 @@ namespace Nesp.Extensions
             var memberBind = typeInfo.GetCustomAttribute<MemberBindAttribute>();
             return (memberBind != null)
                 ? memberBind.MemberName
-                : GetReadableTypeName(typeInfo.AsType());
+                : GetReadableTypeName(typeInfo);
         }
 
         private static string GetMemberName(MemberInfo member)
@@ -122,7 +117,7 @@ namespace Nesp.Extensions
             return member.DeclaringType.FullName + "." + member.Name;
         }
 
-        public IReadOnlyDictionary<string, Type[]> TypesByName { get; }
+        public IReadOnlyDictionary<string, TypeInfo[]> TypesByName { get; }
         public IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
         public IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
         public IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }

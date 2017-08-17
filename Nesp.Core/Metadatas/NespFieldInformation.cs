@@ -17,39 +17,38 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Diagnostics;
+using System.Reflection;
 
-namespace Nesp.Expressions.Resolved
+namespace Nesp.Metadatas
 {
-    /// <summary>
-    /// This is a expression for symbol id maybe parameter or bound expression.
-    /// </summary>
-    /// <remarks>This expression temporary usage, will correct another expression by resolver.</remarks>
-    public sealed class NespReferenceSymbolExpression : NespSymbolExpression
+    public sealed class NespFieldInformation
     {
-        internal NespReferenceSymbolExpression(string symbol, NespSourceInformation source)
-            : base(symbol, source)
+        private readonly FieldInfo field;
+
+        internal NespFieldInformation(FieldInfo field, NespMetadataContext context)
         {
+            this.field = field;
+            this.DeclaringType = context.FromType(field.DeclaringType.GetTypeInfo());
+            this.FieldType = context.FromType(field.FieldType.GetTypeInfo());
         }
 
-        public NespSymbolExpression Related { get; private set; }
+        public string Name => field.Name;
+        public NespTypeInformation DeclaringType { get; }
+        public NespTypeInformation FieldType { get; }
 
-        internal void SetRelated(NespSymbolExpression related)
+        public bool IsConstant =>
+            field.IsStatic
+            && (field.IsLiteral || field.IsInitOnly)
+            && !(this.FieldType is NespGenericParameterTypeInformation);
+
+        public object GetConstantValue()
         {
-            Debug.Assert(related.Symbol == this.Symbol);
-
-            this.Related = related;
-        }
-
-        internal NespReferenceSymbolExpression Clone()
-        {
-            return new NespReferenceSymbolExpression(this.Symbol, this.Source);
+            return field.GetValue(null);
         }
 
         public override string ToString()
         {
-            return $"{this.Symbol}";
+            return $"{this.DeclaringType}.{this.Name}";
         }
     }
 }

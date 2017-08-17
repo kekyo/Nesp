@@ -17,31 +17,29 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
 using System.Linq;
-using System.Reflection;
 
-using Nesp.Internals;
+using Nesp.Metadatas;
 
 namespace Nesp.Expressions.Resolved
 {
     public sealed class NespApplyFunctionExpression : NespResolvedExpression
     {
-        internal NespApplyFunctionExpression(MethodInfo method, NespExpression[] arguments, NespSourceInformation source)
+        internal NespApplyFunctionExpression(NespFunctionInformation function, NespExpression[] arguments, NespSourceInformation source)
             : base(source)
         {
-            this.Method = method;
+            this.Function = function;
             this.Arguments = arguments;
         }
 
-        public override Type FixedType => this.Method.ReturnType;
+        public override NespTypeInformation Type => this.Function.ReturnType;
 
-        public MethodInfo Method { get; }
+        public NespFunctionInformation Function { get; }
         public NespExpression[] Arguments { get; }
 
         public override string ToString()
         {
-            return $"{NespUtilities.GetReservedReadableTypeName(this.Method.DeclaringType)}.{this.Method.Name}({string.Join(",", this.Method.GetParameters().Select(parameter => NespUtilities.GetReservedReadableTypeName(parameter.ParameterType)))})";
+            return $"[{this.Function}({string.Join(",", this.Function.Parameters.Select(parameter => parameter.Type))})]:function";
         }
     }
 }

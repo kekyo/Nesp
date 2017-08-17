@@ -17,7 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
+using Nesp.Metadatas;
 
 namespace Nesp.Expressions
 {
@@ -30,7 +30,7 @@ namespace Nesp.Expressions
 
         public sealed override bool IsResolved => true;
 
-        public abstract Type FixedType { get; }
+        public abstract NespTypeInformation Type { get; }
 
         internal ulong Score { get; private set; }
 

@@ -564,7 +564,7 @@ namespace Nesp
             var argExprs = functionExpr.Arguments
                 .Select(iexpr => (NespNumericExpression)iexpr)
                 .ToArray();
-            Assert.IsTrue(argExprs.Select(iexpr => iexpr.FixedType).SequenceEqual(new [] { typeof(int) }));
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new [] { typeof(int) }));
             Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new object[] { 12345678 }));
         }
 
@@ -587,7 +587,7 @@ namespace Nesp
             var argExprs = functionExpr.Arguments
                 .Select(iexpr => (NespStringExpression)iexpr)
                 .ToArray();
-            Assert.IsTrue(argExprs.Select(iexpr => iexpr.FixedType).SequenceEqual(new[] { typeof(string) }));
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new[] { typeof(string) }));
             Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new [] { "abcdefg" }));
         }
 
@@ -610,7 +610,7 @@ namespace Nesp
             var argExprs = functionExpr.Arguments
                 .Select(iexpr => (NespNumericExpression)iexpr)
                 .ToArray();
-            Assert.IsTrue(argExprs.Select(iexpr => iexpr.FixedType).SequenceEqual(new[] { typeof(int), typeof(int) }));
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new[] { typeof(int), typeof(int) }));
             Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new object[] { 12345678, 23456789 }));
         }
 
@@ -633,7 +633,7 @@ namespace Nesp
             var argExprs = functionExpr.Arguments
                 .Select(iexpr => (NespNumericExpression)iexpr)
                 .ToArray();
-            Assert.IsTrue(argExprs.Select(iexpr => iexpr.FixedType).SequenceEqual(new[] { typeof(int), typeof(long) }));
+            Assert.IsTrue(argExprs.Select(iexpr => iexpr.Type).SequenceEqual(new[] { typeof(int), typeof(long) }));
             Assert.IsTrue(argExprs.Select(iexpr => iexpr.Value).SequenceEqual(new object[] { 12345678, 2345678901234567 }));
         }
         #endregion
@@ -784,7 +784,7 @@ namespace Nesp
 
             var lambdaExpr = (NespDefineLambdaExpression)typedExprs.Single();
             Assert.AreEqual("getString0", lambdaExpr.Name);
-            Assert.AreEqual(typeof(string), lambdaExpr.FixedType);
+            Assert.AreEqual(typeof(string), lambdaExpr.Type);
             Assert.AreEqual(0, lambdaExpr.Parameters.Length);
             var bodyExpr = (NespApplyFunctionExpression)lambdaExpr.Body;
             Assert.AreEqual(typeof(LambdaTestType).GetMethod("GetString0"), bodyExpr.Method);
@@ -801,7 +801,7 @@ namespace Nesp
 
             var lambdaExpr = (NespDefineLambdaExpression)typedExprs.Single();
             Assert.AreEqual("parseInt32", lambdaExpr.Name);
-            Assert.AreEqual(typeof(int), lambdaExpr.FixedType);
+            Assert.AreEqual(typeof(int), lambdaExpr.Type);
             Assert.AreEqual(1, lambdaExpr.Parameters.Length);
             Assert.AreEqual("value", lambdaExpr.Parameters[0].Symbol);
         // TODO: How deriving inferered type from NespReferenceSymbolExpression?
@@ -823,7 +823,7 @@ namespace Nesp
 
             var lambdaExpr0 = (NespDefineLambdaExpression) typedExprs[0];
             Assert.AreEqual("getString1", lambdaExpr0.Name);
-            Assert.AreEqual(typeof(string), lambdaExpr0.FixedType);
+            Assert.AreEqual(typeof(string), lambdaExpr0.Type);
             Assert.AreEqual(1, lambdaExpr0.Parameters.Length);
             Assert.AreEqual("value", lambdaExpr0.Parameters[0].Symbol);
         // TODO: How deriving inferered type from NespReferenceSymbolExpression?
@@ -833,7 +833,7 @@ namespace Nesp
 
             var lambdaExpr1 = (NespDefineLambdaExpression)typedExprs[1];
             Assert.AreEqual("getString1", lambdaExpr1.Name);
-            Assert.AreEqual(typeof(string), lambdaExpr1.FixedType);
+            Assert.AreEqual(typeof(string), lambdaExpr1.Type);
             Assert.AreEqual(1, lambdaExpr1.Parameters.Length);
             Assert.AreEqual("value", lambdaExpr1.Parameters[0].Symbol);
         // TODO: How deriving inferered type from NespReferenceSymbolExpression?

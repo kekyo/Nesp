@@ -20,10 +20,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
+
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
 
@@ -31,30 +33,30 @@ namespace Nesp.Internals
 {
     internal static class NespUtilities
     {
-        public static readonly IReadOnlyDictionary<Type, string> ReservedTypeNames =
-            new Dictionary<Type, string>
+        public static readonly IReadOnlyDictionary<TypeInfo, string> ReservedTypeNames =
+            new Dictionary<TypeInfo, string>
             {
-                { typeof(object), "object" },
-                { typeof(byte), "byte" },
-                { typeof(sbyte), "sbyte" },
-                { typeof(short), "short" },
-                { typeof(ushort), "ushort" },
-                { typeof(int), "int" },
-                { typeof(uint), "uint" },
-                { typeof(long), "long" },
-                { typeof(ulong), "ulong" },
-                { typeof(float), "float" },
-                { typeof(double), "double" },
-                { typeof(decimal), "decimal" },
-                { typeof(bool), "bool" },
-                { typeof(char), "char" },
-                { typeof(string), "string" },
-                { typeof(DateTime), "datetime" },
-                { typeof(TimeSpan), "timespan" },
-                { typeof(Guid), "guid" },
-                { typeof(Math), "math" },
-                { typeof(Enum), "enum" },
-                { typeof(Type), "type" },
+                { typeof(object).GetTypeInfo(), "object" },
+                { typeof(byte).GetTypeInfo(), "byte" },
+                { typeof(sbyte).GetTypeInfo(), "sbyte" },
+                { typeof(short).GetTypeInfo(), "short" },
+                { typeof(ushort).GetTypeInfo(), "ushort" },
+                { typeof(int).GetTypeInfo(), "int" },
+                { typeof(uint).GetTypeInfo(), "uint" },
+                { typeof(long).GetTypeInfo(), "long" },
+                { typeof(ulong).GetTypeInfo(), "ulong" },
+                { typeof(float).GetTypeInfo(), "float" },
+                { typeof(double).GetTypeInfo(), "double" },
+                { typeof(decimal).GetTypeInfo(), "decimal" },
+                { typeof(bool).GetTypeInfo(), "bool" },
+                { typeof(char).GetTypeInfo(), "char" },
+                { typeof(string).GetTypeInfo(), "string" },
+                { typeof(DateTime).GetTypeInfo(), "datetime" },
+                { typeof(TimeSpan).GetTypeInfo(), "timespan" },
+                { typeof(Guid).GetTypeInfo(), "guid" },
+                { typeof(Math).GetTypeInfo(), "math" },
+                { typeof(Enum).GetTypeInfo(), "enum" },
+                { typeof(Type).GetTypeInfo(), "type" },
             };
 
         public static readonly IReadOnlyDictionary<string, string> OperatorMethodNames =
@@ -104,70 +106,68 @@ namespace Nesp.Internals
         private static readonly IList<IParseTree> empty =
             new IParseTree[0];
 
-        private static readonly Type voidType = typeof(void);
-        private static readonly Type unitType = typeof(Unit);
-        private static readonly Type delegateType = typeof(Delegate);
-        private static readonly TypeInfo delegateTypeInfo = delegateType.GetTypeInfo();
+        private static readonly TypeInfo voidType = typeof(void).GetTypeInfo();
+        private static readonly TypeInfo unitType = typeof(Unit).GetTypeInfo();
+        private static readonly TypeInfo delegateType = typeof(Delegate).GetTypeInfo();
 
-        public static string GetReadableTypeName(Type type)
+        public static string GetReadableTypeName(TypeInfo typeInfo)
         {
-            return GetReadableTypeName(type, GetReadableTypeName);
+            return GetReadableTypeName(typeInfo, GetReadableTypeName);
         }
 
-        public static string GetReservedReadableTypeName(Type type)
+        public static string GetReservedReadableTypeName(TypeInfo typeInfo)
         {
-            if (ReservedTypeNames.TryGetValue(type, out var typeName))
+            if (ReservedTypeNames.TryGetValue(typeInfo, out var typeName))
             {
                 return typeName;
             }
 
-            return GetReadableTypeName(type, GetReservedReadableTypeName);
+            return GetReadableTypeName(typeInfo, GetReservedReadableTypeName);
         }
 
-        public static string GetReadableTypeName(Type type, Func<Type, string> getTypeName)
+        public static string GetReadableTypeName(TypeInfo typeInfo, Func<TypeInfo, string> getTypeName)
         {
             // getTypeName is recursive call target (combinator)
 
             // Void (Unit)
-            if (type == voidType)
+            if (typeInfo == voidType)
             {
                 return getTypeName(unitType);
             }
 
             // Array
-            if (type.IsArray)
+            if (typeInfo.IsArray)
             {
-                var elementType = type.GetElementType();
-                return $"{getTypeName(elementType)}[{new string(Enumerable.Range(0, type.GetArrayRank() - 1).Select(index => ',').ToArray())}]";
+                var elementType = typeInfo.GetElementType().GetTypeInfo();
+                return $"{getTypeName(elementType)}[{new string(Enumerable.Range(0, typeInfo.GetArrayRank() - 1).Select(index => ',').ToArray())}]";
             }
 
             // Generic parameter
-            if (type.IsGenericParameter)
+            if (typeInfo.IsGenericParameter)
             {
-                return type.Name;
+                return typeInfo.Name;
             }
 
             // Nested type
-            if (type.IsNested)
+            if (typeInfo.IsNested)
             {
-                return $"{getTypeName(type.DeclaringType)}.{type.Name}";
+                return $"{getTypeName(typeInfo.DeclaringType.GetTypeInfo())}.{typeInfo.Name}";
             }
 
             // Delegate (Func<>)
-            var typeInfo = type.GetTypeInfo();
             if ((typeInfo.IsAbstract == false)
-                && delegateTypeInfo.IsAssignableFrom(typeInfo))
+                && delegateType.IsAssignableFrom(typeInfo))
             {
                 var invokeMethod = typeInfo.GetDeclaredMethod("Invoke");
                 var parameters = invokeMethod.GetParameters();
-                var parameterTypes = string.Join(" -> ", parameters.Select(parameter => getTypeName(parameter.ParameterType)));
+                var parameterTypes = string.Join(" -> ", parameters.Select(parameter => getTypeName(parameter.ParameterType.GetTypeInfo())));
                 parameterTypes = (parameterTypes.Length >= 1) ? parameterTypes : getTypeName(unitType);
-                return $"{string.Join(" -> ", parameterTypes)} -> {getTypeName(invokeMethod.ReturnType)}";
+                return $"{string.Join(" -> ", parameterTypes)} -> {getTypeName(invokeMethod.ReturnType.GetTypeInfo())}";
             }
 
             // TODO: Generic type
             // TODO: Inner type
-            return $"{type.Namespace}.{type.Name}";
+            return $"{typeInfo.Namespace}.{typeInfo.Name}";
         }
 
         private static string InternalFormatReadableString(object value)
@@ -179,6 +179,10 @@ namespace Nesp.Internals
             if (value is string)
             {
                 return "\"" + value + "\"";
+            }
+            if (value is char)
+            {
+                return "'" + value + "'";
             }
 
             var collection = value as ICollection;
@@ -206,15 +210,15 @@ namespace Nesp.Internals
             return FormatReadableString(value, GetReservedReadableTypeName);
         }
 
-        public static string FormatReadableString(object value, Func<Type, string> getTypeName)
+        public static string FormatReadableString(object value, Func<TypeInfo, string> getTypeName)
         {
             if (value == null)
             {
                 return "(null)";
             }
 
-            var type = value.GetType();
-            var typeName = getTypeName(type);
+            var typeInfo = value.GetType().GetTypeInfo();
+            var typeName = getTypeName(typeInfo);
 
             return $"{InternalFormatReadableString(value)} : {typeName}";
         }
@@ -276,6 +280,44 @@ namespace Nesp.Internals
             }
 
             return sb.ToString();
+        }
+
+        public static IEnumerable<T> Traverse<T>(this T first, Func<T, T> next)
+            where T : class
+        {
+            var current = first;
+            while (current != null)
+            {
+                yield return current;
+                current = next(current);
+            }
+        }
+
+        private static readonly TypeInfo[] emptyTypeInfo = new TypeInfo[0];
+
+        public static TypeInfo[] CalculateElementType(this TypeInfo typeInfo, TypeInfo genericDefinitionType)
+        {
+            Debug.Assert(genericDefinitionType.IsGenericTypeDefinition);
+
+            if (genericDefinitionType.IsInterface)
+            {
+                return typeInfo.ImplementedInterfaces
+                    .Select(type => type.GetTypeInfo())
+                    .Where(ti => ti.IsGenericType &&
+                        object.ReferenceEquals(ti.GetGenericTypeDefinition().GetTypeInfo(), genericDefinitionType))
+                    .Select(ti => ti.GenericTypeParameters.Select(t => t.GetTypeInfo()).ToArray())
+                    .FirstOrDefault()
+                    ?? emptyTypeInfo;
+            }
+            else
+            {
+                return typeInfo.Traverse(ti => ti.BaseType?.GetTypeInfo())
+                    .Where(ti => ti.IsGenericType &&
+                        object.ReferenceEquals(ti.GetGenericTypeDefinition().GetTypeInfo(), genericDefinitionType))
+                    .Select(ti => ti.GenericTypeParameters.Select(t => t.GetTypeInfo()).ToArray())
+                    .FirstOrDefault()
+                    ?? emptyTypeInfo;
+            }
         }
     }
 }

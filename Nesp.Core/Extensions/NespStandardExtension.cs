@@ -20,14 +20,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
+
 using Nesp.Internals;
 
 namespace Nesp.Extensions
 {
     public sealed class NespStandardExtension : NespExtensionBase
     {
-        public static readonly IReadOnlyDictionary<Type, string> ReservedTypeNames =
+        public static readonly IReadOnlyDictionary<TypeInfo, string> ReservedTypeNames =
             NespUtilities.ReservedTypeNames;
 
         public static readonly INespExtension Instance = new NespStandardExtension();
@@ -39,7 +41,7 @@ namespace Nesp.Extensions
         internal static IMemberProducer CreateMemberProducer()
         {
             var extractor = new MemberExtractor(
-                ReservedTypeNames.Keys.Concat(new[] { typeof(NespStandardOperators) }));
+                ReservedTypeNames.Keys.Concat(new[] { typeof(NespStandardOperators).GetTypeInfo() }));
             return new NespStandardMemberProducer(extractor);
         }
 

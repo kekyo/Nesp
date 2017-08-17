@@ -49,22 +49,22 @@ namespace Nesp.Extensions
                     g => g.Distinct().ToArray());
         }
 
-        private static string GetTypeName(Type type, string fallbackName)
+        private static string GetTypeName(TypeInfo typeInfo, string fallbackName)
         {
-            return NespUtilities.ReservedTypeNames.TryGetValue(type, out var typeName)
+            return NespUtilities.ReservedTypeNames.TryGetValue(typeInfo, out var typeName)
                 ? typeName
                 : fallbackName;
         }
 
         private static string GetMemberName(MemberInfo member, string fallbackName)
         {
-            var type = member.DeclaringType;
-            return NespUtilities.ReservedTypeNames.TryGetValue(type, out var typeName)
+            var typeInfo = member.DeclaringType.GetTypeInfo();
+            return NespUtilities.ReservedTypeNames.TryGetValue(typeInfo, out var typeName)
                 ? typeName + "." + member.Name
                 : fallbackName;
         }
 
-        public IReadOnlyDictionary<string, Type[]> TypesByName { get; }
+        public IReadOnlyDictionary<string, TypeInfo[]> TypesByName { get; }
         public IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
         public IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
         public IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }

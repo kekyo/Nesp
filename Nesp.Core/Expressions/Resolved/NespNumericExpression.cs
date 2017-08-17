@@ -17,25 +17,13 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using Nesp.Internals;
-
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespNumericExpression : NespTokenExpression<object>
+    public sealed class NespNumericExpression<T> : NespStandardTypeConstantExpression<T>
     {
-        internal NespNumericExpression(object value, NespSourceInformation source)
-            : base(source)
+        internal NespNumericExpression(T value, NespSourceInformation source)
+            : base(value, source)
         {
-            this.Value = value;
-        }
-
-        public override Type FixedType => this.Value.GetType();
-        public override object Value { get; }
-
-        public override string ToString()
-        {
-            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
         }
     }
 }

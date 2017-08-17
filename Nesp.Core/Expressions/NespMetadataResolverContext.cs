@@ -27,17 +27,44 @@ using System.Threading.Tasks;
 using Nesp.Expressions.Abstracts;
 using Nesp.Expressions.Resolved;
 using Nesp.Internals;
+using Nesp.Metadatas;
 
 namespace Nesp.Expressions
 {
     public sealed class NespMetadataResolverContext
     {
-        private static readonly NespExpression[] emptyExpressions = new NespExpression[0];
+        #region Static
+        /// <summary>
+        /// These entries are holding custom expression factories for basic type constants.
+        /// </summary>
+        private static readonly Dictionary<NespTypeInformation, Func<object, NespSourceInformation, NespResolvedExpression>> constantExpressionFactories =
+            new Dictionary<NespTypeInformation, Func<object, NespSourceInformation, NespResolvedExpression>>
+            {
+                { NespMetadataContext.UnsafeFromType<bool>(), (value, source) => new NespBoolExpression((bool)value, source) },
+                { NespMetadataContext.UnsafeFromType<string>(), (value, source) => new NespStringExpression((string)value, source) },
+                { NespMetadataContext.UnsafeFromType<char>(), (value, source) => new NespCharExpression((char)value, source) },
+                { NespMetadataContext.UnsafeFromType<byte>(), (value, source) => new NespNumericExpression<byte>((byte)value, source) },
+                { NespMetadataContext.UnsafeFromType<sbyte>(), (value, source) => new NespNumericExpression<sbyte>((sbyte)value, source) },
+                { NespMetadataContext.UnsafeFromType<short>(), (value, source) => new NespNumericExpression<short>((short)value, source) },
+                { NespMetadataContext.UnsafeFromType<ushort>(), (value, source) => new NespNumericExpression<ushort>((ushort)value, source) },
+                { NespMetadataContext.UnsafeFromType<int>(), (value, source) => new NespNumericExpression<int>((int)value, source) },
+                { NespMetadataContext.UnsafeFromType<uint>(), (value, source) => new NespNumericExpression<uint>((uint)value, source) },
+                { NespMetadataContext.UnsafeFromType<long>(), (value, source) => new NespNumericExpression<long>((long)value, source) },
+                { NespMetadataContext.UnsafeFromType<ulong>(), (value, source) => new NespNumericExpression<ulong>((ulong)value, source) },
+                { NespMetadataContext.UnsafeFromType<float>(), (value, source) => new NespNumericExpression<float>((float)value, source) },
+                { NespMetadataContext.UnsafeFromType<double>(), (value, source) => new NespNumericExpression<double>((double)value, source) },
+                { NespMetadataContext.UnsafeFromType<decimal>(), (value, source) => new NespNumericExpression<decimal>((decimal)value, source) },
+            };
 
-        private readonly CandidatesDictionary<FieldInfo> fields = new CandidatesDictionary<FieldInfo>();
-        private readonly CandidatesDictionary<PropertyInfo> properties = new CandidatesDictionary<PropertyInfo>();
-        private readonly CandidatesDictionary<MethodInfo> methods = new CandidatesDictionary<MethodInfo>();
-        private readonly CandidatesDictionary<NespReferenceSymbolExpression> symbols = new CandidatesDictionary<NespReferenceSymbolExpression>();
+        private static readonly NespExpression[] emptyExpressions = new NespExpression[0];
+        #endregion
+
+        private readonly NespMetadataContext metadataContext = new NespMetadataContext();
+
+        private readonly CandidatesDictionary<NespFieldInformation> fields = new CandidatesDictionary<NespFieldInformation>();
+        private readonly CandidatesDictionary<NespPropertyInformation> properties = new CandidatesDictionary<NespPropertyInformation>();
+        private readonly CandidatesDictionary<NespFunctionInformation> functions = new CandidatesDictionary<NespFunctionInformation>();
+        private readonly CandidatesDictionary<NespSymbolExpression> symbols = new CandidatesDictionary<NespSymbolExpression>();
 
         public NespMetadataResolverContext()
         {
@@ -54,14 +81,11 @@ namespace Nesp.Expressions
                 .Wait();
         }
 
-        public void AddCandidate(Type type)
-        {
-            this.AddCandidate(type.GetTypeInfo());
-        }
-
         public void AddCandidate(TypeInfo typeInfo)
         {
-            var typeName = NespUtilities.GetReadableTypeName(typeInfo.AsType());
+            // TODO: Move to metadata context.
+
+            var typeName = NespUtilities.GetReadableTypeName(typeInfo);
 
             lock (fields)
             {
@@ -69,7 +93,7 @@ namespace Nesp.Expressions
                     .Where(field => field.IsPublic && (!typeInfo.IsEnum || !field.IsSpecialName)))
                 {
                     var key = $"{typeName}.{field.Name}";
-                    fields.AddCandidate(key, field);
+                    fields.AddCandidate(key, new NespFieldInformation(field, metadataContext));
                 }
             }
 
@@ -80,20 +104,20 @@ namespace Nesp.Expressions
                     .Where(property => property.CanRead && property.GetMethod.IsPublic))
                 {
                     var key = $"{typeName}.{property.Name}";
-                    properties.AddCandidate(key, property);
+                    properties.AddCandidate(key, new NespPropertyInformation(property, metadataContext));
 
                     propertyMethods.Add(property.GetMethod);
                     propertyMethods.Add(property.SetMethod);
                 }
             }
 
-            lock (methods)
+            lock (functions)
             {
                 foreach (var method in typeInfo.DeclaredMethods
                     .Where(method => method.IsPublic && (propertyMethods.Contains(method) == false)))
                 {
                     var key = $"{typeName}.{method.Name}";
-                    methods.AddCandidate(key, method);
+                    functions.AddCandidate(key, new NespFunctionInformation(method, metadataContext));
                 }
             }
         }
@@ -107,7 +131,7 @@ namespace Nesp.Expressions
 
             return (this.fields.Equals(cachedContext.fields))
                    && (this.properties.Equals(cachedContext.properties))
-                   && (this.methods.Equals(cachedContext.methods));
+                   && (this.functions.Equals(cachedContext.functions));
         }
 
         #region List
@@ -179,16 +203,16 @@ namespace Nesp.Expressions
         /// <summary>
         /// Calculate how adaptable do apply this method's parametes and expressions.
         /// </summary>
-        /// <param name="method">Target method</param>
+        /// <param name="function">Target method</param>
         /// <param name="argumentResolvedExpressions">Target expressions (require resolved, will be update)</param>
         /// <returns>Adaptable score (null: cannot use, 0 >= better for large amount value, int.MaxValue: exactly matched)</returns>
         private static ulong? CalculateAdaptableScoreByArguments(
-            MethodInfo method, NespResolvedExpression[] argumentResolvedExpressions)
+            NespFunctionInformation function, NespResolvedExpression[] argumentResolvedExpressions)
         {
             Debug.Assert(argumentResolvedExpressions.Length <= 31);
 
             // Lack for arguments.
-            var parameters = method.GetParameters();
+            var parameters = function.Parameters;
             if (parameters.Length > argumentResolvedExpressions.Length)
             {
                 // Argument count mismatched.
@@ -200,13 +224,13 @@ namespace Nesp.Expressions
             var score = 0UL;
             for (var index = 0; index < parameters.Length; index++)
             {
-                var parameterType = parameters[index].ParameterType;
+                var parameterType = parameters[index].Type;
                 var argumentResolvedExpression = argumentResolvedExpressions[index];
-                var expressionType = argumentResolvedExpression.FixedType;
+                var expressionType = argumentResolvedExpression.Type;
                 if (expressionType == null)
                 {
                     // Type inference by method parameter[index]
-                    var referenceSymbolExpression = argumentResolvedExpression as NespReferenceSymbolExpression;
+                    var referenceSymbolExpression = argumentResolvedExpression as NespSymbolExpression;
                     if (referenceSymbolExpression != null)
                     {
                         expressionType = parameterType;
@@ -217,7 +241,7 @@ namespace Nesp.Expressions
                         argumentResolvedExpressions[index] = argumentResolvedExpression;
 
                         // Inference.
-                        referenceSymbolExpression.InferenceByType(expressionType);
+                        //referenceSymbolExpression.InferenceByType(expressionType);
 
                         // Exactly match, but not fixed.
                         score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
@@ -239,20 +263,18 @@ namespace Nesp.Expressions
                 }
 
                 // TODO: Generic type arguments
-                var parameterTypeInfo = parameterType.GetTypeInfo();
-                var expressionTypeInfo = expressionType.GetTypeInfo();
-                if (parameterTypeInfo.IsAssignableFrom(expressionTypeInfo))
+                if (parameterType.IsAssignableFrom(expressionType))
                 {
                     // Argument can cast implicitly.
                     score += 2UL << ((argumentResolvedExpressions.Length - index) * 2);
                     continue;
                 }
 
-                if (((index + 1) == parameters.Length)
-                    && (parameters[index].IsDefined(typeof(ParamArrayAttribute))))
+                if (function.ParamArrayElementType != null)
                 {
+                    var elementType = function.ParamArrayElementType;
+
                     // TODO: Support seq<T>
-                    var elementType = parameterType.GetElementType();
                     if (object.ReferenceEquals(elementType, expressionType))
                     {
                         // Exactly match in variable argument.
@@ -262,8 +284,7 @@ namespace Nesp.Expressions
                     }
 
                     // TODO: Generic type arguments
-                    var elementTypeInfo = elementType.GetTypeInfo();
-                    if (elementTypeInfo.IsAssignableFrom(expressionTypeInfo))
+                    if (elementType.IsAssignableFrom(expressionType))
                     {
                         // Argument can cast implicitly.
                         score += 2UL << ((argumentResolvedExpressions.Length - index) * 2);
@@ -276,25 +297,23 @@ namespace Nesp.Expressions
             }
 
             // Step 2: Do match variables
-            var parameterLast = parameters.LastOrDefault();
-            if (parameterLast?.IsDefined(typeof(ParamArrayAttribute)) ?? false)
+            if (function.ParamArrayElementType != null)
             {
-                var elementType = parameters[parameters.Length - 1].ParameterType.GetElementType();
-                var elementTypeInfo = elementType.GetTypeInfo();
+                var elementType = function.ParamArrayElementType;
 
                 // Variable first is already verified.
                 for (var index = parameters.Length; index < argumentResolvedExpressions.Length; index++)
                 {
                     var argumentResolvedExpression = argumentResolvedExpressions[index];
-                    var expressionType = argumentResolvedExpression.FixedType;
+                    var expressionType = argumentResolvedExpression.Type;
                     if (expressionType == null)
                     {
                         // Type inference by method parameter[index]
-                        var referenceSymbolExpression = argumentResolvedExpression as NespReferenceSymbolExpression;
+                        var referenceSymbolExpression = argumentResolvedExpression as NespSymbolExpression;
                         if (referenceSymbolExpression != null)
                         {
                             expressionType = elementType;
-                            referenceSymbolExpression.InferenceByType(expressionType);
+                            //referenceSymbolExpression.InferenceByType(expressionType);
 
                             // Exactly match, but not fixed.
                             score += 3UL << ((argumentResolvedExpressions.Length - index) * 2);
@@ -316,8 +335,7 @@ namespace Nesp.Expressions
                     }
 
                     // TODO: Generic type arguments
-                    var expressionTypeInfo = expressionType.GetTypeInfo();
-                    if (elementTypeInfo.IsAssignableFrom(expressionTypeInfo))
+                    if (elementType.IsAssignableFrom(expressionType))
                     {
                         // Argument can cast implicitly.
                         score += 2UL << ((argumentResolvedExpressions.Length - index) * 2);
@@ -369,7 +387,7 @@ namespace Nesp.Expressions
                 var argumentExpressions = listExpressions
                     .Skip(1)
                     .ToArray();
-                var score = CalculateAdaptableScoreByArguments(applyFunction0.Method, argumentExpressions);
+                var score = CalculateAdaptableScoreByArguments(applyFunction0.Function, argumentExpressions);
                 if (score == null)
                 {
                     // Can't match
@@ -378,7 +396,7 @@ namespace Nesp.Expressions
 
                 // Construct function apply expression.
                 var expr = new NespApplyFunctionExpression(
-                    applyFunction0.Method, argumentExpressions, untypedExpression.Source);
+                    applyFunction0.Function, argumentExpressions, untypedExpression.Source);
                 expr.SetScore(score.Value);
                 return expr;
             }
@@ -390,7 +408,7 @@ namespace Nesp.Expressions
             //            |  |  a20: parameterList (Each unique instance)
             //            |  a10: symbolName
             //            a00: 'define'
-            var defineExpr0 = listExpressions.FirstOrDefault() as NespReferenceSymbolExpression;
+            var defineExpr0 = listExpressions.FirstOrDefault() as NespSymbolExpression;
             if (defineExpr0?.Symbol == "define")
             {
                 // TODO: Bind expression
@@ -398,7 +416,7 @@ namespace Nesp.Expressions
                 if (listExpressions.Length == 4)
                 {
                     // Get symbol name, parameters and body.
-                    var symbolNameExpression = listExpressions[1] as NespReferenceSymbolExpression;
+                    var symbolNameExpression = listExpressions[1] as NespSymbolExpression;
                     var parametersExpression = listExpressions[2] as NespResolvedListExpression;
                     var bodyExpression = listExpressions[3];
 
@@ -407,14 +425,14 @@ namespace Nesp.Expressions
                         && (bodyExpression != null))
                     {
                         var preParameterExpressions = parametersExpression.List
-                            .Select(iexpr => iexpr as NespReferenceSymbolExpression)
+                            .Select(iexpr => iexpr as NespSymbolExpression)
                             .ToArray();
                         if ((preParameterExpressions.Length == 0)
                             || (preParameterExpressions.All(iexpr => iexpr != null)))
                         {
                             // Convert to truely parameter expressions.
                             var parameterExpressions = preParameterExpressions
-                                .Select(pexpr => new NespParameterExpression(pexpr.Symbol, pexpr.FixedType, pexpr.Source))
+                                .Select(pexpr => new NespParameterExpression(pexpr.Symbol, pexpr.Type, pexpr.Source))
                                 .ToArray();
 
                             // Deshadowing by parameters.
@@ -448,7 +466,7 @@ namespace Nesp.Expressions
             {
                 // Construct list expression.
                 // TODO: List type.
-                var type = typeof(object[]);
+                var type = metadataContext.FromType(typeof(object[]).GetTypeInfo());
                 var expr = new NespResolvedListExpression(listExpressions, type, untypedExpression.Source);
                 expr.SetScore(0);
                 return expr;
@@ -513,7 +531,7 @@ namespace Nesp.Expressions
             if (list.Length == 0)
             {
                 // TODO: List type.
-                var type = typeof(object[]);
+                var type = metadataContext.FromType(typeof(object[]).GetTypeInfo());
                 return new NespResolvedExpression[]
                 {
                     new NespResolvedListExpression(new NespExpression[0], type, untypedExpression.Source)
@@ -557,47 +575,25 @@ namespace Nesp.Expressions
         /// If field gives concrete value (Literal or marked initonly),
         /// get real value at this point and construct constant expression.</remarks>
         private static NespResolvedExpression ConstructExpressionFromField(
-            FieldInfo field, NespIdExpression untypedExpression)
+            NespFieldInformation field, NespIdExpression untypedExpression)
         {
-            // Field is literal or marked initonly.
-            if (field.IsStatic && (field.IsLiteral || field.IsInitOnly))
+            // Is field a constant value?
+            if (field.IsConstant)
             {
-                // Get real value.
-                var value = field.GetValue(null);
-
+                // Get constant value.
+                var value = field.GetConstantValue();
                 var type = field.FieldType;
-                if (type == typeof(bool))
+                if (constantExpressionFactories.TryGetValue(field.FieldType, out var factory))
                 {
-                    return new NespBoolExpression((bool)value, untypedExpression.Source);
-                }
-                if (type == typeof(string))
-                {
-                    return new NespStringExpression((string)value, untypedExpression.Source);
-                }
-                if (type == typeof(char))
-                {
-                    return new NespCharExpression((char)value, untypedExpression.Source);
-                }
-                if ((type == typeof(byte))
-                    || (type == typeof(sbyte))
-                    || (type == typeof(short))
-                    || (type == typeof(ushort))
-                    || (type == typeof(int))
-                    || (type == typeof(uint))
-                    || (type == typeof(long))
-                    || (type == typeof(ulong))
-                    || (type == typeof(float))
-                    || (type == typeof(double))
-                    || (type == typeof(decimal)))
-                {
-                    return new NespNumericExpression(value, untypedExpression.Source);
-                }
-                if (type.GetTypeInfo().IsEnum)
-                {
-                    return new NespEnumExpression((Enum)value, untypedExpression.Source);
+                    return factory(value, untypedExpression.Source);
                 }
 
-                return new NespConstantExpression(value, untypedExpression.Source);
+                if (type.IsEnum)
+                {
+                    return new NespEnumExpression(type, (Enum)value, untypedExpression.Source);
+                }
+
+                return new NespValueExpression(type, value, untypedExpression.Source);
             }
 
             // Field reference resolved at runtime.
@@ -626,7 +622,7 @@ namespace Nesp.Expressions
 
             // TODO: Events
 
-            var methodInfos = methods[id];
+            var methodInfos = functions[id];
             if (methodInfos.Length >= 1)
             {
                 return methodInfos
@@ -638,7 +634,7 @@ namespace Nesp.Expressions
             }
 
             // TODO: Handle type annotation
-            var symbolExpression = new NespReferenceSymbolExpression(id, untypedExpression.Source);
+            var symbolExpression = new NespSymbolExpression(id, untypedExpression.Source);
             var sexprs = symbols[id];
             if (sexprs.Length >= 1)
             {

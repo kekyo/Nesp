@@ -17,6 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace Nesp.Extensions
@@ -31,7 +32,7 @@ namespace Nesp.Extensions
 
         internal static IMemberProducer CreateMemberProducer()
         {
-            return new MemberExtractor(typeof(NespReplOperators));
+            return new MemberExtractor(typeof(NespReplOperators).GetTypeInfo());
         }
 
         protected override Task<IMemberProducer> CreateMemberProducerAsync()

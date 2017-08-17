@@ -17,15 +17,39 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
+using System.Diagnostics;
+
+using Nesp.Metadatas;
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespParameterExpression : NespSymbolExpression
+    public sealed class NespParameterExpression : NespResolvedIdExpression
     {
-        internal NespParameterExpression(string symbol, Type annotatedType, NespSourceInformation source)
-            : base(symbol, annotatedType, source)
+        internal NespParameterExpression(string symbol, NespTypeInformation type, NespSourceInformation source)
+            : base(symbol, source)
         {
+            this.Type = type;
+        }
+
+        public override NespTypeInformation Type { get; }
+
+        public NespResolvedIdExpression Related { get; private set; }
+
+        internal void SetRelated(NespResolvedIdExpression related)
+        {
+            Debug.Assert(related.Symbol == this.Symbol);
+
+            this.Related = related;
+        }
+
+        internal NespParameterExpression Clone()
+        {
+            return new NespParameterExpression(this.Symbol, this.Type, this.Source);
+        }
+
+        public override string ToString()
+        {
+            return $"[{this.Symbol}:{this.Type}]:parameter";
         }
     }
 }

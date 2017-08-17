@@ -19,23 +19,16 @@
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespUnitExpression : NespTokenExpression<Unit>
+    public sealed class NespUnitExpression : NespStandardTypeConstantExpression<Unit>
     {
         internal NespUnitExpression(NespSourceInformation source)
-            : base(source)
+            : base(Unit.Value, source)
         {
         }
-
-        internal override object GetValue()
-        {
-            return Unit.Value;
-        }
-
-        public override Unit Value => new Unit();
 
         public override string ToString()
         {
-            return ":unit";
+            return "unit";
         }
     }
 }

@@ -17,27 +17,25 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
-using System.Reflection;
-using Nesp.Internals;
+using Nesp.Metadatas;
 
 namespace Nesp.Expressions.Resolved
 {
     public sealed class NespPropertyExpression : NespResolvedExpression
     {
-        internal NespPropertyExpression(PropertyInfo property, NespSourceInformation source)
+        internal NespPropertyExpression(NespPropertyInformation property, NespSourceInformation source)
             : base(source)
         {
             this.Property = property;
         }
 
-        public override Type FixedType => this.Property.PropertyType;
+        public override NespTypeInformation Type => this.Property.PropertyType;
 
-        public PropertyInfo Property { get; }
+        public NespPropertyInformation Property { get; }
 
         public override string ToString()
         {
-            return $"[{NespUtilities.GetReservedReadableTypeName(this.Property.DeclaringType)}.{this.Property.Name}]:property";
+            return $"[{this.Property}]:property";
         }
     }
 }

@@ -17,7 +17,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
-using System;
+using Nesp.Metadatas;
 
 namespace Nesp.Expressions.Resolved
 {
@@ -32,7 +32,7 @@ namespace Nesp.Expressions.Resolved
             this.Parameters = parameters;
         }
 
-        public override Type FixedType => this.Body.FixedType;
+        public override NespTypeInformation Type => this.Body.Type;
 
         public string Name { get; }
         public NespResolvedExpression Body { get; }

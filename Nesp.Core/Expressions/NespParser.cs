@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+
 using Antlr4.Runtime;
 
 using Nesp.Expressions.Abstracts;
@@ -138,7 +139,7 @@ namespace Nesp.Expressions
             return new NespCharExpression(unescaped[0], source);
         }
 
-        private static NespNumericExpression ParseHexadecimalNumeric(
+        private static NespConstantExpression ParseHexadecimalNumeric(
             string text, NespSourceInformation token)
         {
             if (text.StartsWith("0x") == false)
@@ -152,7 +153,7 @@ namespace Nesp.Expressions
                 numericText = numericText.Substring(0, numericText.Length - 2);
                 if (ulong.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var ulongValue))
                 {
-                    return new NespNumericExpression(ulongValue, token);
+                    return new NespNumericExpression<ulong>(ulongValue, token);
                 }
             }
             else if (numericText.EndsWith("l"))
@@ -160,7 +161,7 @@ namespace Nesp.Expressions
                 numericText = numericText.Substring(0, numericText.Length - 1);
                 if (long.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var longValue))
                 {
-                    return new NespNumericExpression(longValue, token);
+                    return new NespNumericExpression<long>(longValue, token);
                 }
             }
             else if (numericText.EndsWith("u"))
@@ -168,33 +169,33 @@ namespace Nesp.Expressions
                 numericText = numericText.Substring(0, numericText.Length - 1);
                 if (uint.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var uintValue))
                 {
-                    return new NespNumericExpression(uintValue, token);
+                    return new NespNumericExpression<uint>(uintValue, token);
                 }
             }
             else
             {
                 if (byte.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var byteValue))
                 {
-                    return new NespNumericExpression(byteValue, token);
+                    return new NespNumericExpression<byte>(byteValue, token);
                 }
                 if (short.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var shortValue))
                 {
-                    return new NespNumericExpression(shortValue, token);
+                    return new NespNumericExpression<short>(shortValue, token);
                 }
                 if (int.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var intValue))
                 {
-                    return new NespNumericExpression(intValue, token);
+                    return new NespNumericExpression<int>(intValue, token);
                 }
                 if (long.TryParse(numericText, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out var longValue))
                 {
-                    return new NespNumericExpression(longValue, token);
+                    return new NespNumericExpression<long>(longValue, token);
                 }
             }
 
             return null;
         }
 
-        private static NespNumericExpression ParseStrictNumeric(
+        private static NespConstantExpression ParseStrictNumeric(
             string text, NespSourceInformation token)
         {
             if (text.EndsWith("ul"))
@@ -202,7 +203,7 @@ namespace Nesp.Expressions
                 var numericText = text.Substring(0, text.Length - 2);
                 if (ulong.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var ulongValue))
                 {
-                    return new NespNumericExpression(ulongValue, token);
+                    return new NespNumericExpression<ulong>(ulongValue, token);
                 }
             }
             else if (text.EndsWith("l"))
@@ -210,7 +211,7 @@ namespace Nesp.Expressions
                 var numericText = text.Substring(0, text.Length - 1);
                 if (long.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var longValue))
                 {
-                    return new NespNumericExpression(longValue, token);
+                    return new NespNumericExpression<long>(longValue, token);
                 }
             }
             else if (text.EndsWith("u"))
@@ -218,7 +219,7 @@ namespace Nesp.Expressions
                 var numericText = text.Substring(0, text.Length - 1);
                 if (uint.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var uintValue))
                 {
-                    return new NespNumericExpression(uintValue, token);
+                    return new NespNumericExpression<uint>(uintValue, token);
                 }
             }
             else if (text.EndsWith("f"))
@@ -226,7 +227,7 @@ namespace Nesp.Expressions
                 var numericText = text.Substring(0, text.Length - 1);
                 if (float.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var floatValue))
                 {
-                    return new NespNumericExpression(floatValue, token);
+                    return new NespNumericExpression<float>(floatValue, token);
                 }
             }
             else if (text.EndsWith("d"))
@@ -234,7 +235,7 @@ namespace Nesp.Expressions
                 var numericText = text.Substring(0, text.Length - 1);
                 if (double.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleValue))
                 {
-                    return new NespNumericExpression(doubleValue, token);
+                    return new NespNumericExpression<double>(doubleValue, token);
                 }
             }
             else if (text.EndsWith("m"))
@@ -242,39 +243,35 @@ namespace Nesp.Expressions
                 var numericText = text.Substring(0, text.Length - 1);
                 if (decimal.TryParse(numericText, NumberStyles.Any, CultureInfo.InvariantCulture, out var decimalValue))
                 {
-                    return new NespNumericExpression(decimalValue, token);
+                    return new NespNumericExpression<decimal>(decimalValue, token);
                 }
             }
 
             return null;
         }
 
-        private static NespNumericExpression ParseNumeric(
+        private static NespConstantExpression ParseNumeric(
             string text, NespSourceInformation token)
         {
             if (byte.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var byteValue))
             {
-                return new NespNumericExpression(byteValue, token);
+                return new NespNumericExpression<byte>(byteValue, token);
             }
             if (short.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var shortValue))
             {
-                return new NespNumericExpression(shortValue, token);
+                return new NespNumericExpression<short>(shortValue, token);
             }
             if (int.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var intValue))
             {
-                return new NespNumericExpression(intValue, token);
+                return new NespNumericExpression<int>(intValue, token);
             }
             if (long.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var longValue))
             {
-                return new NespNumericExpression(longValue, token);
+                return new NespNumericExpression<long>(longValue, token);
             }
             if (double.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var doubleValue))
             {
-                return new NespNumericExpression(doubleValue, token);
-            }
-            if (decimal.TryParse(text, NumberStyles.Any, CultureInfo.InvariantCulture, out var decimalValue))
-            {
-                return new NespNumericExpression(decimalValue, token);
+                return new NespNumericExpression<double>(doubleValue, token);
             }
 
             return null;

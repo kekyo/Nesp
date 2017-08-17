@@ -25,7 +25,7 @@ namespace Nesp.Extensions
 {
     public interface IMemberProducer
     {
-        IReadOnlyDictionary<string, Type[]> TypesByName { get; }
+        IReadOnlyDictionary<string, TypeInfo[]> TypesByName { get; }
         IReadOnlyDictionary<string, FieldInfo[]> FieldsByName { get; }
         IReadOnlyDictionary<string, PropertyInfo[]> PropertiesByName { get; }
         IReadOnlyDictionary<string, MethodInfo[]> MethodsByName { get; }

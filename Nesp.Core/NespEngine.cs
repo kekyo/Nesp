@@ -20,6 +20,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Threading.Tasks;
 using Antlr4.Runtime;
 using Antlr4.Runtime.Tree;
@@ -40,12 +41,12 @@ namespace Nesp
             this.parser = new NespParser(binder);
         }
 
-        public static string GetReadableTypeName(Type type)
+        public static string GetReadableTypeName(TypeInfo typeInfo)
         {
-            return NespUtilities.ReservedTypeNames.TryGetValue(type, out var typeName)
+            return NespUtilities.ReservedTypeNames.TryGetValue(typeInfo, out var typeName)
                 ? typeName
                 : NespUtilities.GetReadableTypeName(
-                    type, GetReadableTypeName);
+                    typeInfo, GetReadableTypeName);
         }
 
         public static string FormatReadableString(object value)

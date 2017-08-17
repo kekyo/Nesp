@@ -18,25 +18,19 @@
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
 using System;
-using Nesp.Internals;
+
+using Nesp.Metadatas;
 
 namespace Nesp.Expressions.Resolved
 {
-    public sealed class NespEnumExpression : NespTokenExpression<Enum>
+    public sealed class NespEnumExpression : NespConstantExpression
     {
-        internal NespEnumExpression(Enum value, NespSourceInformation source)
-            : base(source)
+        internal NespEnumExpression(NespTypeInformation type, Enum value, NespSourceInformation source)
+            : base(value, source)
         {
-            this.FixedType = value.GetType();
-            this.Value = value;
+            this.Type = type;
         }
 
-        public override Type FixedType { get; }
-        public override Enum Value { get; }
-
-        public override string ToString()
-        {
-            return $"{NespUtilities.FormatReservedReadableString(this.Value)}";
-        }
+        public override NespTypeInformation Type { get; }
     }
 }
