@@ -165,7 +165,18 @@ namespace Nesp.Internals
                 return $"{string.Join(" -> ", parameterTypes)} -> {getTypeName(invokeMethod.ReturnType.GetTypeInfo())}";
             }
 
-            // TODO: Generic type
+            // Generic type
+            if (typeInfo.IsGenericType || typeInfo.IsGenericTypeDefinition)
+            {
+                var index = typeInfo.Name.IndexOf('`');
+                var name = (index >= 0) ? typeInfo.Name.Substring(0, index) : typeInfo.Name;
+                var genericTypeArguments = typeInfo.GenericTypeArguments;
+                var genericArguments = (genericTypeArguments.Length >= 0)
+                    ? $"<{string.Join(",", genericTypeArguments.Select(type => getTypeName(type.GetTypeInfo())))}>"
+                    : string.Empty;
+                return $"{typeInfo.Namespace}.{name}{genericArguments}";
+            }
+
             // TODO: Inner type
             return $"{typeInfo.Namespace}.{typeInfo.Name}";
         }

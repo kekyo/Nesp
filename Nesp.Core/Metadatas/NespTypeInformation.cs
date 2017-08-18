@@ -17,6 +17,8 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -43,11 +45,13 @@ namespace Nesp.Metadatas
 
         public abstract bool IsBasicType { get; }
 
+        public abstract bool IsInterfaceType { get; }
+
         public abstract bool IsEnumType { get; }
 
         public abstract NespTypeInformation GetBaseType(NespMetadataContext context);
 
-        public abstract NespTypeInformation[] GetInterfaces(NespMetadataContext context);
+        public abstract NespTypeInformation[] GetBaseInterfaces(NespMetadataContext context);
 
         public abstract bool IsGenericType { get; }
 
@@ -69,6 +73,54 @@ namespace Nesp.Metadatas
             return (type != objectType) ? type : null;
         }
 
+        private NespTypeInformation InternalCalculateNarrowing(
+            NespTypeInformation targetType, Func<NespTypeInformation, NespTypeInformation> next)
+        {
+            var thisDeriveTypes = this.Traverse(next).Reverse();
+            var targetDeriveTypes = targetType.Traverse(next).Reverse();
+            var narrowTypes = thisDeriveTypes
+                .Zip(targetDeriveTypes, (thisDeriveType, targetDerive) => new { thisDeriveType, targetDerive })
+                .LastOrDefault(entry => entry.thisDeriveType == entry.targetDerive);
+
+            return narrowTypes?.thisDeriveType;
+        }
+
+        private static IEnumerable<NespTypeInformation[]> CrawlBaseInterfaceHierarchies(
+            NespTypeInformation targetType, List<NespTypeInformation> hierarchyList, NespMetadataContext context)
+        {
+            // Add type to hierarchy list if type is interface.
+            if (targetType.IsInterfaceType)
+            {
+                hierarchyList.Add(targetType);
+            }
+
+            // If available base interface types, traverse by recursivity.
+            var interfaceTypes = targetType.GetBaseInterfaces(context);
+            if (interfaceTypes.Length >= 1)
+            {
+                return interfaceTypes
+                    .SelectMany(interfaceType =>
+                    {
+                        // Copy current hierarchy list.
+                        var currentList = hierarchyList.ToList();
+
+                        // 
+                        return CrawlBaseInterfaceHierarchies(interfaceType, currentList, context);
+                    })
+                    .ToArray();
+            }
+
+            // Bottom of base interface.
+
+            // HACK: All interface base type NO derived from System.Object,
+            //   but this hack can align the bottom type for System.Object.
+            hierarchyList.Add(objectType);
+
+            // Base to derives
+            hierarchyList.Reverse();
+            return new[] { hierarchyList.ToArray() };
+        }
+
         public NespTypeInformation CalculateNarrowing(NespTypeInformation targetType, NespMetadataContext context)
         {
             if (this.IsAssignableFrom(targetType))
@@ -80,12 +132,8 @@ namespace Nesp.Metadatas
                 return this;
             }
 
-            var thisDeriveTypes = this
-                .Traverse(type => type.InternalGetBaseType(context))
-                .Reverse();
-            var targetDeriveTypes = targetType
-                .Traverse(type => type.InternalGetBaseType(context))
-                .Reverse();
+            var thisDeriveTypes = this.Traverse(type => type.InternalGetBaseType(context)).Reverse();
+            var targetDeriveTypes = targetType.Traverse(type => type.InternalGetBaseType(context)).Reverse();
             var narrowTypes = thisDeriveTypes
                 .Zip(targetDeriveTypes, (thisDeriveType, targetDerive) => new { thisDeriveType, targetDerive })
                 .LastOrDefault(entry => entry.thisDeriveType == entry.targetDerive);
@@ -94,6 +142,14 @@ namespace Nesp.Metadatas
             {
                 return narrowTypes.thisDeriveType;
             }
+
+            var thisInterfaceTypeSets = CrawlBaseInterfaceHierarchies(this, new List<NespTypeInformation>(), context);
+            var targetInterfaceTypeSets = CrawlBaseInterfaceHierarchies(targetType, new List<NespTypeInformation>(), context);
+
+            // TODO: Aggregate
+            //var narrowInterfaceTypeSets = thisInterfaceTypeSets
+            //    .Zip(targetInterfaceTypeSets, (thisInterfaceTypeSet, targetInterfaceTypeSet) => new { thisInterfaceTypeSet, targetInterfaceTypeSet })
+            //    .LastOrDefault(entry => entry.)
 
             return objectType;
         }
@@ -144,8 +200,10 @@ namespace Nesp.Metadatas
         public override bool IsPrimitiveType => typeInfo.IsPrimitive;
 
         public override bool IsBasicType => typeInfo.IsPrimitive
-            || (typeInfo == stringTypeInfo)
-            || (typeInfo == decimalTypeInfo);
+            || (typeInfo.Equals(stringTypeInfo))
+            || (typeInfo.Equals(decimalTypeInfo));
+
+        public override bool IsInterfaceType => typeInfo.IsInterface;
 
         public override bool IsEnumType => typeInfo.IsEnum;
 
@@ -156,9 +214,33 @@ namespace Nesp.Metadatas
             return (baseTypeInfo != null) ? context.FromType(baseTypeInfo) : null;
         }
 
-        public override NespTypeInformation[] GetInterfaces(NespMetadataContext context)
+        public override NespTypeInformation[] GetBaseInterfaces(NespMetadataContext context)
         {
-            return typeInfo.ImplementedInterfaces
+            // TODO: cache?
+
+            var interfaces = typeInfo.ImplementedInterfaces.ToArray();
+
+            // The ImplementedInterfaces property returns all implemented interface types.
+            // This function returns only directly implemented interface types.
+
+            // A         <--+
+            // |            |
+            // B            | Remove from candidates
+            // |-----+      |
+            // C     D   <--+
+            // |--+  |
+            // E  F  G   <--- Results
+
+            var candidates = new HashSet<Type>(interfaces);
+            foreach (var interfaceType in interfaces)
+            {
+                foreach (var baseInterfaceType in interfaceType.GetTypeInfo().ImplementedInterfaces)
+                {
+                    candidates.Remove(baseInterfaceType);
+                }
+            }
+
+            return candidates
                 .Select(type => context.FromType(type.GetTypeInfo()))
                 .ToArray();
         }
@@ -173,12 +255,15 @@ namespace Nesp.Metadatas
         }
 
         public override bool IsValueTypeConstraint =>
+            typeInfo.IsGenericParameter &&
             (typeInfo.GenericParameterAttributes & GenericParameterAttributes.NotNullableValueTypeConstraint) == GenericParameterAttributes.NotNullableValueTypeConstraint;
 
         public override bool IsReferenceConstraint =>
+            typeInfo.IsGenericParameter &&
             (typeInfo.GenericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint) == GenericParameterAttributes.ReferenceTypeConstraint;
 
         public override bool IsDefaultConstractorConstraint =>
+            typeInfo.IsGenericParameter &&
             (typeInfo.GenericParameterAttributes & GenericParameterAttributes.DefaultConstructorConstraint) == GenericParameterAttributes.DefaultConstructorConstraint;
 
         public override NespTypeInformation[] GetPolymorphicParameterConstraints(NespMetadataContext context)
@@ -242,6 +327,8 @@ namespace Nesp.Metadatas
 
         public override bool IsBasicType => false;
 
+        public override bool IsInterfaceType => false;
+
         public override bool IsEnumType => false; // TODO: Apply constraints
 
         public override NespTypeInformation GetBaseType(NespMetadataContext context)
@@ -250,7 +337,7 @@ namespace Nesp.Metadatas
             return null;
         }
 
-        public override NespTypeInformation[] GetInterfaces(NespMetadataContext context)
+        public override NespTypeInformation[] GetBaseInterfaces(NespMetadataContext context)
         {
             // TODO:
             return null;
