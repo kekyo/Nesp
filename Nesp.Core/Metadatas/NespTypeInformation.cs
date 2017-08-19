@@ -69,20 +69,9 @@ namespace Nesp.Metadatas
 
         private NespTypeInformation InternalGetBaseType(NespMetadataContext context)
         {
+            // Exclude object type
             var type = this.GetBaseType(context);
             return (type != objectType) ? type : null;
-        }
-
-        private NespTypeInformation InternalCalculateNarrowing(
-            NespTypeInformation targetType, Func<NespTypeInformation, NespTypeInformation> next)
-        {
-            var thisDeriveTypes = this.Traverse(next).Reverse();
-            var targetDeriveTypes = targetType.Traverse(next).Reverse();
-            var narrowTypes = thisDeriveTypes
-                .Zip(targetDeriveTypes, (thisDeriveType, targetDerive) => new { thisDeriveType, targetDerive })
-                .LastOrDefault(entry => entry.thisDeriveType == entry.targetDerive);
-
-            return narrowTypes?.thisDeriveType;
         }
 
         private static IEnumerable<NespTypeInformation[]> CrawlBaseInterfaceHierarchies(
@@ -96,33 +85,40 @@ namespace Nesp.Metadatas
 
             // If available base interface types, traverse by recursivity.
             var interfaceTypes = targetType.GetBaseInterfaces(context);
-            if (interfaceTypes.Length >= 1)
+            switch (interfaceTypes.Length)
             {
-                return interfaceTypes
-                    .SelectMany(interfaceType =>
-                    {
-                        // Copy current hierarchy list.
-                        var currentList = hierarchyList.ToList();
+                case 0:
+                    // Bottom of base interface.
+                    // Base to derives
+                    hierarchyList.Reverse();
+                    return new[] { hierarchyList.ToArray() };
 
-                        // 
-                        return CrawlBaseInterfaceHierarchies(interfaceType, currentList, context);
-                    })
-                    .ToArray();
+                case 1:
+                    // Only a child interface type
+                    // (Suppress list copy cost)
+                    return CrawlBaseInterfaceHierarchies(interfaceTypes[0], hierarchyList, context);
+
+                default:
+                    // More children interface types
+                    return interfaceTypes
+                        .SelectMany(interfaceType =>
+                        {
+                            // Copy current hierarchy list.
+                            var currentList = hierarchyList.ToList();
+
+                            // 
+                            return CrawlBaseInterfaceHierarchies(interfaceType, currentList, context);
+                        })
+                        .ToArray();
             }
 
-            // Bottom of base interface.
-
-            // HACK: All interface base type NO derived from System.Object,
-            //   but this hack can align the bottom type for System.Object.
-            hierarchyList.Add(objectType);
-
-            // Base to derives
-            hierarchyList.Reverse();
-            return new[] { hierarchyList.ToArray() };
         }
 
         public NespTypeInformation CalculateNarrowing(NespTypeInformation targetType, NespMetadataContext context)
         {
+            /////////////////////////////////////////////////////
+            // Step 1: Shortcut calculation by hard-coded assignable decision (Low cost)
+
             if (this.IsAssignableFrom(targetType))
             {
                 return targetType;
@@ -132,26 +128,45 @@ namespace Nesp.Metadatas
                 return this;
             }
 
+            /////////////////////////////////////////////////////
+            // Step 2: Calculate narrowing by class hierarchy
+
             var thisDeriveTypes = this.Traverse(type => type.InternalGetBaseType(context)).Reverse();
             var targetDeriveTypes = targetType.Traverse(type => type.InternalGetBaseType(context)).Reverse();
-            var narrowTypes = thisDeriveTypes
+
+            // Get most deep derived class type
+            var narrowDeriveTypeEntry = thisDeriveTypes
                 .Zip(targetDeriveTypes, (thisDeriveType, targetDerive) => new { thisDeriveType, targetDerive })
                 .LastOrDefault(entry => entry.thisDeriveType == entry.targetDerive);
 
-            if (narrowTypes != null)
+            if (narrowDeriveTypeEntry != null)
             {
-                return narrowTypes.thisDeriveType;
+                // Commonly used class type found (Exclude object type)
+                return narrowDeriveTypeEntry.thisDeriveType;
             }
+
+            /////////////////////////////////////////////////////
+            // Step 3: Calculate narrowing by interface hierarchy
 
             var thisInterfaceTypeSets = CrawlBaseInterfaceHierarchies(this, new List<NespTypeInformation>(), context);
             var targetInterfaceTypeSets = CrawlBaseInterfaceHierarchies(targetType, new List<NespTypeInformation>(), context);
 
-            // TODO: Aggregate
-            //var narrowInterfaceTypeSets = thisInterfaceTypeSets
-            //    .Zip(targetInterfaceTypeSets, (thisInterfaceTypeSet, targetInterfaceTypeSet) => new { thisInterfaceTypeSet, targetInterfaceTypeSet })
-            //    .LastOrDefault(entry => entry.)
+            // Get most deep derived interface type
+            var narrowInterfaceType =
+                (from thisInterfaceTypes in thisInterfaceTypeSets
+                 from targetInterfaceTypes in targetInterfaceTypeSets
+                 let zipped = thisInterfaceTypes
+                     .Zip(targetInterfaceTypes,
+                         (thisInterfaceType, targetInterfaceType) => new {thisInterfaceType, targetInterfaceType})
+                     .Where(entry => entry.thisInterfaceType == entry.targetInterfaceType)
+                     .ToArray()
+                 where zipped.Length >= 1
+                 orderby zipped.Length descending // More deep derived interface types.
+                 select zipped.Last().thisInterfaceType)
+                .FirstOrDefault();
 
-            return objectType;
+            // If final result not found, apply wildcard (object type)
+            return narrowInterfaceType ?? objectType;
         }
 
         public abstract bool Equals(NespTypeInformation obj);
