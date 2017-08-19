@@ -29,6 +29,26 @@ using Nesp.Internals;
 
 namespace Nesp.Metadatas
 {
+    public sealed class NespPolymorphicTypeConstraint
+    {
+        internal NespPolymorphicTypeConstraint(
+            bool isValueType, bool isReference, bool isDefaultConstractor, NespTypeInformation[] constraintTypes)
+        {
+            this.IsValueType = isValueType;
+            this.IsReference = isReference;
+            this.IsDefaultConstractor = isDefaultConstractor;
+            this.ConstraintTypes = constraintTypes;
+        }
+
+        public bool IsValueType { get; }
+
+        public bool IsReference { get; }
+
+        public bool IsDefaultConstractor { get; }
+
+        public NespTypeInformation[] ConstraintTypes { get; }
+    }
+
     public abstract class NespTypeInformation
     {
         private static readonly NespTypeInformation objectType = NespMetadataContext.UnsafeFromType<object>();
@@ -53,17 +73,11 @@ namespace Nesp.Metadatas
 
         public abstract NespTypeInformation[] GetBaseInterfaces(NespMetadataContext context);
 
-        public abstract bool IsGenericType { get; }
+        public abstract bool IsPolymorphicType { get; }
 
         public abstract NespTypeInformation[] GetPolymorphicParameters(NespMetadataContext context);
 
-        public abstract bool IsValueTypeConstraint { get; }
-
-        public abstract bool IsReferenceConstraint { get; }
-
-        public abstract bool IsDefaultConstractorConstraint { get; }
-
-        public abstract NespTypeInformation[] GetPolymorphicParameterConstraints(NespMetadataContext context);
+        public abstract NespPolymorphicTypeConstraint[] GetPolymorphicTypeConstraints(NespMetadataContext context);
 
         public abstract bool IsAssignableFrom(NespTypeInformation type);
 
@@ -111,7 +125,6 @@ namespace Nesp.Metadatas
                         })
                         .ToArray();
             }
-
         }
 
         public NespTypeInformation CalculateNarrowing(NespTypeInformation targetType, NespMetadataContext context)
@@ -161,8 +174,11 @@ namespace Nesp.Metadatas
                      .Where(entry => entry.thisInterfaceType == entry.targetInterfaceType)
                      .ToArray()
                  where zipped.Length >= 1
-                 orderby zipped.Length descending // More deep derived interface types.
-                 select zipped.Last().thisInterfaceType)
+                 let last = zipped.Last()
+                 orderby
+                    last.thisInterfaceType.IsPolymorphicType ? 1 : 0 descending,
+                    zipped.Length descending
+                 select last.thisInterfaceType)
                 .FirstOrDefault();
 
             // If final result not found, apply wildcard (object type)
@@ -200,6 +216,7 @@ namespace Nesp.Metadatas
     {
         private static readonly TypeInfo stringTypeInfo = typeof(string).GetTypeInfo();
         private static readonly TypeInfo decimalTypeInfo = typeof(decimal).GetTypeInfo();
+        private static readonly NespPolymorphicTypeConstraint[] emptyConstraints = new NespPolymorphicTypeConstraint[0];
 
         private readonly TypeInfo typeInfo;
 
@@ -260,7 +277,7 @@ namespace Nesp.Metadatas
                 .ToArray();
         }
 
-        public override bool IsGenericType => typeInfo.IsGenericType;
+        public override bool IsPolymorphicType => typeInfo.IsGenericType;
 
         public override NespTypeInformation[] GetPolymorphicParameters(NespMetadataContext context)
         {
@@ -269,23 +286,23 @@ namespace Nesp.Metadatas
                 .ToArray();
         }
 
-        public override bool IsValueTypeConstraint =>
-            typeInfo.IsGenericParameter &&
-            (typeInfo.GenericParameterAttributes & GenericParameterAttributes.NotNullableValueTypeConstraint) == GenericParameterAttributes.NotNullableValueTypeConstraint;
-
-        public override bool IsReferenceConstraint =>
-            typeInfo.IsGenericParameter &&
-            (typeInfo.GenericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint) == GenericParameterAttributes.ReferenceTypeConstraint;
-
-        public override bool IsDefaultConstractorConstraint =>
-            typeInfo.IsGenericParameter &&
-            (typeInfo.GenericParameterAttributes & GenericParameterAttributes.DefaultConstructorConstraint) == GenericParameterAttributes.DefaultConstructorConstraint;
-
-        public override NespTypeInformation[] GetPolymorphicParameterConstraints(NespMetadataContext context)
+        public override NespPolymorphicTypeConstraint[] GetPolymorphicTypeConstraints(NespMetadataContext context)
         {
-            return typeInfo.GetGenericParameterConstraints()
-                .Select(type => context.FromType(type.GetTypeInfo()))
-                .ToArray();
+            return typeInfo.IsGenericParameter
+                ? new[]
+                {
+                    new NespPolymorphicTypeConstraint(
+                        (typeInfo.GenericParameterAttributes & GenericParameterAttributes.NotNullableValueTypeConstraint) ==
+                            GenericParameterAttributes.NotNullableValueTypeConstraint,
+                        (typeInfo.GenericParameterAttributes & GenericParameterAttributes.ReferenceTypeConstraint) ==
+                            GenericParameterAttributes.ReferenceTypeConstraint,
+                        (typeInfo.GenericParameterAttributes & GenericParameterAttributes.DefaultConstructorConstraint) ==
+                            GenericParameterAttributes.DefaultConstructorConstraint,
+                        typeInfo.GetGenericParameterConstraints()
+                            .Select(type => context.FromType(type.GetTypeInfo()))
+                            .ToArray())
+                }
+                : emptyConstraints;
         }
 
         public override bool IsAssignableFrom(NespTypeInformation type)
@@ -358,20 +375,14 @@ namespace Nesp.Metadatas
             return null;
         }
 
-        public override bool IsGenericType => true;
+        public override bool IsPolymorphicType => true;
 
         public override NespTypeInformation[] GetPolymorphicParameters(NespMetadataContext context)
         {
             return null;
         }
 
-        public override bool IsValueTypeConstraint => false;
-
-        public override bool IsReferenceConstraint => false;
-
-        public override bool IsDefaultConstractorConstraint => false;
-
-        public override NespTypeInformation[] GetPolymorphicParameterConstraints(NespMetadataContext context)
+        public override NespPolymorphicTypeConstraint[] GetPolymorphicTypeConstraints(NespMetadataContext context)
         {
             return null;
         }
