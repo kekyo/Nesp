@@ -81,57 +81,9 @@ namespace Nesp.Metadatas
 
         public abstract bool IsAssignableFrom(NespTypeInformation type);
 
-        private NespTypeInformation InternalGetBaseType(NespMetadataContext context)
-        {
-            // Exclude object type
-            var type = this.GetBaseType(context);
-            return (type != objectType) ? type : null;
-        }
-
-        private static IEnumerable<NespTypeInformation[]> CrawlBaseInterfaceHierarchies(
-            NespTypeInformation targetType, List<NespTypeInformation> hierarchyList, NespMetadataContext context)
-        {
-            // Add type to hierarchy list if type is interface.
-            if (targetType.IsInterfaceType)
-            {
-                hierarchyList.Add(targetType);
-            }
-
-            // If available base interface types, traverse by recursivity.
-            var interfaceTypes = targetType.GetBaseInterfaces(context);
-            switch (interfaceTypes.Length)
-            {
-                case 0:
-                    // Bottom of base interface.
-                    // Base to derives
-                    hierarchyList.Reverse();
-                    return new[] { hierarchyList.ToArray() };
-
-                case 1:
-                    // Only a child interface type
-                    // (Suppress list copy cost)
-                    return CrawlBaseInterfaceHierarchies(interfaceTypes[0], hierarchyList, context);
-
-                default:
-                    // More children interface types
-                    return interfaceTypes
-                        .SelectMany(interfaceType =>
-                        {
-                            // Copy current hierarchy list.
-                            var currentList = hierarchyList.ToList();
-
-                            // 
-                            return CrawlBaseInterfaceHierarchies(interfaceType, currentList, context);
-                        })
-                        .ToArray();
-            }
-        }
-
         public NespTypeInformation CalculateNarrowing(NespTypeInformation targetType, NespMetadataContext context)
         {
-            /////////////////////////////////////////////////////
-            // Step 1: Shortcut calculation by hard-coded assignable decision (Low cost)
-
+            // Shortcut calculation by hard-coded assignable decision (Low cost)
             if (this.IsAssignableFrom(targetType))
             {
                 return targetType;
@@ -141,48 +93,8 @@ namespace Nesp.Metadatas
                 return this;
             }
 
-            /////////////////////////////////////////////////////
-            // Step 2: Calculate narrowing by class hierarchy
-
-            var thisDeriveTypes = this.Traverse(type => type.InternalGetBaseType(context)).Reverse();
-            var targetDeriveTypes = targetType.Traverse(type => type.InternalGetBaseType(context)).Reverse();
-
-            // Get most deep derived class type
-            var narrowDeriveTypeEntry = thisDeriveTypes
-                .Zip(targetDeriveTypes, (thisDeriveType, targetDerive) => new { thisDeriveType, targetDerive })
-                .LastOrDefault(entry => entry.thisDeriveType == entry.targetDerive);
-
-            if (narrowDeriveTypeEntry != null)
-            {
-                // Commonly used class type found (Exclude object type)
-                return narrowDeriveTypeEntry.thisDeriveType;
-            }
-
-            /////////////////////////////////////////////////////
-            // Step 3: Calculate narrowing by interface hierarchy
-
-            var thisInterfaceTypeSets = CrawlBaseInterfaceHierarchies(this, new List<NespTypeInformation>(), context);
-            var targetInterfaceTypeSets = CrawlBaseInterfaceHierarchies(targetType, new List<NespTypeInformation>(), context);
-
-            // Get most deep derived interface type
-            var narrowInterfaceType =
-                (from thisInterfaceTypes in thisInterfaceTypeSets
-                 from targetInterfaceTypes in targetInterfaceTypeSets
-                 let zipped = thisInterfaceTypes
-                     .Zip(targetInterfaceTypes,
-                         (thisInterfaceType, targetInterfaceType) => new {thisInterfaceType, targetInterfaceType})
-                     .Where(entry => entry.thisInterfaceType == entry.targetInterfaceType)
-                     .ToArray()
-                 where zipped.Length >= 1
-                 let last = zipped.Last()
-                 orderby
-                    last.thisInterfaceType.IsPolymorphicType ? 1 : 0 descending,
-                    zipped.Length descending
-                 select last.thisInterfaceType)
-                .FirstOrDefault();
-
-            // If final result not found, apply wildcard (object type)
-            return narrowInterfaceType ?? objectType;
+            // Turn to polymorphic type
+            return new NespPolymorphicTypeInformation(context.CreatePolymorphicName(), this, targetType);
         }
 
         public abstract bool Equals(NespTypeInformation obj);
@@ -243,7 +155,7 @@ namespace Nesp.Metadatas
         {
             var baseType = typeInfo.BaseType;
             var baseTypeInfo = baseType?.GetTypeInfo();
-            return (baseTypeInfo != null) ? context.FromType(baseTypeInfo) : null;
+            return (baseTypeInfo != null) ? context.FromTypeInfo(baseTypeInfo) : null;
         }
 
         public override NespTypeInformation[] GetBaseInterfaces(NespMetadataContext context)
@@ -273,7 +185,7 @@ namespace Nesp.Metadatas
             }
 
             return candidates
-                .Select(type => context.FromType(type.GetTypeInfo()))
+                .Select(type => context.FromTypeInfo(type.GetTypeInfo()))
                 .ToArray();
         }
 
@@ -282,7 +194,7 @@ namespace Nesp.Metadatas
         public override NespTypeInformation[] GetPolymorphicParameters(NespMetadataContext context)
         {
             return typeInfo.GenericTypeParameters
-                .Select(type => context.FromType(type.GetTypeInfo()))
+                .Select(type => context.FromTypeInfo(type.GetTypeInfo()))
                 .ToArray();
         }
 
@@ -299,7 +211,7 @@ namespace Nesp.Metadatas
                         (typeInfo.GenericParameterAttributes & GenericParameterAttributes.DefaultConstructorConstraint) ==
                             GenericParameterAttributes.DefaultConstructorConstraint,
                         typeInfo.GetGenericParameterConstraints()
-                            .Select(type => context.FromType(type.GetTypeInfo()))
+                            .Select(type => context.FromTypeInfo(type.GetTypeInfo()))
                             .ToArray())
                 }
                 : emptyConstraints;
@@ -346,33 +258,45 @@ namespace Nesp.Metadatas
 
     public sealed class NespPolymorphicTypeInformation : NespTypeInformation
     {
-        internal NespPolymorphicTypeInformation(string name)
+        private readonly NespRuntimeTypeInformation[] constraintTypes;
+
+        internal NespPolymorphicTypeInformation(string name, params NespTypeInformation[] targetTypes)
         {
             this.Name = name;
+            constraintTypes = targetTypes
+                .SelectMany(type =>
+                {
+                    var pt = type as NespPolymorphicTypeInformation;
+                    return pt?.constraintTypes ?? new[] { (NespRuntimeTypeInformation)type };
+                })
+                .ToArray();
         }
 
         public override string FullName => $"'{this.Name}";
 
         public override string Name { get; }
 
-        public override bool IsPrimitiveType => false;
+        public override bool IsPrimitiveType => constraintTypes.All(type => type.IsPrimitiveType);
 
-        public override bool IsBasicType => false;
+        public override bool IsBasicType => constraintTypes.All(type => type.IsBasicType);
 
-        public override bool IsInterfaceType => false;
+        public override bool IsInterfaceType => constraintTypes.All(type => type.IsInterfaceType);
 
-        public override bool IsEnumType => false; // TODO: Apply constraints
+        public override bool IsEnumType => constraintTypes.All(type => type.IsEnumType);
 
         public override NespTypeInformation GetBaseType(NespMetadataContext context)
         {
-            // TODO:
-            return null;
+            return constraintTypes
+                .Cast<NespTypeInformation>()
+                .Aggregate((type0, type1) => type0.CalculateNarrowing(type1, context));
         }
 
         public override NespTypeInformation[] GetBaseInterfaces(NespMetadataContext context)
         {
-            // TODO:
             return null;
+            //return constraintTypes
+            //    .Select(type => type.GetBaseInterfaces(context))
+            //    .Aggregate((type0, type1) => type0.CalculateNarrowing(type1, context));
         }
 
         public override bool IsPolymorphicType => true;

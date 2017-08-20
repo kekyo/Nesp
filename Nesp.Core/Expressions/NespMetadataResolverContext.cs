@@ -466,7 +466,7 @@ namespace Nesp.Expressions
             {
                 // Construct list expression.
                 // TODO: List type.
-                var type = metadataContext.FromType(typeof(object[]).GetTypeInfo());
+                var type = metadataContext.FromTypeInfo(typeof(object[]).GetTypeInfo());
                 var expr = new NespResolvedListExpression(listExpressions, type, untypedExpression.Source);
                 expr.SetScore(0);
                 return expr;
@@ -531,7 +531,7 @@ namespace Nesp.Expressions
             if (list.Length == 0)
             {
                 // TODO: List type.
-                var type = metadataContext.FromType(typeof(object[]).GetTypeInfo());
+                var type = metadataContext.FromTypeInfo(typeof(object[]).GetTypeInfo());
                 return new NespResolvedExpression[]
                 {
                     new NespResolvedListExpression(new NespExpression[0], type, untypedExpression.Source)

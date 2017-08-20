@@ -51,21 +51,21 @@ namespace Nesp.Metadatas
         internal NespFunctionInformation(MethodInfo method, NespMetadataContext context)
         {
             this.method = method;
-            this.DeclaringType = context.FromType(method.DeclaringType.GetTypeInfo());
-            this.ReturnType = context.FromType(method.ReturnType.GetTypeInfo());
+            this.DeclaringType = context.FromTypeInfo(method.DeclaringType.GetTypeInfo());
+            this.ReturnType = context.FromTypeInfo(method.ReturnType.GetTypeInfo());
 
             var parameters = method.GetParameters();
             this.Parameters = parameters
                 .Select(parameter => new NespFunctionParameter(
                     parameter.Name,
-                    context.FromType(parameter.ParameterType.GetTypeInfo())))
+                    context.FromTypeInfo(parameter.ParameterType.GetTypeInfo())))
                 .ToArray();
             parameters.LastOrDefault()
                 .Match(lastParameter => lastParameter.ParameterType
                     .GetTypeInfo()
                     .CalculateElementType(enumerableTypeInfo)
                     .FirstOrDefault()
-                    .Match(lastTypeElement => this.ParamArrayElementType = context.FromType(lastTypeElement)));
+                    .Match(lastTypeElement => this.ParamArrayElementType = context.FromTypeInfo(lastTypeElement)));
         }
 
         public string Name => method.Name;

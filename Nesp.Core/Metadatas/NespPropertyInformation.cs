@@ -28,8 +28,8 @@ namespace Nesp.Metadatas
         internal NespPropertyInformation(PropertyInfo property, NespMetadataContext context)
         {
             this.property = property;
-            this.DeclaringType = context.FromType(property.DeclaringType.GetTypeInfo());
-            this.PropertyType = context.FromType(property.PropertyType.GetTypeInfo());
+            this.DeclaringType = context.FromTypeInfo(property.DeclaringType.GetTypeInfo());
+            this.PropertyType = context.FromTypeInfo(property.PropertyType.GetTypeInfo());
             this.Getter = (property.GetMethod != null) ? context.FromMethodInfo(property.GetMethod) : null;
             this.Setter = (property.SetMethod != null) ? context.FromMethodInfo(property.SetMethod) : null;
         }

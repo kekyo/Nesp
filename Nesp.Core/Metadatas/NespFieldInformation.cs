@@ -28,8 +28,8 @@ namespace Nesp.Metadatas
         internal NespFieldInformation(FieldInfo field, NespMetadataContext context)
         {
             this.field = field;
-            this.DeclaringType = context.FromType(field.DeclaringType.GetTypeInfo());
-            this.FieldType = context.FromType(field.FieldType.GetTypeInfo());
+            this.DeclaringType = context.FromTypeInfo(field.DeclaringType.GetTypeInfo());
+            this.FieldType = context.FromTypeInfo(field.FieldType.GetTypeInfo());
         }
 
         public string Name => field.Name;

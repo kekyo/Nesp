@@ -21,6 +21,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace Nesp.Metadatas
 {
@@ -85,6 +86,7 @@ namespace Nesp.Metadatas
         private readonly Dictionary<TypeInfo, NespTypeInformation> runtimeTypes;
         private readonly Dictionary<MethodInfo, NespFunctionInformation> runtimeMethods =
             new Dictionary<MethodInfo, NespFunctionInformation>();
+        private int polymorphicNameCount = 0;
 
         public NespMetadataContext()
             : this(new Dictionary<TypeInfo, NespTypeInformation>(standardTypes))
@@ -96,7 +98,7 @@ namespace Nesp.Metadatas
             this.runtimeTypes = runtimeTypes;
         }
 
-        public NespTypeInformation FromType(TypeInfo runtimeTypeInfo)
+        public NespTypeInformation FromTypeInfo(TypeInfo runtimeTypeInfo)
         {
             if (runtimeTypes.TryGetValue(runtimeTypeInfo, out var type) == false)
             {
@@ -114,6 +116,21 @@ namespace Nesp.Metadatas
                 runtimeMethods.Add(runtimeMethod, function);
             }
             return function;
+        }
+
+        public string CreatePolymorphicName()
+        {
+            var sb = new StringBuilder();
+            var current = polymorphicNameCount + 1;
+            while (current >= 0)
+            {
+                var offset = (current - 1) % ('z' - 'a' + 1);
+                var ch = (char) ('a' + offset);
+                sb.Insert(0, ch);
+                current -= offset + 1;
+            }
+            polymorphicNameCount++;
+            return sb.ToString();
         }
     }
 }
