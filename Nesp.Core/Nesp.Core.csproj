@@ -84,6 +84,7 @@
     <Compile Include="Extensions\NespBaseExtension.cs" />
     <Compile Include="Internals\NespUtilities.cs" />
     <Compile Include="Internals\Optional.cs" />
+    <Compile Include="MD\NespMetadataContext.cs" />
     <Compile Include="Metadatas\NespPropertyInformation.cs" />
     <Compile Include="Metadatas\NespFieldInformation.cs" />
     <Compile Include="Metadatas\NespMetadataContext.cs" />

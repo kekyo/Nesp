@@ -22,16 +22,295 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-
-using Nesp.Metadatas;
+using System.Threading.Tasks;
 
 using NUnit.Framework;
 
-namespace Nesp
+namespace Nesp.MD
 {
     [TestFixture]
     public sealed class NespMetadataTests
     {
+#if true
+        #region Name
+        [Test]
+        public void GetNameFromStringTypeTest()
+        {
+            var context = new NespMetadataContext();
+            var type = context.TypeFrom(typeof(string).GetTypeInfo());
+
+            Assert.AreEqual("System.String", type.FullName);
+            Assert.AreEqual("string", type.Name);
+        }
+
+        [Test]
+        public void GetNameFromInt32TypeTest()
+        {
+            var context = new NespMetadataContext();
+            var type = context.TypeFrom(typeof(int).GetTypeInfo());
+
+            Assert.AreEqual("System.Int32", type.FullName);
+            Assert.AreEqual("int", type.Name);
+        }
+
+        [Test]
+        public void GetNameFromUriTypeTest()
+        {
+            var context = new NespMetadataContext();
+            var type = context.TypeFrom(typeof(Uri).GetTypeInfo());
+
+            Assert.AreEqual("System.Uri", type.FullName);
+            Assert.AreEqual("Uri", type.Name);
+        }
+
+        public static class InnerClassTestType
+        {
+        }
+
+        [Test]
+        public void GetNameFromInnerClassTypeTest()
+        {
+            var context = new NespMetadataContext();
+            var type = context.TypeFrom(typeof(InnerClassTestType).GetTypeInfo());
+
+            Assert.AreEqual("Nesp.MD.NespMetadataTests.InnerClassTestType", type.FullName);
+            Assert.AreEqual("InnerClassTestType", type.Name);
+        }
+
+        [Test]
+        public void GetCombinedNameStringOrInt32TypeTest()
+        {
+            var context = new NespMetadataContext();
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(stringType, int32Type);
+
+            Assert.AreEqual("'T1", combinedType.FullName);
+            Assert.AreEqual("T1", combinedType.Name);
+        }
+
+        [Test]
+        public void GeneratePolymorphicTypeNameTest()
+        {
+            var context = new NespMetadataContext();
+            var results = Enumerable.Range(0, 100)
+                .Select(_ => context.GeneratePolymorphicTypeName())
+                .ToArray();
+
+            Assert.AreEqual("T1", results[0]);
+            Assert.AreEqual("T100", results[99]);
+        }
+        #endregion
+
+        #region CalculateCombined
+        [Test]
+        public void CalculateCombinedStringTypeAndStringType()
+        {
+            var context = new NespMetadataContext();
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(stringType, stringType);
+
+            Assert.AreSame(stringType, combinedType);
+        }
+
+        [Test]
+        public void CalculateCombinedStringTypeAndObjectType()
+        {
+            var context = new NespMetadataContext();
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+            var objectType = context.TypeFrom(typeof(object).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(stringType, objectType);
+
+            Assert.AreSame(objectType, combinedType);
+        }
+
+        [Test]
+        public void CalculateCombinedObjectTypeAndStringType()
+        {
+            var context = new NespMetadataContext();
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+            var objectType = context.TypeFrom(typeof(object).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(objectType, stringType);
+
+            Assert.AreSame(objectType, combinedType);
+        }
+
+        [Test]
+        public void CalculateCombinedInt32TypeAndStringType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(int32Type, stringType);
+
+            var polymorphicType = (NespPolymorphicTypeInformation)combinedType;
+            Assert.IsNotNull(polymorphicType);
+        }
+
+        [Test]
+        public void CalculateCombinedInt32TypeAndStringTypeAndUriType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+            var uriType = context.TypeFrom(typeof(Uri).GetTypeInfo());
+
+            var combinedType1 = context.CalculateCombinedType(int32Type, stringType);
+            var combinedType2 = context.CalculateCombinedType(combinedType1, uriType);
+
+            var polymorphicType = (NespPolymorphicTypeInformation)combinedType2;
+
+            Assert.AreEqual(3, polymorphicType.Count);
+
+            Assert.IsTrue(context.IsAssignableType(polymorphicType, int32Type));
+            Assert.IsTrue(context.IsAssignableType(polymorphicType, stringType));
+            Assert.IsTrue(context.IsAssignableType(polymorphicType, uriType));
+        }
+
+        [Test]
+        public void CalculateCombinedInt32TypeAndMethodInfoTypeAndMethodBaseType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var methodInfoType = context.TypeFrom(typeof(MethodInfo).GetTypeInfo());
+            var methodBaseType = context.TypeFrom(typeof(MethodBase).GetTypeInfo());
+
+            var combinedType1 = context.CalculateCombinedType(int32Type, methodInfoType);
+            var combinedType2 = context.CalculateCombinedType(combinedType1, methodBaseType);
+
+            var polymorphicType = (NespPolymorphicTypeInformation)combinedType2;
+
+            Assert.AreEqual(2, polymorphicType.Count);
+
+            Assert.IsTrue(context.IsAssignableType(polymorphicType, int32Type));
+            Assert.IsFalse(context.IsAssignableType(polymorphicType, methodBaseType));
+            Assert.IsTrue(context.IsAssignableType(polymorphicType, methodInfoType));
+        }
+
+        [Test]
+        public void CalculateCombinedInt32TypeAndMethodBaseTypeAndMethodInfoType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var methodBaseType = context.TypeFrom(typeof(MethodBase).GetTypeInfo());
+            var methodInfoType = context.TypeFrom(typeof(MethodInfo).GetTypeInfo());
+
+            var combinedType1 = context.CalculateCombinedType(int32Type, methodBaseType);
+            var combinedType2 = context.CalculateCombinedType(combinedType1, methodInfoType);
+
+            var polymorphicType = (NespPolymorphicTypeInformation)combinedType2;
+
+            Assert.AreEqual(2, polymorphicType.Count);
+
+            Assert.IsTrue(context.IsAssignableType(polymorphicType, int32Type));
+            Assert.IsFalse(context.IsAssignableType(polymorphicType, methodBaseType));
+            Assert.IsTrue(context.IsAssignableType(polymorphicType, methodInfoType));
+        }
+        #endregion
+
+        #region IsAssignable
+        [Test]
+        public void IsAssignableFromInt32TypeToObjectType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var objectType = context.TypeFrom(typeof(object).GetTypeInfo());
+
+            Assert.IsTrue(context.IsAssignableType(objectType, int32Type));
+        }
+
+        [Test]
+        public void IsAssignableFromObjectTypeToInt32Type()
+        {
+            var context = new NespMetadataContext();
+            var objectType = context.TypeFrom(typeof(object).GetTypeInfo());
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+
+            Assert.IsFalse(context.IsAssignableType(int32Type, objectType));
+        }
+
+        [Test]
+        public void TrueIsAssignableFromInt32TypeToPolymorphicType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(int32Type, stringType);
+
+            Assert.IsTrue(context.IsAssignableType(combinedType, int32Type));
+        }
+
+        [Test]
+        public void TrueIsAssignableFromStringTypeToPolymorphicType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(int32Type, stringType);
+
+            Assert.IsTrue(context.IsAssignableType(combinedType, stringType));
+        }
+
+        [Test]
+        public void TrueIsAssignableFromPolymorphicTypeToObjectType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+            var objectType = context.TypeFrom(typeof(object).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(int32Type, stringType);
+
+            Assert.IsTrue(context.IsAssignableType(objectType, combinedType));
+        }
+
+        [Test]
+        public void FalseIsAssignableFromPolymorphicTypeToInt32Type()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(int32Type, stringType);
+
+            // Not compatible string type'd polymorphic to int32 type.
+            Assert.IsFalse(context.IsAssignableType(int32Type, combinedType));
+        }
+
+        [Test]
+        public void FalseIsAssignableFromObjectTypeToPolymorphicType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+            var uriType = context.TypeFrom(typeof(Uri).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(stringType, uriType);
+
+            Assert.IsFalse(context.IsAssignableType(combinedType, int32Type));
+        }
+
+        [Test]
+        public void FalseIsAssignableFromInt32TypeToPolymorphicType()
+        {
+            var context = new NespMetadataContext();
+            var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
+            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
+            var objectType = context.TypeFrom(typeof(object).GetTypeInfo());
+
+            var combinedType = context.CalculateCombinedType(int32Type, stringType);
+
+            Assert.IsFalse(context.IsAssignableType(combinedType, objectType));
+        }
+        #endregion
+#else
         #region RuntimeType
         [Test]
         public void FromRuntimeTypeTest()
@@ -310,5 +589,6 @@ namespace Nesp
         //    Assert.AreEqual(ilistType, result1);
         //}
         #endregion
+#endif
     }
 }
