@@ -7,7 +7,8 @@ using Nesp.Internals;
 
 namespace Nesp.MD
 {
-    public abstract class NespTypeInformation : IEquatable<NespTypeInformation>
+    public abstract class NespTypeInformation
+        : IEquatable<NespTypeInformation>, IComparable<NespTypeInformation>
     {
         internal NespTypeInformation()
         {
@@ -16,7 +17,8 @@ namespace Nesp.MD
         public abstract string FullName { get; }
         public abstract string Name { get; }
 
-        internal abstract NespTypeInformation CalculateCombinedTypeWith(NespMetadataContext context, NespTypeInformation type);
+        internal abstract NespTypeInformation CalculateCombinedTypeWith(
+            NespMetadataContext context, NespTypeInformation type);
 
         internal abstract bool IsAssignableFrom(NespTypeInformation type);
 
@@ -34,6 +36,11 @@ namespace Nesp.MD
         {
             return this.FullName.GetHashCode();
         }
+
+        public int CompareTo(NespTypeInformation rhs)
+        {
+            return StringComparer.Ordinal.Compare(this.FullName, rhs.FullName);
+        }
     }
 
     public sealed class NespRuntimeTypeInformation : NespTypeInformation
@@ -50,7 +57,10 @@ namespace Nesp.MD
             .Split('.')
             .Last();
 
-        internal override NespTypeInformation CalculateCombinedTypeWith(NespMetadataContext context, NespTypeInformation type)
+        public TypeInfo RuntimeType => this.typeInfo;
+
+        internal override NespTypeInformation CalculateCombinedTypeWith(
+            NespMetadataContext context, NespTypeInformation type)
         {
             /////////////////////////////////////////////
             // type is runtime (Both runtime type)
@@ -60,25 +70,24 @@ namespace Nesp.MD
             {
                 if (typeInfo.IsAssignableFrom(rt.typeInfo))
                 {
-                    // MethodBase ------+-- MethodInfo
+                    // BaseX ------+-- DerivedY
                     //            vvvvvvvvv
-                    //                  +-- MethodInfo [Widen: MethodBase]
+                    //             +-- DerivedY [Widen: BaseX]
                     return rt;
                 }
                 if (rt.typeInfo.IsAssignableFrom(typeInfo))
                 {
-                    // MethodInfo ------+-- MethodBase
+                    // DerivedY ------+-- BaseX
                     //            vvvvvvvvv
-                    // MethodInfo ------+              [Widen: MethodBase]
+                    // DerivedY ------+         [Widen: BaseX]
                     return this;
                 }
 
-                // MethodBase ------+-- int
-                //            vvvvvvvvv
-                //                  +-- int
-                //                  +-- MethodBase [Combined: MethodBase]
-                var name = context.GeneratePolymorphicTypeName();
-                return new NespPolymorphicTypeInformation(name, this, rt);
+                // BaseX ------+-- int
+                //         vvvvvvvvv
+                //             +-- int
+                //             +-- BaseX [Combined: BaseX]
+                return context.GetOrAddPolymorphicType(new [] { this, rt });
             }
 
             /////////////////////////////////////////////
@@ -87,11 +96,11 @@ namespace Nesp.MD
             var pt = (NespPolymorphicTypeInformation)type;
             if (pt.types.Any(t => typeInfo.IsAssignableFrom(t.typeInfo)))
             {
-                // MethodBase ------+-- int
-                //                  +-- MethodInfo
-                //            vvvvvvvvv
-                //                  +-- int
-                //                  +-- MethodInfo [Widen: MethodBase]
+                // BaseX ------+-- int
+                //             +-- DerivedY
+                //         vvvvvvvvv
+                //             +-- int
+                //             +-- DerivedY [Widen: BaseX]
                 return type;
             }
 
@@ -101,26 +110,22 @@ namespace Nesp.MD
                 .ToArray();
             if (widen.SequenceEqual(pt.types) == false)
             {
-                // MethodInfo ------+-- int
-                //                  +-- MethodBase
+                // DerivedY ------+-- int
+                //                +-- BaseX
                 //            vvvvvvvvv
-                //                  +-- int
-                //                  +-- MethodInfo [Widen: MethodBase]
-
-                // Construct new pt
-                var name = context.GeneratePolymorphicTypeName();
-                return new NespPolymorphicTypeInformation(name, widen);
+                //                +-- int
+                //                +-- DerivedY [Widen: BaseX]
+                return context.GetOrAddPolymorphicType(widen);
             }
             else
             {
-                // MethodBase ------+-- int
-                //                  +-- MethodBase
-                //            vvvvvvvvv
-                //                  +-- int
-                //                  +-- MethodBase
-
-                // Nothing change
-                return pt;
+                // BaseX ------+-- int
+                //             +-- string
+                //         vvvvvvvvv
+                //             +-- int
+                //             +-- string
+                //             +-- BaseX  [Combined: BaseX]
+                return context.GetOrAddPolymorphicType(widen.Concat(new[] { this }));
             }
         }
 
@@ -145,13 +150,18 @@ namespace Nesp.MD
         {
             return this.FullName;
         }
+
+        public override int GetHashCode()
+        {
+            return typeInfo.GetHashCode();
+        }
     }
 
     public sealed class NespPolymorphicTypeInformation : NespTypeInformation
     {
         internal readonly NespRuntimeTypeInformation[] types;
 
-        internal NespPolymorphicTypeInformation(string name, params NespRuntimeTypeInformation[] types)
+        internal NespPolymorphicTypeInformation(string name, NespRuntimeTypeInformation[] types)
         {
             this.Name = name;
             this.types = types;
@@ -160,87 +170,49 @@ namespace Nesp.MD
         public override string FullName => "'" + this.Name;
         public override string Name { get; }
 
-        public int Count => types.Length;
+        public NespRuntimeTypeInformation[] RuntimeTypes => types;
 
-        internal override NespTypeInformation CalculateCombinedTypeWith(NespMetadataContext context, NespTypeInformation type)
+        internal override NespTypeInformation CalculateCombinedTypeWith(
+            NespMetadataContext context, NespTypeInformation type)
         {
             /////////////////////////////////////////////
             // type is runtime (polymorphic vs runtime)
 
-            var rt = type as NespRuntimeTypeInformation;
-            if (rt != null)
+            var pt = type as NespPolymorphicTypeInformation;
+            if (pt == null)
             {
-                if (types.Any(t => rt.typeInfo.IsAssignableFrom(t.typeInfo)))
-                {
-                    // int        --+------ MethodBase
-                    // MethodInfo --+
-                    //            vvvvvvvvv
-                    // int        --+
-                    // MethodInfo --+                  [Widen: MethodBase]
-                    return this;
-                }
-
-                var widen = types
-                    .Select(t => t.typeInfo.IsAssignableFrom(rt.typeInfo) ? rt : t)
-                    .Distinct()
-                    .ToArray();
-                if (widen.SequenceEqual(types) == false)
-                {
-                    // int        --+------ MethodInfo
-                    // MethodBase --+
-                    //            vvvvvvvvv
-                    // int        --+
-                    // MethodInfo --+                  [Widen: MethodBase]
-
-                    var name = context.GeneratePolymorphicTypeName();
-                    return new NespPolymorphicTypeInformation(name, widen);
-                }
-                else
-                {
-                    // int        --+------ string
-                    // MethodBase --+
-                    //            vvvvvvvvv
-                    // int        --+
-                    // MethodBase --+
-                    // string     --+              [Combined: string]
-
-                    var name = context.GeneratePolymorphicTypeName();
-                    return new NespPolymorphicTypeInformation(name, widen.Concat(new[] { rt }).ToArray());
-                }
+                // swap lhs and rhs
+                return type.CalculateCombinedTypeWith(context, this);
             }
 
             /////////////////////////////////////////////
             // type is polymorphic (both polymorphic type)
 
-            var pt = (NespPolymorphicTypeInformation)type;
             var widen1 = types
                 .Select(t1 => t1.CalculateCombinedTypeWith(context, pt));
             var widen2 = pt.types
                 .Select(t2 => t2.CalculateCombinedTypeWith(context, this));
             var combined = widen1
                 .Concat(widen2)
-                .Distinct()
+                .Distinct()     // LINQ to Object's distinct is stable.
                 .ToArray();
             if (combined.SequenceEqual(types) == false)
             {
                 // TODO:
-                // IE<int>    --+---+-- MethodInfo
-                // MethodBase --+   +-- int[]
-                //            vvvvvvvvv
-                // int[]      --+                  [Widen: IE<int>]
-                // MethodInfo --+                  [Widen: MethodBase]
+                // IE<int>   --+---+-- DerivedY
+                // BaseX     --+   +-- int[]
+                //           vvvvvvvvv
+                // int[]     --+                 [Widen: IE<int>]
+                // DerivedY  --+                 [Widen: BaseX]
 
                 // Construct new pt
-                var name = context.GeneratePolymorphicTypeName();
-                return new NespPolymorphicTypeInformation(
-                    name,
+                return context.GetOrAddPolymorphicType(
                     combined.SelectMany(t =>
                     {
                         var r = t as NespRuntimeTypeInformation;
                         return (r != null) ? new[] {r} : ((NespPolymorphicTypeInformation)t).types;
                     })
-                    .Distinct()
-                    .ToArray());
+                    .Distinct());
             }
 
             return this;
@@ -256,23 +228,51 @@ namespace Nesp.MD
             var t = string.Join(",", this.types.Select(rt => rt.ToString()));
             return $"{this.FullName} [{t}]";
         }
+
+        public override int GetHashCode()
+        {
+            return types.Aggregate(
+                this.FullName.GetHashCode(),
+                (last, type) => last ^ type.GetHashCode());
+        }
     }
 
     public sealed class NespMetadataContext
     {
-        private readonly Dictionary<TypeInfo, NespTypeInformation> types =
-            new Dictionary<TypeInfo, NespTypeInformation>();
+        private sealed class RuntimeTypesComparer : IEqualityComparer<NespRuntimeTypeInformation[]>
+        {
+            public static readonly RuntimeTypesComparer Instance = new RuntimeTypesComparer();
+
+            private RuntimeTypesComparer()
+            {
+            }
+
+            public bool Equals(NespRuntimeTypeInformation[] lhs, NespRuntimeTypeInformation[] rhs)
+            {
+                return lhs.SequenceEqual(rhs);
+            }
+
+            public int GetHashCode(NespRuntimeTypeInformation[] types)
+            {
+                return types.Aggregate(0, (last, type) => last ^ type.GetHashCode());
+            }
+        }
+
+        private readonly Dictionary<TypeInfo, NespRuntimeTypeInformation> runtimeTypes =
+            new Dictionary<TypeInfo, NespRuntimeTypeInformation>();
+        private readonly Dictionary<NespRuntimeTypeInformation[], NespPolymorphicTypeInformation> polymorphicTypes =
+            new Dictionary<NespRuntimeTypeInformation[], NespPolymorphicTypeInformation>(RuntimeTypesComparer.Instance);
 
         private int polymorphicTypeNameIndex = 0;
 
-        public NespTypeInformation TypeFrom(TypeInfo typeInfo)
+        public NespTypeInformation FromType(TypeInfo typeInfo)
         {
-            lock (types)
+            lock (runtimeTypes)
             {
-                if (types.TryGetValue(typeInfo, out var type) == false)
+                if (runtimeTypes.TryGetValue(typeInfo, out var type) == false)
                 {
                     type = new NespRuntimeTypeInformation(typeInfo);
-                    types.Add(typeInfo, type);
+                    runtimeTypes.Add(typeInfo, type);
                 }
                 return type;
             }
@@ -282,6 +282,23 @@ namespace Nesp.MD
         {
             var index = ++polymorphicTypeNameIndex;
             return "T" + index;
+        }
+
+        internal NespPolymorphicTypeInformation GetOrAddPolymorphicType(
+            IEnumerable<NespRuntimeTypeInformation> types)
+        {
+            var normalized = types.OrderBy(type => type).ToArray();
+
+            lock (polymorphicTypes)
+            {
+                if (polymorphicTypes.TryGetValue(normalized, out var type) == false)
+                {
+                    var name = this.GeneratePolymorphicTypeName();
+                    type = new NespPolymorphicTypeInformation(name, normalized);
+                    polymorphicTypes.Add(normalized, type);
+                }
+                return type;
+            }
         }
 
         public NespTypeInformation CalculateCombinedType(NespTypeInformation type1, NespTypeInformation type2)
