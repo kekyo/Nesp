@@ -122,21 +122,11 @@ namespace Nesp.MD
             var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
             var objectType = context.TypeFrom(typeof(object).GetTypeInfo());
 
-            var combinedType = context.CalculateCombinedType(stringType, objectType);
+            var combinedType1 = context.CalculateCombinedType(stringType, objectType);
+            var combinedType2 = context.CalculateCombinedType(objectType, stringType);
 
-            Assert.AreSame(objectType, combinedType);
-        }
-
-        [Test]
-        public void CalculateCombinedObjectTypeAndStringType()
-        {
-            var context = new NespMetadataContext();
-            var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
-            var objectType = context.TypeFrom(typeof(object).GetTypeInfo());
-
-            var combinedType = context.CalculateCombinedType(objectType, stringType);
-
-            Assert.AreSame(objectType, combinedType);
+            Assert.AreSame(stringType, combinedType1);
+            Assert.AreSame(stringType, combinedType2);
         }
 
         [Test]
@@ -146,10 +136,14 @@ namespace Nesp.MD
             var int32Type = context.TypeFrom(typeof(int).GetTypeInfo());
             var stringType = context.TypeFrom(typeof(string).GetTypeInfo());
 
-            var combinedType = context.CalculateCombinedType(int32Type, stringType);
+            var combinedType1 = context.CalculateCombinedType(int32Type, stringType);
+            var combinedType2 = context.CalculateCombinedType(stringType, int32Type);
 
-            var polymorphicType = (NespPolymorphicTypeInformation)combinedType;
-            Assert.IsNotNull(polymorphicType);
+            var polymorphicType1 = (NespPolymorphicTypeInformation)combinedType1;
+            var polymorphicType2 = (NespPolymorphicTypeInformation)combinedType2;
+
+            Assert.AreEqual(2, polymorphicType1.Count);
+            Assert.AreEqual(2, polymorphicType2.Count);
         }
 
         [Test]

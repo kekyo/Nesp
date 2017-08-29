@@ -7,7 +7,7 @@ using Nesp.Internals;
 
 namespace Nesp.MD
 {
-    public abstract class NespTypeInformation
+    public abstract class NespTypeInformation : IEquatable<NespTypeInformation>
     {
         internal NespTypeInformation()
         {
@@ -16,13 +16,23 @@ namespace Nesp.MD
         public abstract string FullName { get; }
         public abstract string Name { get; }
 
-        internal abstract NespRuntimeTypeInformation[] NormalizedRuntimeTypes { get; }
+        internal abstract NespTypeInformation CalculateCombinedTypeWith(NespMetadataContext context, NespTypeInformation type);
 
         internal abstract bool IsAssignableFrom(NespTypeInformation type);
 
-        public override string ToString()
+        public bool Equals(NespTypeInformation rhs)
         {
-            return this.FullName;
+            return rhs != null && object.ReferenceEquals(this, rhs);
+        }
+
+        public override bool Equals(object rhs)
+        {
+            return this.Equals(rhs as NespTypeInformation);
+        }
+
+        public override int GetHashCode()
+        {
+            return this.FullName.GetHashCode();
         }
     }
 
@@ -40,7 +50,79 @@ namespace Nesp.MD
             .Split('.')
             .Last();
 
-        internal override NespRuntimeTypeInformation[] NormalizedRuntimeTypes => new[] {this};
+        internal override NespTypeInformation CalculateCombinedTypeWith(NespMetadataContext context, NespTypeInformation type)
+        {
+            /////////////////////////////////////////////
+            // type is runtime (Both runtime type)
+
+            var rt = type as NespRuntimeTypeInformation;
+            if (rt != null)
+            {
+                if (typeInfo.IsAssignableFrom(rt.typeInfo))
+                {
+                    // MethodBase ------+-- MethodInfo
+                    //            vvvvvvvvv
+                    //                  +-- MethodInfo [Widen: MethodBase]
+                    return rt;
+                }
+                if (rt.typeInfo.IsAssignableFrom(typeInfo))
+                {
+                    // MethodInfo ------+-- MethodBase
+                    //            vvvvvvvvv
+                    // MethodInfo ------+              [Widen: MethodBase]
+                    return this;
+                }
+
+                // MethodBase ------+-- int
+                //            vvvvvvvvv
+                //                  +-- int
+                //                  +-- MethodBase [Combined: MethodBase]
+                var name = context.GeneratePolymorphicTypeName();
+                return new NespPolymorphicTypeInformation(name, this, rt);
+            }
+
+            /////////////////////////////////////////////
+            // type is polymorphic (runtime vs polymorphic)
+
+            var pt = (NespPolymorphicTypeInformation)type;
+            if (pt.types.Any(t => typeInfo.IsAssignableFrom(t.typeInfo)))
+            {
+                // MethodBase ------+-- int
+                //                  +-- MethodInfo
+                //            vvvvvvvvv
+                //                  +-- int
+                //                  +-- MethodInfo [Widen: MethodBase]
+                return type;
+            }
+
+            var widen = pt.types
+                .Select(t => t.typeInfo.IsAssignableFrom(typeInfo) ? this : t)
+                .Distinct()
+                .ToArray();
+            if (widen.SequenceEqual(pt.types) == false)
+            {
+                // MethodInfo ------+-- int
+                //                  +-- MethodBase
+                //            vvvvvvvvv
+                //                  +-- int
+                //                  +-- MethodInfo [Widen: MethodBase]
+
+                // Construct new pt
+                var name = context.GeneratePolymorphicTypeName();
+                return new NespPolymorphicTypeInformation(name, widen);
+            }
+            else
+            {
+                // MethodBase ------+-- int
+                //                  +-- MethodBase
+                //            vvvvvvvvv
+                //                  +-- int
+                //                  +-- MethodBase
+
+                // Nothing change
+                return pt;
+            }
+        }
 
         internal override bool IsAssignableFrom(NespTypeInformation type)
         {
@@ -51,33 +133,128 @@ namespace Nesp.MD
             }
 
             var polymorphicType = (NespPolymorphicTypeInformation)type;
-            if (polymorphicType.NormalizedRuntimeTypes.All(rt => typeInfo.IsAssignableFrom(rt.typeInfo)))
+            if (polymorphicType.types.All(rt => typeInfo.IsAssignableFrom(rt.typeInfo)))
             {
                 return true;
             }
 
             return false;
         }
+
+        public override string ToString()
+        {
+            return this.FullName;
+        }
     }
 
     public sealed class NespPolymorphicTypeInformation : NespTypeInformation
     {
-        internal NespPolymorphicTypeInformation(string name, NespRuntimeTypeInformation[] types)
+        internal readonly NespRuntimeTypeInformation[] types;
+
+        internal NespPolymorphicTypeInformation(string name, params NespRuntimeTypeInformation[] types)
         {
             this.Name = name;
-            this.NormalizedRuntimeTypes = types;
+            this.types = types;
         }
 
         public override string FullName => "'" + this.Name;
         public override string Name { get; }
 
-        public int Count => this.NormalizedRuntimeTypes.Length;
+        public int Count => types.Length;
 
-        internal override NespRuntimeTypeInformation[] NormalizedRuntimeTypes { get; }
+        internal override NespTypeInformation CalculateCombinedTypeWith(NespMetadataContext context, NespTypeInformation type)
+        {
+            /////////////////////////////////////////////
+            // type is runtime (polymorphic vs runtime)
+
+            var rt = type as NespRuntimeTypeInformation;
+            if (rt != null)
+            {
+                if (types.Any(t => rt.typeInfo.IsAssignableFrom(t.typeInfo)))
+                {
+                    // int        --+------ MethodBase
+                    // MethodInfo --+
+                    //            vvvvvvvvv
+                    // int        --+
+                    // MethodInfo --+                  [Widen: MethodBase]
+                    return this;
+                }
+
+                var widen = types
+                    .Select(t => t.typeInfo.IsAssignableFrom(rt.typeInfo) ? rt : t)
+                    .Distinct()
+                    .ToArray();
+                if (widen.SequenceEqual(types) == false)
+                {
+                    // int        --+------ MethodInfo
+                    // MethodBase --+
+                    //            vvvvvvvvv
+                    // int        --+
+                    // MethodInfo --+                  [Widen: MethodBase]
+
+                    var name = context.GeneratePolymorphicTypeName();
+                    return new NespPolymorphicTypeInformation(name, widen);
+                }
+                else
+                {
+                    // int        --+------ string
+                    // MethodBase --+
+                    //            vvvvvvvvv
+                    // int        --+
+                    // MethodBase --+
+                    // string     --+              [Combined: string]
+
+                    var name = context.GeneratePolymorphicTypeName();
+                    return new NespPolymorphicTypeInformation(name, widen.Concat(new[] { rt }).ToArray());
+                }
+            }
+
+            /////////////////////////////////////////////
+            // type is polymorphic (both polymorphic type)
+
+            var pt = (NespPolymorphicTypeInformation)type;
+            var widen1 = types
+                .Select(t1 => t1.CalculateCombinedTypeWith(context, pt));
+            var widen2 = pt.types
+                .Select(t2 => t2.CalculateCombinedTypeWith(context, this));
+            var combined = widen1
+                .Concat(widen2)
+                .Distinct()
+                .ToArray();
+            if (combined.SequenceEqual(types) == false)
+            {
+                // TODO:
+                // IE<int>    --+---+-- MethodInfo
+                // MethodBase --+   +-- int[]
+                //            vvvvvvvvv
+                // int[]      --+                  [Widen: IE<int>]
+                // MethodInfo --+                  [Widen: MethodBase]
+
+                // Construct new pt
+                var name = context.GeneratePolymorphicTypeName();
+                return new NespPolymorphicTypeInformation(
+                    name,
+                    combined.SelectMany(t =>
+                    {
+                        var r = t as NespRuntimeTypeInformation;
+                        return (r != null) ? new[] {r} : ((NespPolymorphicTypeInformation)t).types;
+                    })
+                    .Distinct()
+                    .ToArray());
+            }
+
+            return this;
+        }
 
         internal override bool IsAssignableFrom(NespTypeInformation type)
         {
-            return this.NormalizedRuntimeTypes.Any(t => t.IsAssignableFrom(type));
+            return types.Any(t => t.IsAssignableFrom(type));
+        }
+
+        public override string ToString()
+        {
+            var t = string.Join(",", this.types.Select(rt => rt.ToString()));
+            return $"{this.FullName} [{t}]";
         }
     }
 
@@ -109,36 +286,7 @@ namespace Nesp.MD
 
         public NespTypeInformation CalculateCombinedType(NespTypeInformation type1, NespTypeInformation type2)
         {
-            var replacedIfAssignable = type1.NormalizedRuntimeTypes
-                .Select(rt => rt.IsAssignableFrom(type2) ? type2 : rt)    // Widen [MethodBase <--- MethodInfo]
-                .Distinct()
-                .ToArray();
-
-            if (replacedIfAssignable.Any(rt => type2.IsAssignableFrom(rt)))  // [MethodInfo <--- MethodBase]
-            {
-                if (type1.NormalizedRuntimeTypes.SequenceEqual(replacedIfAssignable))
-                {
-                    return type1;
-                }
-                else
-                {
-                    var name = this.GeneratePolymorphicTypeName();
-                    return new NespPolymorphicTypeInformation(
-                        name,
-                        replacedIfAssignable.SelectMany(t => t.NormalizedRuntimeTypes).ToArray());
-                }
-            }
-            else
-            {
-                var name = this.GeneratePolymorphicTypeName();
-                return new NespPolymorphicTypeInformation(
-                    name,
-                    replacedIfAssignable
-                        .SelectMany(t => t.NormalizedRuntimeTypes)
-                        .Concat(type2.NormalizedRuntimeTypes)
-                        .Distinct()
-                        .ToArray());
-            }
+            return type1.CalculateCombinedTypeWith(this, type2);
         }
 
         public bool IsAssignableType(NespTypeInformation toType, NespTypeInformation fromType)
