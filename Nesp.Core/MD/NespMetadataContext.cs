@@ -1,4 +1,23 @@
-﻿using System;
+﻿/////////////////////////////////////////////////////////////////////////////////////////////////
+//
+// Nesp - A Lisp-like lightweight functional language on .NET
+// Copyright (c) 2017 Kouji Matsui (@kekyo2)
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+/////////////////////////////////////////////////////////////////////////////////////////////////
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -18,10 +37,10 @@ namespace Nesp.MD
         public abstract string FullName { get; }
         public abstract string Name { get; }
 
+        internal abstract bool CalculateAssignableFrom(NespTypeInformation type);
+
         internal abstract NespTypeInformation CalculateCombinedTypeWith(
             NespMetadataContext context, NespTypeInformation type);
-
-        internal abstract bool IsAssignableFrom(NespTypeInformation type);
 
         public bool Equals(NespTypeInformation rhs)
         {
@@ -59,6 +78,23 @@ namespace Nesp.MD
             .Last();
 
         public TypeInfo RuntimeType => this.typeInfo;
+
+        internal override bool CalculateAssignableFrom(NespTypeInformation type)
+        {
+            var runtimeType = type as NespRuntimeTypeInformation;
+            if (runtimeType != null)
+            {
+                return typeInfo.IsAssignableFrom(runtimeType.typeInfo);
+            }
+
+            var polymorphicType = (NespPolymorphicTypeInformation)type;
+            if (polymorphicType.types.All(rt => typeInfo.IsAssignableFrom(rt.typeInfo)))
+            {
+                return true;
+            }
+
+            return false;
+        }
 
         internal override NespTypeInformation CalculateCombinedTypeWith(
             NespMetadataContext context, NespTypeInformation type)
@@ -131,23 +167,6 @@ namespace Nesp.MD
             }
         }
 
-        internal override bool IsAssignableFrom(NespTypeInformation type)
-        {
-            var runtimeType = type as NespRuntimeTypeInformation;
-            if (runtimeType != null)
-            {
-                return typeInfo.IsAssignableFrom(runtimeType.typeInfo);
-            }
-
-            var polymorphicType = (NespPolymorphicTypeInformation)type;
-            if (polymorphicType.types.All(rt => typeInfo.IsAssignableFrom(rt.typeInfo)))
-            {
-                return true;
-            }
-
-            return false;
-        }
-
         public override string ToString()
         {
             return this.FullName;
@@ -175,6 +194,11 @@ namespace Nesp.MD
         public override string Name { get; }
 
         public NespRuntimeTypeInformation[] RuntimeTypes => types;
+
+        internal override bool CalculateAssignableFrom(NespTypeInformation type)
+        {
+            return types.Any(t => t.CalculateAssignableFrom(type));
+        }
 
         internal override NespTypeInformation CalculateCombinedTypeWith(
             NespMetadataContext context, NespTypeInformation type)
@@ -234,11 +258,6 @@ namespace Nesp.MD
             // int[]    --+
             // DerivedY --+
             return this;
-        }
-
-        internal override bool IsAssignableFrom(NespTypeInformation type)
-        {
-            return types.Any(t => t.IsAssignableFrom(type));
         }
 
         public override string ToString()
@@ -320,14 +339,14 @@ namespace Nesp.MD
             }
         }
 
+        public bool CalculateAssignableType(NespTypeInformation toType, NespTypeInformation fromType)
+        {
+            return toType.CalculateAssignableFrom(fromType);
+        }
+
         public NespTypeInformation CalculateCombinedType(NespTypeInformation type1, NespTypeInformation type2)
         {
             return type1.CalculateCombinedTypeWith(this, type2);
-        }
-
-        public bool IsAssignableType(NespTypeInformation toType, NespTypeInformation fromType)
-        {
-            return toType.IsAssignableFrom(fromType);
         }
     }
 }

@@ -102,71 +102,60 @@ namespace Nesp.MD
         }
         #endregion
 
-        #region IsAssignable
+        #region CalculateAssignableType
         [Test]
-        public void IsAssignableInt32TypeAndObjectType()
+        public void CalculateAssignableTypeObjectTypeToInt32Type()
         {
             var context = new NespMetadataContext();
-            var int32Type = context.FromType(typeof(int).GetTypeInfo());
             var objectType = context.FromType(typeof(object).GetTypeInfo());
+            var int32Type = context.FromType(typeof(int).GetTypeInfo());
 
-            Assert.IsTrue(context.IsAssignableType(objectType, int32Type));
-            Assert.IsFalse(context.IsAssignableType(int32Type, objectType));
+            Assert.IsTrue(context.CalculateAssignableType(objectType, int32Type));
+            Assert.IsFalse(context.CalculateAssignableType(int32Type, objectType));
         }
 
         [Test]
-        public void IsAssignableFromStringTypeAndEnumerableCharType()
-        {
-            var context = new NespMetadataContext();
-            var stringType = context.FromType(typeof(string).GetTypeInfo());
-            var enumerableCharType = context.FromType(typeof(IEnumerable<char>).GetTypeInfo());
-
-            Assert.IsTrue(context.IsAssignableType(enumerableCharType, stringType));
-            Assert.IsFalse(context.IsAssignableType(stringType, enumerableCharType));
-        }
-
-        [Test]
-        public void IsAssignableTypesAndPolymorphicType()
+        public void CalculateAssignableTypeInt32TypeAndStringTypeToPolymorphicType()
         {
             var context = new NespMetadataContext();
             var int32Type = context.FromType(typeof(int).GetTypeInfo());
             var stringType = context.FromType(typeof(string).GetTypeInfo());
 
-            var combinedType = context.CalculateCombinedType(int32Type, stringType);
+            var polymorphicType = context.CalculateCombinedType(int32Type, stringType);
 
-            Assert.IsTrue(context.IsAssignableType(combinedType, int32Type));
-            Assert.IsTrue(context.IsAssignableType(combinedType, stringType));
+            Assert.IsTrue(context.CalculateAssignableType(polymorphicType, int32Type));
+            Assert.IsFalse(context.CalculateAssignableType(int32Type, polymorphicType));
 
-            Assert.IsFalse(context.IsAssignableType(int32Type, combinedType));
-            Assert.IsFalse(context.IsAssignableType(stringType, combinedType));
+            Assert.IsTrue(context.CalculateAssignableType(polymorphicType, stringType));
+            Assert.IsFalse(context.CalculateAssignableType(stringType, polymorphicType));
         }
 
         [Test]
-        public void IsAssignableObjectTypeAndPolymorphicType()
+        public void CalculateAssignableTypeObjectTypeToPolymorphicType()
         {
             var context = new NespMetadataContext();
             var int32Type = context.FromType(typeof(int).GetTypeInfo());
             var stringType = context.FromType(typeof(string).GetTypeInfo());
             var objectType = context.FromType(typeof(object).GetTypeInfo());
 
-            var combinedType = context.CalculateCombinedType(int32Type, stringType);
+            var polymorphicType = context.CalculateCombinedType(int32Type, stringType);
 
-            Assert.IsTrue(context.IsAssignableType(objectType, combinedType));
-            Assert.IsFalse(context.IsAssignableType(combinedType, objectType));
+            Assert.IsTrue(context.CalculateAssignableType(objectType, polymorphicType));
+            Assert.IsFalse(context.CalculateAssignableType(polymorphicType, objectType));
         }
 
         [Test]
-        public void IsAssignableAnotherTypeAndPolymorphicType()
+        public void CalculateAssignableTypeAnotherTypeToPolymorphicType()
         {
             var context = new NespMetadataContext();
             var int32Type = context.FromType(typeof(int).GetTypeInfo());
             var stringType = context.FromType(typeof(string).GetTypeInfo());
             var uriType = context.FromType(typeof(Uri).GetTypeInfo());
 
-            var combinedType = context.CalculateCombinedType(stringType, int32Type);
+            var polymorphicType = context.CalculateCombinedType(stringType, int32Type);
 
-            Assert.IsFalse(context.IsAssignableType(combinedType, uriType));
-            Assert.IsFalse(context.IsAssignableType(uriType, combinedType));
+            Assert.IsFalse(context.CalculateAssignableType(polymorphicType, uriType));
+            Assert.IsFalse(context.CalculateAssignableType(uriType, polymorphicType));
         }
         #endregion
 
@@ -230,7 +219,7 @@ namespace Nesp.MD
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
             Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
-                new [] { int32Type, stringType }.OrderBy(t => t)));
+                new[] { int32Type, stringType }.OrderBy(t => t)));
         }
 
         [Test]
