@@ -107,6 +107,10 @@ namespace Nesp.MD
         [Test]
         public void CalculateCombinedStringTypeAndStringType()
         {
+            // BaseX ------+-- DerivedY
+            //            vvvvvvvvv
+            //             +-- DerivedY [Widen: BaseX]
+
             var context = new NespMetadataContext();
             var stringType = context.FromType(typeof(string).GetTypeInfo());
 
@@ -118,6 +122,14 @@ namespace Nesp.MD
         [Test]
         public void CalculateCombinedStringTypeAndObjectType()
         {
+            // BaseX ------+-- DerivedY
+            //            vvvvvvvvv
+            //             +-- DerivedY [Widen: BaseX]
+
+            // DerivedY ------+-- BaseX
+            //            vvvvvvvvv
+            // DerivedY ------+         [Widen: BaseX]
+
             var context = new NespMetadataContext();
             var stringType = context.FromType(typeof(string).GetTypeInfo());
             var objectType = context.FromType(typeof(object).GetTypeInfo());
@@ -133,6 +145,11 @@ namespace Nesp.MD
         [Test]
         public void CalculateCombinedInt32TypeAndStringType()
         {
+            // BaseX ------+-- int
+            //         vvvvvvvvv
+            //             +-- int
+            //             +-- BaseX [Combined: BaseX]
+
             var context = new NespMetadataContext();
             var int32Type = context.FromType(typeof(int).GetTypeInfo());
             var stringType = context.FromType(typeof(string).GetTypeInfo());
@@ -145,15 +162,20 @@ namespace Nesp.MD
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
-            Assert.AreEqual(2, polymorphicType1.RuntimeTypes.Length);
-
-            Assert.IsTrue(context.IsAssignableType(polymorphicType1, int32Type));
-            Assert.IsTrue(context.IsAssignableType(polymorphicType1, stringType));
+            Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
+                new [] { int32Type, stringType }.OrderBy(t => t)));
         }
 
         [Test]
         public void CalculateCombinedInt32TypeAndStringTypeAndUriType()
         {
+            // BaseX ------+-- int
+            //             +-- string
+            //         vvvvvvvvv
+            //             +-- int
+            //             +-- string
+            //             +-- BaseX  [Combined: BaseX]
+
             var context = new NespMetadataContext();
             var int32Type = context.FromType(typeof(int).GetTypeInfo());
             var stringType = context.FromType(typeof(string).GetTypeInfo());
@@ -170,16 +192,19 @@ namespace Nesp.MD
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
-            Assert.AreEqual(3, polymorphicType1.RuntimeTypes.Length);
-
-            Assert.IsTrue(context.IsAssignableType(polymorphicType1, int32Type));
-            Assert.IsTrue(context.IsAssignableType(polymorphicType1, stringType));
-            Assert.IsTrue(context.IsAssignableType(polymorphicType1, uriType));
+            Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
+                new[] { int32Type, stringType, uriType }.OrderBy(t => t)));
         }
 
         [Test]
         public void CalculateCombinedInt32TypeAndMethodInfoTypeAndMethodBaseType()
         {
+            // BaseX ------+-- int
+            //             +-- DerivedY
+            //         vvvvvvvvv
+            //             +-- int
+            //             +-- DerivedY [Widen: BaseX]
+
             var context = new NespMetadataContext();
             var int32Type = context.FromType(typeof(int).GetTypeInfo());
             var methodInfoType = context.FromType(typeof(MethodInfo).GetTypeInfo());
@@ -196,16 +221,19 @@ namespace Nesp.MD
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
-            Assert.AreEqual(2, polymorphicType1.RuntimeTypes.Length);
-
-            Assert.IsTrue(context.IsAssignableType(polymorphicType1, int32Type));
-            Assert.IsFalse(context.IsAssignableType(polymorphicType1, methodBaseType));
-            Assert.IsTrue(context.IsAssignableType(polymorphicType1, methodInfoType));
+            Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
+                new[] { int32Type, methodInfoType }.OrderBy(t => t)));
         }
 
         [Test]
         public void CalculateCombinedInt32TypeAndMethodBaseTypeAndMethodInfoType()
         {
+            // DerivedY ------+-- int
+            //                +-- BaseX
+            //            vvvvvvvvv
+            //                +-- int
+            //                +-- DerivedY [Widen: BaseX]
+
             var context = new NespMetadataContext();
             var int32Type = context.FromType(typeof(int).GetTypeInfo());
             var methodBaseType = context.FromType(typeof(MethodBase).GetTypeInfo());
@@ -222,11 +250,83 @@ namespace Nesp.MD
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
-            Assert.AreEqual(2, polymorphicType1.RuntimeTypes.Length);
+            Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
+                new[] { int32Type, methodInfoType }.OrderBy(t => t)));
+        }
 
-            Assert.IsTrue(context.IsAssignableType(polymorphicType1, int32Type));
-            Assert.IsFalse(context.IsAssignableType(polymorphicType1, methodBaseType));
-            Assert.IsTrue(context.IsAssignableType(polymorphicType1, methodInfoType));
+        [Test]
+        public void CalculateCombinedInt32ArrayTypeAndMethodBaseType()
+        {
+            // int[]   --+---+-- BaseX
+            // BaseX   --+   +-- int[]
+            //           vvvvvvvvv
+            // int[]   --+---+-- BaseX
+            // BaseX   --+   +-- int[]
+
+            var context = new NespMetadataContext();
+            var methodBaseType = context.FromType(typeof(MethodBase).GetTypeInfo());
+            var int32ArrayType = context.FromType(typeof(int[]).GetTypeInfo());
+
+            var combinedType11 = context.CalculateCombinedType(int32ArrayType, methodBaseType);
+            var combinedType12 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
+            var combinedType13 = context.CalculateCombinedType(combinedType11, combinedType12);
+
+            var combinedType21 = context.CalculateCombinedType(int32ArrayType, methodBaseType);
+            var combinedType22 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
+            var combinedType23 = context.CalculateCombinedType(combinedType22, combinedType21);
+
+            var polymorphicType1 = (NespPolymorphicTypeInformation)combinedType13;
+            var polymorphicType2 = (NespPolymorphicTypeInformation)combinedType23;
+
+            Assert.AreSame(polymorphicType1, polymorphicType2);
+
+            Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
+                new[] { int32ArrayType, methodBaseType }.OrderBy(t => t)));
+        }
+
+        [Test]
+        public void CalculateCombinedEnumerableInt32TypeAndMethodBaseTypeVersusMethodInfoTypeAndInt32ArrayType()
+        {
+            // IE<int>   --+---+-- BaseX
+            // DerivedY  --+   +-- int[]
+            // string    --+
+            //           vvvvvvvvv
+            // int[]     --+                 [Widen: IE<int>]
+            // DerivedY  --+                 [Widen: BaseX]
+            // string    --+                 [Combined: string]
+
+            // IE<int>   --+---+-- BaseX
+            // DerivedY  --+   +-- int[]
+            //                 +-- string
+            //           vvvvvvvvv
+            // int[]     --+                 [Widen: IE<int>]
+            // DerivedY  --+                 [Widen: BaseX]
+            // string    --+                 [Combined: string]
+
+            var context = new NespMetadataContext();
+            var enumerableInt32Type = context.FromType(typeof(IEnumerable<int>).GetTypeInfo());
+            var methodBaseType = context.FromType(typeof(MethodBase).GetTypeInfo());
+            var methodInfoType = context.FromType(typeof(MethodInfo).GetTypeInfo());
+            var int32ArrayType = context.FromType(typeof(int[]).GetTypeInfo());
+            var stringType = context.FromType(typeof(string).GetTypeInfo());
+
+            var combinedType11 = context.CalculateCombinedType(enumerableInt32Type, methodInfoType);
+            var combinedType12 = context.CalculateCombinedType(combinedType11, stringType);
+            var combinedType13 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
+            var combinedType14 = context.CalculateCombinedType(combinedType12, combinedType13);
+
+            var combinedType21 = context.CalculateCombinedType(enumerableInt32Type, methodInfoType);
+            var combinedType22 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
+            var combinedType23 = context.CalculateCombinedType(stringType, combinedType22);
+            var combinedType24 = context.CalculateCombinedType(combinedType23, combinedType21);
+
+            var polymorphicType1 = (NespPolymorphicTypeInformation)combinedType14;
+            var polymorphicType2 = (NespPolymorphicTypeInformation)combinedType24;
+
+            Assert.AreSame(polymorphicType1, polymorphicType2);
+
+            Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
+                new[] { int32ArrayType, methodInfoType, stringType }.OrderBy(t => t)));
         }
         #endregion
 

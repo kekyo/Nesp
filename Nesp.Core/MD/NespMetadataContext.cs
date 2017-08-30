@@ -159,6 +159,8 @@ namespace Nesp.MD
 
     public sealed class NespPolymorphicTypeInformation : NespTypeInformation
     {
+        private static readonly NespRuntimeTypeInformation[] empty = new NespRuntimeTypeInformation[0];
+
         internal readonly NespRuntimeTypeInformation[] types;
 
         internal NespPolymorphicTypeInformation(string name, NespRuntimeTypeInformation[] types)
@@ -188,33 +190,47 @@ namespace Nesp.MD
             /////////////////////////////////////////////
             // type is polymorphic (both polymorphic type)
 
-            var widen1 = types
-                .Select(t1 => t1.CalculateCombinedTypeWith(context, pt));
-            var widen2 = pt.types
-                .Select(t2 => t2.CalculateCombinedTypeWith(context, this));
-            var combined = widen1
-                .Concat(widen2)
-                .Distinct()     // LINQ to Object's distinct is stable.
+            // TODO: Reduce calculation costs
+            var assignableWiden = types
+                .SelectMany(t1 => pt.types
+                    .SelectMany(t2 => t1.typeInfo.IsAssignableFrom(t2.typeInfo)
+                        ? new[] { t2 }
+                        : t2.typeInfo.IsAssignableFrom(t1.typeInfo)
+                            ? new [] { t1 }
+                            : empty));
+            var combinedUnassignablesLeft = types
+                .SelectMany(t1 => pt.types
+                    .All(t2 => !t1.typeInfo.IsAssignableFrom(t2.typeInfo) && !t2.typeInfo.IsAssignableFrom(t1.typeInfo))
+                        ? new[] { t1 }
+                        : empty);
+            var combinedUnassignablesRight = pt.types
+                .SelectMany(t2 => types
+                    .All(t1 => !t1.typeInfo.IsAssignableFrom(t2.typeInfo) && !t2.typeInfo.IsAssignableFrom(t1.typeInfo))
+                    ? new[] { t2 }
+                    : empty);
+            var combined = assignableWiden
+                .Concat(combinedUnassignablesLeft)
+                .Concat(combinedUnassignablesRight)
+                .Distinct()
+                .OrderBy(t => t)
                 .ToArray();
             if (combined.SequenceEqual(types) == false)
             {
-                // TODO:
-                // IE<int>   --+---+-- DerivedY
-                // BaseX     --+   +-- int[]
+                // IE<int>   --+---+-- BaseX
+                // DerivedY  --+   +-- int[]
+                // string    --+
                 //           vvvvvvvvv
                 // int[]     --+                 [Widen: IE<int>]
                 // DerivedY  --+                 [Widen: BaseX]
-
-                // Construct new pt
-                return context.GetOrAddPolymorphicType(
-                    combined.SelectMany(t =>
-                    {
-                        var r = t as NespRuntimeTypeInformation;
-                        return (r != null) ? new[] {r} : ((NespPolymorphicTypeInformation)t).types;
-                    })
-                    .Distinct());
+                // string    --+                 [Combined: string]
+                return context.GetOrAddPolymorphicType(combined);
             }
 
+            // int[]   --+---+-- BaseX
+            // BaseX   --+   +-- int[]
+            //           vvvvvvvvv
+            // int[]   --+---+-- BaseX
+            // BaseX   --+   +-- int[]
             return this;
         }
 
