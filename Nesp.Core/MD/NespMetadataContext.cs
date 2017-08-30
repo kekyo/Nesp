@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
@@ -87,7 +88,7 @@ namespace Nesp.MD
                 //         vvvvvvvvv
                 //             +-- int
                 //             +-- BaseX [Combined: BaseX]
-                return context.GetOrAddPolymorphicType(new [] { this, rt });
+                return context.GetOrAddPolymorphicType(new [] { this, rt }.OrderBy(t => t));
             }
 
             /////////////////////////////////////////////
@@ -107,6 +108,7 @@ namespace Nesp.MD
             var widen = pt.types
                 .Select(t => t.typeInfo.IsAssignableFrom(typeInfo) ? this : t)
                 .Distinct()
+                .OrderBy(t => t)
                 .ToArray();
             if (widen.SequenceEqual(pt.types) == false)
             {
@@ -125,7 +127,7 @@ namespace Nesp.MD
                 //             +-- int
                 //             +-- string
                 //             +-- BaseX  [Combined: BaseX]
-                return context.GetOrAddPolymorphicType(widen.Concat(new[] { this }));
+                return context.GetOrAddPolymorphicType(widen.Concat(new[] { this }).OrderBy(t => t));
             }
         }
 
@@ -226,11 +228,11 @@ namespace Nesp.MD
                 return context.GetOrAddPolymorphicType(combined);
             }
 
-            // int[]   --+---+-- BaseX
-            // BaseX   --+   +-- int[]
+            // int[]    --+---+-- BaseX
+            // DerivedY --+   +-- int[]
             //           vvvvvvvvv
-            // int[]   --+---+-- BaseX
-            // BaseX   --+   +-- int[]
+            // int[]    --+
+            // DerivedY --+
             return this;
         }
 
@@ -303,15 +305,16 @@ namespace Nesp.MD
         internal NespPolymorphicTypeInformation GetOrAddPolymorphicType(
             IEnumerable<NespRuntimeTypeInformation> types)
         {
-            var normalized = types.OrderBy(type => type).ToArray();
+            var memo = types.ToArray();
+            Debug.Assert(memo.SequenceEqual(memo.OrderBy(t => t)));
 
             lock (polymorphicTypes)
             {
-                if (polymorphicTypes.TryGetValue(normalized, out var type) == false)
+                if (polymorphicTypes.TryGetValue(memo, out var type) == false)
                 {
                     var name = this.GeneratePolymorphicTypeName();
-                    type = new NespPolymorphicTypeInformation(name, normalized);
-                    polymorphicTypes.Add(normalized, type);
+                    type = new NespPolymorphicTypeInformation(name, memo);
+                    polymorphicTypes.Add(memo, type);
                 }
                 return type;
             }
