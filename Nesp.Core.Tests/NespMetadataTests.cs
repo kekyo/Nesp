@@ -104,7 +104,7 @@ namespace Nesp.MD
 
         #region CalculateAssignableType
         [Test]
-        public void CalculateAssignableTypeObjectTypeToInt32Type()
+        public void CalculateAssignableTypeInt32TypeToObjectType()
         {
             var context = new NespMetadataContext();
             var objectType = context.FromType(typeof(object).GetTypeInfo());
@@ -112,6 +112,17 @@ namespace Nesp.MD
 
             Assert.IsTrue(context.CalculateAssignableType(objectType, int32Type));
             Assert.IsFalse(context.CalculateAssignableType(int32Type, objectType));
+        }
+
+        [Test]
+        public void CalculateAssignableTypeInt32ArrayTypeToEnumerableInt32Type()
+        {
+            var context = new NespMetadataContext();
+            var int32ArrayType = context.FromType(typeof(int[]).GetTypeInfo());
+            var enumerableInt32Type = context.FromType(typeof(IEnumerable<int>).GetTypeInfo());
+
+            Assert.IsTrue(context.CalculateAssignableType(enumerableInt32Type, int32ArrayType));
+            Assert.IsFalse(context.CalculateAssignableType(int32ArrayType, enumerableInt32Type));
         }
 
         [Test]
@@ -156,6 +167,80 @@ namespace Nesp.MD
 
             Assert.IsFalse(context.CalculateAssignableType(polymorphicType, uriType));
             Assert.IsFalse(context.CalculateAssignableType(uriType, polymorphicType));
+        }
+        #endregion
+
+        #region CalculateAssignable (Generic)
+        public abstract class TestBaseClass1<T>
+        { }
+
+        public sealed class TestDeriveClass1<T> : TestBaseClass1<T>
+        { }
+
+        [Test]
+        public void CalculateAssignableTypeFromDeriveInt32ToBaseGenericType()
+        {
+            // TestBaseClass1<T> <--- TestDeriveClass1<int>
+            //     vvvvvvvvv
+            // TestBaseClass1<int> ,  TestDeriveClass1<int>    [MakeGenericType: int]
+
+            var context = new NespMetadataContext();
+            var deriveInt32Type = context.FromType(typeof(TestDeriveClass1<int>).GetTypeInfo());
+            var baseType = context.FromType(typeof(TestBaseClass1<>).GetTypeInfo());
+            var baseInt32Type = context.FromType(typeof(TestBaseClass1<int>).GetTypeInfo());
+
+            var result1 = context.CalculateAssignableType(baseType, deriveInt32Type);
+
+            Assert.IsTrue(result1);
+            Assert.AreSame(deriveInt32Type, result1.From);
+            Assert.AreSame(baseInt32Type, result1.To);
+
+            Assert.IsFalse(context.CalculateAssignableType(deriveInt32Type, baseType));
+        }
+
+        [Test]
+        public void CalculateAssignableTypeFromDeriveGenericToBaseInt32Type()
+        {
+            // TestBaseClass1<int> <--- TestDeriveClass1<T>
+            //     vvvvvvvvv
+            // TestBaseClass1<int> ,  TestDeriveClass1<int>    [MakeGenericType: int]
+
+            var context = new NespMetadataContext();
+            var deriveType = context.FromType(typeof(TestDeriveClass1<>).GetTypeInfo());
+            var baseInt32Type = context.FromType(typeof(TestBaseClass1<int>).GetTypeInfo());
+            var deriveInt32Type = context.FromType(typeof(TestDeriveClass1<int>).GetTypeInfo());
+
+            var result1 = context.CalculateAssignableType(baseInt32Type, deriveType);
+
+            Assert.IsTrue(result1);
+            Assert.AreSame(deriveInt32Type, result1.From);
+            Assert.AreSame(baseInt32Type, result1.To);
+
+            Assert.IsFalse(context.CalculateAssignableType(deriveType, baseInt32Type));
+        }
+
+        public sealed class TestDeriveClass2<T, U> : TestBaseClass1<U>
+        { }
+
+        [Test]
+        public void CalculateAssignableTypeFromDeriveInt32StringToBaseGenericType()
+        {
+            // TestBaseClass1<T>   <--- TestDeriveClass1<int, string>
+            //     vvvvvvvvv
+            // TestBaseClass1<string>                [MakeGenericType: string]
+
+            var context = new NespMetadataContext();
+            var deriveInt32StringType = context.FromType(typeof(TestDeriveClass2<int, string>).GetTypeInfo());
+            var baseType = context.FromType(typeof(TestBaseClass1<>).GetTypeInfo());
+            var baseStringType = context.FromType(typeof(TestBaseClass1<string>).GetTypeInfo());
+
+            var result1 = context.CalculateAssignableType(baseType, deriveInt32StringType);
+
+            Assert.IsTrue(result1);
+            Assert.AreSame(deriveInt32StringType, result1.From);
+            Assert.AreSame(baseStringType, result1.To);
+
+            Assert.IsFalse(context.CalculateAssignableType(deriveInt32StringType, baseType));
         }
         #endregion
 
