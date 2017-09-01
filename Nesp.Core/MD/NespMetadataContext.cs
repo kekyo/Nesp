@@ -108,6 +108,11 @@ namespace Nesp.MD
                     // BaseX ------+-- DerivedY
                     //            vvvvvvvvv
                     //             +-- DerivedY [Widen: BaseX]
+
+                    // BaseClassType<int>  ---+--- DerivedClassType3<T>
+                    //            vvvvvvvvv
+                    //                        +--- DerivedClassType3<T> [Widen]
+
                     return rt;
                 }
                 if (rhsType.IsAssignableFrom(lhsType))
@@ -115,6 +120,11 @@ namespace Nesp.MD
                     // DerivedY ------+-- BaseX
                     //            vvvvvvvvv
                     // DerivedY ------+         [Widen: BaseX]
+
+                    // DerivedClassType3<T>  ---+--- BaseClassType<int>
+                    //            vvvvvvvvv
+                    // DerivedClassType3<T>  ---+                       [Widen]
+
                     return this;
                 }
 
