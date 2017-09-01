@@ -77,7 +77,7 @@ namespace Nesp.MD
 
         public TypeInfo RuntimeType => this.typeInfo;
 
-        private static TypeInfo GetEquatableType(TypeInfo type)
+        private static TypeInfo GetEquatableTypeInfo(TypeInfo type)
         {
             return (type.IsGenericType && !type.IsGenericTypeDefinition)
                 ? type.GetGenericTypeDefinition().GetTypeInfo()
@@ -91,6 +91,169 @@ namespace Nesp.MD
                 : type.GenericTypeArguments;
         }
 
+        private static NespTypeInformation CalculateCombinedRuntimeTypeWith(
+            NespMetadataContext context, NespRuntimeTypeInformation lhsType, NespRuntimeTypeInformation rhsType)
+        {
+            var lhsTypeInfo = lhsType.typeInfo;
+            var rhsTypeInfo = rhsType.typeInfo;
+
+            if (lhsTypeInfo.IsAssignableFrom(rhsTypeInfo))
+            {
+                // BaseX ------+-- DerivedY
+                //            vvvvvvvvv
+                //             +-- DerivedY [Widen: BaseX]
+
+                // BaseClassType<int>  ---+--- DerivedClassType3<T>
+                //            vvvvvvvvv
+                //                        +--- DerivedClassType3<T> [Widen: int]
+
+                // IInterfaceType<int>    ---+--- ImplementedClassType1<T>
+                //            vvvvvvvvv
+                //                           +--- ImplementedClassType1<T> [Widen: int]
+
+                return rhsType;
+            }
+
+            if (rhsTypeInfo.IsAssignableFrom(lhsTypeInfo))
+            {
+                // DerivedY ------+-- BaseX
+                //            vvvvvvvvv
+                // DerivedY ------+         [Widen: BaseX]
+
+                // DerivedClassType3<T>  ---+--- BaseClassType<int>
+                //            vvvvvvvvv
+                // DerivedClassType3<T>  ---+                       [Widen: int]
+
+                // ImplementedClassType1<T>   ---+--- IInterfaceType<int>
+                //            vvvvvvvvv
+                // ImplementedClassType1<T>   ---+                         [Widen: int]
+
+                return lhsType;
+            }
+
+            var rhsEquatableTypeInfo = GetEquatableTypeInfo(rhsTypeInfo);
+            var lhsBaseDefinitionTypeInfo = lhsTypeInfo
+                .Traverse(t => t.BaseType?.GetTypeInfo())
+                .Concat(lhsTypeInfo.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
+                .FirstOrDefault(t => GetEquatableTypeInfo(t).Equals(rhsEquatableTypeInfo));
+            if (lhsBaseDefinitionTypeInfo != null)
+            {
+                if (lhsTypeInfo.IsGenericTypeDefinition)
+                {
+                    // DerivedClassType1<T>   ---+--- BaseClassType<T2>
+                    //            vvvvvvvvv
+                    // DerivedClassType1<T>   ---+                        [Widen]   // TODO: How to tell info about T == T2?
+
+                    // DerivedClassType1<T>    ---+--- BaseClassType<int>
+                    //            vvvvvvvvv
+                    // DerivedClassType1<int>  ---+                       [Widen: int]
+
+                    // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
+                    //            vvvvvvvvv
+                    // DerivedClassType4<T, U>   ---+                     [Widen]   // TODO: How to tell info about T == T2?
+
+                    // ImplementedClassType1<T>   ---+--- IInterfaceType<T2>
+                    //            vvvvvvvvv
+                    // ImplementedClassType1<T>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
+
+                    // ImplementedClassType1<T>   ---+--- IInterfaceType<int>
+                    //            vvvvvvvvv
+                    // ImplementedClassType1<int> ---+                           [Widen: int]
+
+                    // ImplementedClassType4<T, U>   ---+--- IInterfaceType<T2>
+                    //            vvvvvvvvv
+                    // ImplementedClassType4<T, U>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
+
+                    var argumentTypeMap = GetGenericArguments(lhsBaseDefinitionTypeInfo)
+                        .Zip(GetGenericArguments(rhsTypeInfo),
+                            (lhsArgument, rhsArgument) => new { lhsArgument, rhsArgument })
+                        .Where(entry => entry.rhsArgument.IsGenericParameter == false)
+                        .ToDictionary(entry => entry.lhsArgument, entry => entry.rhsArgument);
+                    var lhsMappedArguments = GetGenericArguments(lhsTypeInfo)
+                        .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
+                        .ToArray();
+                    var lhsFixedTypeInfo = lhsTypeInfo.MakeGenericType(lhsMappedArguments).GetTypeInfo();
+                    return context.FromType(lhsFixedTypeInfo);
+                }
+                else
+                {
+                    // DerivedClassType2  ---+--- BaseClassType<T>
+                    //            vvvvvvvvv
+                    // DerivedClassType2  ---+                       [Widen: int]   // TODO: How to tell info about T == int?
+
+                    // ImplementedClassType2   ---+--- IInterfaceType<T>
+                    //            vvvvvvvvv
+                    // ImplementedClassType2   ---+                       [Widen: int]   // TODO: How to tell info about T == int?
+
+                    return lhsType;
+                }
+            }
+
+            var lhsEquatableTypeInfo = GetEquatableTypeInfo(lhsTypeInfo);
+            var rhsBaseDefinitionTypeInfo = rhsTypeInfo
+                .Traverse(t => t.BaseType?.GetTypeInfo())
+                .Concat(rhsTypeInfo.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
+                .FirstOrDefault(t => lhsEquatableTypeInfo.Equals(GetEquatableTypeInfo(t)));
+            if (rhsBaseDefinitionTypeInfo != null)
+            {
+                if (rhsTypeInfo.IsGenericTypeDefinition)
+                {
+                    // BaseClassType<T2>    ---+--- DerivedClassType1<T>
+                    //            vvvvvvvvv
+                    //                         +--- DerivedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
+
+                    // BaseClassType<int>    ---+--- DerivedClassType1<T>
+                    //            vvvvvvvvv
+                    //                          +--- DerivedClassType1<int>  [Widen: int]
+
+                    // BaseClassType<T2>    ---+--- DerivedClassType4<T, U>
+                    //            vvvvvvvvv
+                    //                         +--- DerivedClassType4<T, U>  [Widen]   // TODO: How to tell info about T == T2?
+
+                    // IInterfaceType<T2>    ---+--- ImplementedClassType1<T>
+                    //            vvvvvvvvv
+                    //                          +--- ImplementedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
+
+                    // IInterfaceType<int>    ---+--- ImplementedClassType1<T>
+                    //            vvvvvvvvv
+                    //                           +--- ImplementedClassType1<int> [Widen: int]
+
+                    // IInterfaceType<T2>    ---+--- ImplementedClassType4<T, U>
+                    //            vvvvvvvvv
+                    //                          +--- ImplementedClassType4<T, U> [Widen]   // TODO: How to tell info about T == T2?
+
+                    var argumentTypeMap = GetGenericArguments(rhsBaseDefinitionTypeInfo)
+                        .Zip(GetGenericArguments(lhsTypeInfo),
+                            (rhsArgument, lhsArgument) => new { rhsArgument, lhsArgument })
+                        .Where(entry => entry.lhsArgument.IsGenericParameter == false)
+                        .ToDictionary(entry => entry.rhsArgument, entry => entry.lhsArgument);
+                    var rhsMappedArguments = GetGenericArguments(rhsTypeInfo)
+                        .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
+                        .ToArray();
+                    var rshFixedTypeInfo = rhsTypeInfo.MakeGenericType(rhsMappedArguments).GetTypeInfo();
+                    return context.FromType(rshFixedTypeInfo);
+                }
+                else
+                {
+                    // BaseClassType<T>  ---+--- DerivedClassType2
+                    //            vvvvvvvvv
+                    //                      +--- DerivedClassType2   [Widen: int]   // TODO: How to tell info about T == int?
+
+                    // IInterfaceType<T>    ---+--- ImplementedClassType2
+                    //            vvvvvvvvv
+                    //                         +--- ImplementedClassType2 [Widen: int]   // TODO: How to tell info about T == int?
+
+                    return rhsType;
+                }
+            }
+
+            // BaseX ------+-- int
+            //         vvvvvvvvv
+            //             +-- int
+            //             +-- BaseX [Combined: BaseX]
+            return context.GetOrAddPolymorphicType(new[] { lhsType, rhsType }.OrderBy(t => t));
+        }
+
         internal override NespTypeInformation CalculateCombinedTypeWith(
             NespMetadataContext context, NespTypeInformation type)
         {
@@ -100,137 +263,7 @@ namespace Nesp.MD
             var rt = type as NespRuntimeTypeInformation;
             if (rt != null)
             {
-                var lhsType = typeInfo;
-                var rhsType = rt.typeInfo;
-
-                if (lhsType.IsAssignableFrom(rhsType))
-                {
-                    // BaseX ------+-- DerivedY
-                    //            vvvvvvvvv
-                    //             +-- DerivedY [Widen: BaseX]
-
-                    // BaseClassType<int>  ---+--- DerivedClassType3<T>
-                    //            vvvvvvvvv
-                    //                        +--- DerivedClassType3<T> [Widen]
-
-                    // IInterfaceType<int>    ---+--- ImplementedClassType1<T>
-                    //            vvvvvvvvv
-                    //                           +--- ImplementedClassType1<T> [Widen: int]
-
-                    return rt;
-                }
-                if (rhsType.IsAssignableFrom(lhsType))
-                {
-                    // DerivedY ------+-- BaseX
-                    //            vvvvvvvvv
-                    // DerivedY ------+         [Widen: BaseX]
-
-                    // DerivedClassType3<T>  ---+--- BaseClassType<int>
-                    //            vvvvvvvvv
-                    // DerivedClassType3<T>  ---+                       [Widen]
-
-                    // ImplementedClassType1<T>   ---+--- IInterfaceType<int>
-                    //            vvvvvvvvv
-                    // ImplementedClassType1<T>   ---+                         [Widen: int]
-
-                    return this;
-                }
-
-                var rhsEquatableType = GetEquatableType(rhsType);
-                var lhsBaseDefinitionType = lhsType
-                    .Traverse(t => t.BaseType?.GetTypeInfo())
-                    .Concat(lhsType.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
-                    .FirstOrDefault(t => GetEquatableType(t).Equals(rhsEquatableType));
-                if (lhsBaseDefinitionType != null)
-                {
-                    if (lhsType.IsGenericTypeDefinition)
-                    {
-                        // DerivedClassType1<T>    ---+--- BaseClassType<int>
-                        //            vvvvvvvvv
-                        // DerivedClassType1<int>  ---+                       [Widen: int]
-
-                        // DerivedClassType1<T>   ---+--- BaseClassType<T2>
-                        //            vvvvvvvvv
-                        // DerivedClassType1<T>   ---+                        [Widen]   // TODO: How to tell info about T == T2?
-
-                        // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
-                        //            vvvvvvvvv
-                        // DerivedClassType4<T, U>   ---+                     [Widen]   // TODO: How to tell info about T == T2?
-
-                        // ImplementedClassType1<T>   ---+--- IInterfaceType<T2>
-                        //            vvvvvvvvv
-                        // ImplementedClassType1<T>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
-
-                        var argumentTypeMap = GetGenericArguments(lhsBaseDefinitionType)
-                            .Zip(GetGenericArguments(rhsType),
-                                (lhsArgument, rhsArgument) => new {lhsArgument, rhsArgument})
-                            .Where(entry => entry.rhsArgument.IsGenericParameter == false)
-                            .ToDictionary(entry => entry.lhsArgument, entry => entry.rhsArgument);
-                        var lhsMappedArguments = GetGenericArguments(lhsType)
-                            .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
-                            .ToArray();
-                        var lhsFixedType = lhsType.MakeGenericType(lhsMappedArguments).GetTypeInfo();
-                        return context.FromType(lhsFixedType);
-                    }
-                    else
-                    {
-                        // DerivedClassType2  ---+--- BaseClassType<T>
-                        //            vvvvvvvvv
-                        // DerivedClassType2  ---+                       [Widen: int]   // TODO: How to tell info about T == int?
-                        return this;
-                    }
-                }
-
-                var lhsEquatableType = GetEquatableType(lhsType);
-                var rhsBaseDefinitionType = rhsType
-                    .Traverse(t => t.BaseType?.GetTypeInfo())
-                    .Concat(rhsType.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
-                    .FirstOrDefault(t => lhsEquatableType.Equals(GetEquatableType(t)));
-                if (rhsBaseDefinitionType != null)
-                {
-                    if (rhsType.IsGenericTypeDefinition)
-                    {
-                        // BaseClassType<int>    ---+--- DerivedClassType1<T>
-                        //            vvvvvvvvv
-                        //                          +--- DerivedClassType1<int>  [Widen: int]
-
-                        // BaseClassType<T2>    ---+--- DerivedClassType1<T>
-                        //            vvvvvvvvv
-                        //                         +--- DerivedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
-
-                        // BaseClassType<T2>    ---+--- DerivedClassType4<T, U>
-                        //            vvvvvvvvv
-                        //                         +--- DerivedClassType4<T, U>  [Widen]   // TODO: How to tell info about T == T2?
-
-                        // IInterfaceType<T2>    ---+--- ImplementedClassType1<T>
-                        //            vvvvvvvvv
-                        //                          +--- ImplementedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
-
-                        var argumentTypeMap = GetGenericArguments(rhsBaseDefinitionType)
-                            .Zip(GetGenericArguments(lhsType),
-                                (rhsArgument, lhsArgument) => new {rhsArgument, lhsArgument})
-                            .Where(entry => entry.lhsArgument.IsGenericParameter == false)
-                            .ToDictionary(entry => entry.rhsArgument, entry => entry.lhsArgument);
-                        var rhsMappedArguments = GetGenericArguments(rhsType)
-                            .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
-                            .ToArray();
-                        var rshFixedType = rhsType.MakeGenericType(rhsMappedArguments).GetTypeInfo();
-                        return context.FromType(rshFixedType);
-                    }
-                    else
-                    {
-                        // BaseClassType<T>  ---+--- DerivedClassType2
-                        //            vvvvvvvvv
-                        //                      +--- DerivedClassType2   [Widen: int]   // TODO: How to tell info about T == int?
-                        return rt;
-                    }
-                }
-
-                // BaseX ------+-- int
-                //         vvvvvvvvv
-                //             +-- int
-                //             +-- BaseX [Combined: BaseX]
-                return context.GetOrAddPolymorphicType(new [] { this, rt }.OrderBy(t => t));
+                return CalculateCombinedRuntimeTypeWith(context, this, rt);
             }
 
             /////////////////////////////////////////////
