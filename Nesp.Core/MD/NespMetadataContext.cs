@@ -140,6 +140,10 @@ namespace Nesp.MD
                         //            vvvvvvvvv
                         // DerivedClassType1<int>  ---+                       [Widen: int]
 
+                        // DerivedClassType1<T>   ---+--- BaseClassType<T2>
+                        //            vvvvvvvvv
+                        // DerivedClassType1<T>   ---+                        [Widen]   // TODO: How to tell info about T == T2?
+
                         // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
                         //            vvvvvvvvv
                         // DerivedClassType4<T, U>   ---+                     [Widen]   // TODO: How to tell info about T == T2?
@@ -175,6 +179,10 @@ namespace Nesp.MD
                         // BaseClassType<int>    ---+--- DerivedClassType1<T>
                         //            vvvvvvvvv
                         //                          +--- DerivedClassType1<int>  [Widen: int]
+
+                        // BaseClassType<T2>    ---+--- DerivedClassType1<T>
+                        //            vvvvvvvvv
+                        //                         +--- DerivedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
 
                         // BaseClassType<T2>    ---+--- DerivedClassType4<T, U>
                         //            vvvvvvvvv

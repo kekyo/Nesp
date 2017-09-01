@@ -338,11 +338,34 @@ namespace Nesp.MD
         { }
 
         [Test]
+        public void CalculateCombinedGenericDefinitionTypeAndGenericDefinitionTypeTest()
+        {
+            // DerivedClassType1<T>   ---+--- BaseClassType<T2>
+            //            vvvvvvvvv
+            // DerivedClassType1<T>   ---+                       [Widen]
+
+            // BaseClassType<T2>    ---+--- DerivedClassType1<T>
+            //            vvvvvvvvv
+            //                         +--- DerivedClassType1<T> [Widen]
+
+            var context = new NespMetadataContext();
+            var derivedType = context.FromType(typeof(DerivedClassType1<>).GetTypeInfo());
+            var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
+
+            var combinedType1 = context.CalculateCombinedType(derivedType, baseType);
+            var combinedType2 = context.CalculateCombinedType(baseType, derivedType);
+
+            Assert.AreSame(combinedType1, combinedType2);
+
+            Assert.AreSame(derivedType, combinedType1);
+        }
+
+        [Test]
         public void CalculateCombinedGenericDefinitionTypeAndGenericInt32Test()
         {
             // DerivedClassType1<T>    ---+--- BaseClassType<int>
             //            vvvvvvvvv
-            // DerivedClassType1<int>  ---+                       [Widen: int]
+            // DerivedClassType1<int>  ---+                          [Widen: int]
 
             // BaseClassType<int>    ---+--- DerivedClassType1<T>
             //            vvvvvvvvv
