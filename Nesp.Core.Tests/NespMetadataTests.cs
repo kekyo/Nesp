@@ -491,22 +491,27 @@ namespace Nesp.MD
         {
             // DerivedClassType5<T>  ---+--- BaseClassType<T2>
             //            vvvvvvvvv
-            // DerivedClassType5<T>  ---+                       [Widen: int]   // TODO: How to tell info about T == int?
+            // DerivedClassType5<T>  ---+                       [Widen: int]
 
             // BaseClassType<T2>  ---+--- DerivedClassType5<T>
             //            vvvvvvvvv
-            //                       +--- DerivedClassType5<T>  [Widen: int]   // TODO: How to tell info about T == int?
+            //                       +--- DerivedClassType5<T>  [Widen: int]
 
             var context = new NespMetadataContext();
             var derivedType = context.FromType(typeof(DerivedClassType5<>).GetTypeInfo());
             var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
+            var baseInt32Type = context.FromType(typeof(BaseClassType<int>).GetTypeInfo());
 
             var result1 = context.CalculateCombinedType(derivedType, baseType);
             var result2 = context.CalculateCombinedType(baseType, derivedType);
 
             Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
 
             Assert.AreSame(derivedType, result1.Combined);
+            Assert.AreSame(derivedType, result1.LeftFixed);
+            Assert.AreSame(baseInt32Type, result1.RightFixed);
         }
         #endregion
 

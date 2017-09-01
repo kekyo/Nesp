@@ -111,7 +111,7 @@ namespace Nesp.MD
                 : type.GenericTypeArguments;
         }
 
-        private static NespCalculateCombinedResult CalculateCombinedRuntimeTypeWith(
+        private static NespCalculateCombinedResult CalculateCombinedRuntimeTypes(
             NespMetadataContext context, NespRuntimeTypeInformation lhsType, NespRuntimeTypeInformation rhsType)
         {
             var lhsTypeInfo = lhsType.typeInfo;
@@ -152,17 +152,22 @@ namespace Nesp.MD
             }
 
             var rhsEquatableTypeInfo = GetEquatableTypeInfo(rhsTypeInfo);
-            var lhsBaseDefinitionTypeInfo = lhsTypeInfo
+            var lhsBaseTypeInfo = lhsTypeInfo
                 .Traverse(t => t.BaseType?.GetTypeInfo())
                 .Concat(lhsTypeInfo.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
                 .FirstOrDefault(t => GetEquatableTypeInfo(t).Equals(rhsEquatableTypeInfo));
-            if (lhsBaseDefinitionTypeInfo != null)
+            if (lhsBaseTypeInfo != null)
             {
+                // Calculate T --> T2 relation result
+                var rhsFixedType = (rhsTypeInfo.IsGenericTypeDefinition)
+                    ? context.FromType(rhsTypeInfo.MakeGenericType(GetGenericArguments(lhsBaseTypeInfo)).GetTypeInfo())
+                    : rhsType;
+
                 if (lhsTypeInfo.IsGenericTypeDefinition)
                 {
                     // DerivedClassType1<T>   ---+--- BaseClassType<T2>
                     //            vvvvvvvvv
-                    // DerivedClassType1<T>   ---+                        [Widen]   // TODO: How to tell info about T == T2?
+                    // DerivedClassType1<T>   ---+                        [Widen]
 
                     // DerivedClassType1<T>    ---+--- BaseClassType<int>
                     //            vvvvvvvvv
@@ -170,15 +175,15 @@ namespace Nesp.MD
 
                     // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
                     //            vvvvvvvvv
-                    // DerivedClassType4<T, U>   ---+                     [Widen]   // TODO: How to tell info about T == T2?
+                    // DerivedClassType4<T, U>   ---+                     [Widen]
 
                     // DerivedClassType5<T>  ---+--- BaseClassType<T2>
                     //            vvvvvvvvv
-                    // DerivedClassType5<T>  ---+                       [Widen: int]   // TODO: How to tell info about T == int?
+                    // DerivedClassType5<T>  ---+                       [Widen: int]
 
                     // ImplementedClassType1<T>   ---+--- IInterfaceType<T2>
                     //            vvvvvvvvv
-                    // ImplementedClassType1<T>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
+                    // ImplementedClassType1<T>   ---+                       [Widen]
 
                     // ImplementedClassType1<T>   ---+--- IInterfaceType<int>
                     //            vvvvvvvvv
@@ -186,9 +191,9 @@ namespace Nesp.MD
 
                     // ImplementedClassType4<T, U>   ---+--- IInterfaceType<T2>
                     //            vvvvvvvvv
-                    // ImplementedClassType4<T, U>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
+                    // ImplementedClassType4<T, U>   ---+                       [Widen]
 
-                    var argumentTypeMap = GetGenericArguments(lhsBaseDefinitionTypeInfo)
+                    var argumentTypeMap = GetGenericArguments(lhsBaseTypeInfo)
                         .Zip(GetGenericArguments(rhsTypeInfo),
                             (lhsArgument, rhsArgument) => new { lhsArgument, rhsArgument })
                         .Where(entry => entry.rhsArgument.IsGenericParameter == false)
@@ -199,34 +204,39 @@ namespace Nesp.MD
                     var lhsFixedTypeInfo = lhsTypeInfo.MakeGenericType(lhsMappedArguments).GetTypeInfo();
 
                     return new NespCalculateCombinedResult(
-                        lhsType, rhsType, context.FromType(lhsFixedTypeInfo));
+                        lhsType, rhsFixedType, context.FromType(lhsFixedTypeInfo));
                 }
                 else
                 {
                     // DerivedClassType2  ---+--- BaseClassType<T>
                     //            vvvvvvvvv
-                    // DerivedClassType2  ---+                       [Widen: int]   // TODO: How to tell info about T == int?
+                    // DerivedClassType2  ---+                       [Widen: int]
 
                     // ImplementedClassType2   ---+--- IInterfaceType<T>
                     //            vvvvvvvvv
-                    // ImplementedClassType2   ---+                       [Widen: int]   // TODO: How to tell info about T == int?
+                    // ImplementedClassType2   ---+                       [Widen: int]
 
-                    return new NespCalculateCombinedResult(lhsType, rhsType, lhsType);
+                    return new NespCalculateCombinedResult(lhsType, rhsFixedType, lhsType);
                 }
             }
 
             var lhsEquatableTypeInfo = GetEquatableTypeInfo(lhsTypeInfo);
-            var rhsBaseDefinitionTypeInfo = rhsTypeInfo
+            var rhsBaseTypeInfo = rhsTypeInfo
                 .Traverse(t => t.BaseType?.GetTypeInfo())
                 .Concat(rhsTypeInfo.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
                 .FirstOrDefault(t => lhsEquatableTypeInfo.Equals(GetEquatableTypeInfo(t)));
-            if (rhsBaseDefinitionTypeInfo != null)
+            if (rhsBaseTypeInfo != null)
             {
+                // Calculate T --> T2 relation result
+                var lhsFixedType = (lhsTypeInfo.IsGenericTypeDefinition)
+                    ? context.FromType(lhsTypeInfo.MakeGenericType(GetGenericArguments(rhsBaseTypeInfo)).GetTypeInfo())
+                    : lhsType;
+
                 if (rhsTypeInfo.IsGenericTypeDefinition)
                 {
                     // BaseClassType<T2>    ---+--- DerivedClassType1<T>
                     //            vvvvvvvvv
-                    //                         +--- DerivedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
+                    //                         +--- DerivedClassType1<T> [Widen]
 
                     // BaseClassType<int>    ---+--- DerivedClassType1<T>
                     //            vvvvvvvvv
@@ -234,15 +244,15 @@ namespace Nesp.MD
 
                     // BaseClassType<T2>    ---+--- DerivedClassType4<T, U>
                     //            vvvvvvvvv
-                    //                         +--- DerivedClassType4<T, U>  [Widen]   // TODO: How to tell info about T == T2?
+                    //                         +--- DerivedClassType4<T, U>  [Widen]
 
                     // BaseClassType<T2>  ---+--- DerivedClassType5<T>
                     //            vvvvvvvvv
-                    //                       +--- DerivedClassType5<T>  [Widen: int]   // TODO: How to tell info about T == int?
+                    //                       +--- DerivedClassType5<T>  [Widen: int]
 
                     // IInterfaceType<T2>    ---+--- ImplementedClassType1<T>
                     //            vvvvvvvvv
-                    //                          +--- ImplementedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
+                    //                          +--- ImplementedClassType1<T> [Widen]
 
                     // IInterfaceType<int>    ---+--- ImplementedClassType1<T>
                     //            vvvvvvvvv
@@ -250,9 +260,9 @@ namespace Nesp.MD
 
                     // IInterfaceType<T2>    ---+--- ImplementedClassType4<T, U>
                     //            vvvvvvvvv
-                    //                          +--- ImplementedClassType4<T, U> [Widen]   // TODO: How to tell info about T == T2?
+                    //                          +--- ImplementedClassType4<T, U> [Widen]
 
-                    var argumentTypeMap = GetGenericArguments(rhsBaseDefinitionTypeInfo)
+                    var argumentTypeMap = GetGenericArguments(rhsBaseTypeInfo)
                         .Zip(GetGenericArguments(lhsTypeInfo),
                             (rhsArgument, lhsArgument) => new { rhsArgument, lhsArgument })
                         .Where(entry => entry.lhsArgument.IsGenericParameter == false)
@@ -263,19 +273,19 @@ namespace Nesp.MD
                     var rshFixedTypeInfo = rhsTypeInfo.MakeGenericType(rhsMappedArguments).GetTypeInfo();
 
                     return new NespCalculateCombinedResult(
-                        lhsType, rhsType, context.FromType(rshFixedTypeInfo));
+                        lhsFixedType, rhsType, context.FromType(rshFixedTypeInfo));
                 }
                 else
                 {
                     // BaseClassType<T>  ---+--- DerivedClassType2
                     //            vvvvvvvvv
-                    //                      +--- DerivedClassType2   [Widen: int]   // TODO: How to tell info about T == int?
+                    //                      +--- DerivedClassType2   [Widen: int]
 
                     // IInterfaceType<T>    ---+--- ImplementedClassType2
                     //            vvvvvvvvv
-                    //                         +--- ImplementedClassType2 [Widen: int]   // TODO: How to tell info about T == int?
+                    //                         +--- ImplementedClassType2 [Widen: int]
 
-                    return new NespCalculateCombinedResult(lhsType, rhsType, rhsType);
+                    return new NespCalculateCombinedResult(lhsFixedType, rhsType, rhsType);
                 }
             }
 
@@ -296,7 +306,7 @@ namespace Nesp.MD
             var rt = rhsType as NespRuntimeTypeInformation;
             if (rt != null)
             {
-                return CalculateCombinedRuntimeTypeWith(context, this, rt);
+                return CalculateCombinedRuntimeTypes(context, this, rt);
             }
 
             /////////////////////////////////////////////
