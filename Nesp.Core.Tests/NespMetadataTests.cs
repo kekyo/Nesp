@@ -113,6 +113,8 @@ namespace Nesp.MD
 
             var result = context.CalculateCombinedType(stringType, stringType);
 
+            Assert.AreSame(stringType, result.LeftFixed);
+            Assert.AreSame(stringType, result.RightFixed);
             Assert.AreSame(stringType, result.Combined);
         }
 
@@ -134,8 +136,12 @@ namespace Nesp.MD
             var result1 = context.CalculateCombinedType(stringType, objectType);
             var result2 = context.CalculateCombinedType(objectType, stringType);
 
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
             Assert.AreSame(result1.Combined, result2.Combined);
 
+            Assert.AreSame(stringType, result1.LeftFixed);
+            Assert.AreSame(objectType, result1.RightFixed);
             Assert.AreSame(stringType, result1.Combined);
         }
 
@@ -154,11 +160,16 @@ namespace Nesp.MD
             var result1 = context.CalculateCombinedType(int32Type, stringType);
             var result2 = context.CalculateCombinedType(stringType, int32Type);
 
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
+
             var polymorphicType1 = (NespPolymorphicTypeInformation)result1.Combined;
             var polymorphicType2 = (NespPolymorphicTypeInformation)result2.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
+            Assert.AreSame(int32Type, result1.LeftFixed);
+            Assert.AreSame(stringType, result1.RightFixed);
             Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
                 new[] { int32Type, stringType }.OrderBy(t => t)));
         }
@@ -184,11 +195,16 @@ namespace Nesp.MD
             var result21 = context.CalculateCombinedType(int32Type, stringType);
             var result22 = context.CalculateCombinedType(uriType, result21.Combined);
 
+            Assert.AreSame(result12.LeftFixed, result22.RightFixed);
+            Assert.AreSame(result12.RightFixed, result22.LeftFixed);
+
             var polymorphicType1 = (NespPolymorphicTypeInformation)result12.Combined;
             var polymorphicType2 = (NespPolymorphicTypeInformation)result22.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
+            Assert.AreSame(result11.Combined, result12.LeftFixed);
+            Assert.AreSame(uriType, result12.RightFixed);
             Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
                 new[] { int32Type, stringType, uriType }.OrderBy(t => t)));
         }
@@ -213,11 +229,16 @@ namespace Nesp.MD
             var result21 = context.CalculateCombinedType(int32Type, methodInfoType);
             var result22 = context.CalculateCombinedType(methodBaseType, result21.Combined);
 
+            Assert.AreSame(result12.LeftFixed, result22.RightFixed);
+            Assert.AreSame(result12.RightFixed, result22.LeftFixed);
+
             var polymorphicType1 = (NespPolymorphicTypeInformation)result12.Combined;
             var polymorphicType2 = (NespPolymorphicTypeInformation)result22.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
+            Assert.AreSame(result11.Combined, result12.LeftFixed);
+            Assert.AreSame(methodBaseType, result12.RightFixed);
             Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
                 new[] { int32Type, methodInfoType }.OrderBy(t => t)));
         }
@@ -242,11 +263,16 @@ namespace Nesp.MD
             var result21 = context.CalculateCombinedType(int32Type, methodBaseType);
             var result22 = context.CalculateCombinedType(methodInfoType, result21.Combined);
 
+            Assert.AreSame(result12.LeftFixed, result22.RightFixed);
+            Assert.AreSame(result12.RightFixed, result22.LeftFixed);
+
             var polymorphicType1 = (NespPolymorphicTypeInformation)result12.Combined;
             var polymorphicType2 = (NespPolymorphicTypeInformation)result22.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
+            Assert.AreSame(result11.Combined, result12.LeftFixed);
+            Assert.AreSame(methodInfoType, result12.RightFixed);
             Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
                 new[] { int32Type, methodInfoType }.OrderBy(t => t)));
         }
@@ -273,11 +299,16 @@ namespace Nesp.MD
             var result22 = context.CalculateCombinedType(methodInfoType, int32ArrayType);
             var result23 = context.CalculateCombinedType(result21.Combined, result22.Combined);
 
+            Assert.AreSame(result13.LeftFixed, result23.RightFixed);
+            Assert.AreSame(result13.RightFixed, result23.LeftFixed);
+
             var polymorphicType1 = (NespPolymorphicTypeInformation)result13.Combined;
             var polymorphicType2 = (NespPolymorphicTypeInformation)result23.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
+            Assert.AreSame(result11.Combined, result13.LeftFixed);
+            Assert.AreSame(result12.Combined, result13.RightFixed);
             Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
                 new[] { int32ArrayType, methodInfoType }.OrderBy(t => t)));
         }
@@ -318,11 +349,18 @@ namespace Nesp.MD
             var result23 = context.CalculateCombinedType(stringType, result22.Combined);
             var result24 = context.CalculateCombinedType(result23.Combined, result21.Combined);
 
+            Assert.AreSame(result14.LeftFixed, result12.Combined);
+            Assert.AreSame(result14.RightFixed, result13.Combined);
+            Assert.AreSame(result24.LeftFixed, result23.Combined);
+            Assert.AreSame(result24.RightFixed, result21.Combined);
+
             var polymorphicType1 = (NespPolymorphicTypeInformation)result14.Combined;
             var polymorphicType2 = (NespPolymorphicTypeInformation)result24.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
+            Assert.AreSame(result12.Combined, result14.LeftFixed);
+            Assert.AreSame(result13.Combined, result14.RightFixed);
             Assert.IsTrue(polymorphicType1.RuntimeTypes.SequenceEqual(
                 new[] { int32ArrayType, methodInfoType, stringType }.OrderBy(t => t)));
         }

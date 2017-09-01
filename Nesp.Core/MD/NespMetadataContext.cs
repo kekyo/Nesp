@@ -389,7 +389,9 @@ namespace Nesp.MD
             if (pt == null)
             {
                 // swap lhs and rhs
-                return rhsType.CalculateCombinedTypeWith(context, this);
+                var result = rhsType.CalculateCombinedTypeWith(context, this);
+                return new NespCalculateCombinedResult(
+                    result.RightFixed, result.LeftFixed, result.Combined);
             }
 
             /////////////////////////////////////////////
