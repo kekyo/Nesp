@@ -77,6 +77,20 @@ namespace Nesp.MD
 
         public TypeInfo RuntimeType => this.typeInfo;
 
+        private static TypeInfo GetEquatableType(TypeInfo type)
+        {
+            return (type.IsGenericType && !type.IsGenericTypeDefinition)
+                ? type.GetGenericTypeDefinition().GetTypeInfo()
+                : type;
+        }
+
+        private static Type[] GetGenericArguments(TypeInfo type)
+        {
+            return type.IsGenericTypeDefinition
+                ? type.GenericTypeParameters
+                : type.GenericTypeArguments;
+        }
+
         internal override NespTypeInformation CalculateCombinedTypeWith(
             NespMetadataContext context, NespTypeInformation type)
         {
@@ -86,14 +100,17 @@ namespace Nesp.MD
             var rt = type as NespRuntimeTypeInformation;
             if (rt != null)
             {
-                if (typeInfo.IsAssignableFrom(rt.typeInfo))
+                var lhsType = typeInfo;
+                var rhsType = rt.typeInfo;
+
+                if (lhsType.IsAssignableFrom(rhsType))
                 {
                     // BaseX ------+-- DerivedY
                     //            vvvvvvvvv
                     //             +-- DerivedY [Widen: BaseX]
                     return rt;
                 }
-                if (rt.typeInfo.IsAssignableFrom(typeInfo))
+                if (rhsType.IsAssignableFrom(lhsType))
                 {
                     // DerivedY ------+-- BaseX
                     //            vvvvvvvvv
@@ -101,48 +118,63 @@ namespace Nesp.MD
                     return this;
                 }
 
-                if (typeInfo.IsGenericTypeDefinition)
+                var rhsEquatableType = GetEquatableType(rhsType);
+                var lhsBaseDefinitionType = lhsType
+                    .Traverse(t => t.BaseType?.GetTypeInfo())
+                    .FirstOrDefault(t => GetEquatableType(t).Equals(rhsEquatableType));
+                if (lhsBaseDefinitionType != null)
                 {
-                    var rhsDefinitionType = rt.typeInfo.GetGenericTypeDefinition().GetTypeInfo();
-                    var lhsBaseDefinitionType = typeInfo
-                        .Traverse(t => t.BaseType?.GetTypeInfo())
-                        .FirstOrDefault(t => t.IsGenericType && t.GetGenericTypeDefinition().GetTypeInfo().Equals(rhsDefinitionType));
-                    if (lhsBaseDefinitionType != null)
+                    if (lhsType.IsGenericTypeDefinition)
                     {
                         // DerivedClassType1<T>    ---+--- BaseClassType<int>
                         //            vvvvvvvvv
                         // DerivedClassType1<int>  ---+                       [Widen: int]
-                        var argumentTypeMap = lhsBaseDefinitionType.GenericTypeArguments
-                            .Zip(rt.typeInfo.GenericTypeArguments,
+                        var argumentTypeMap = GetGenericArguments(lhsBaseDefinitionType)
+                            .Zip(GetGenericArguments(rhsType),
                                 (lhsArgument, rhsArgument) => new {lhsArgument, rhsArgument})
                             .ToDictionary(entry => entry.lhsArgument, entry => entry.rhsArgument);
-                        var lhsMappedArguments = typeInfo.GenericTypeParameters
+                        var lhsMappedArguments = GetGenericArguments(lhsType)
                             .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
                             .ToArray();
-                        var lhsFixedType = typeInfo.MakeGenericType(lhsMappedArguments).GetTypeInfo();
+                        var lhsFixedType = lhsType.MakeGenericType(lhsMappedArguments).GetTypeInfo();
                         return context.FromType(lhsFixedType);
                     }
+                    else
+                    {
+                        // DerivedClassType2  ---+--- BaseClassType<T>
+                        //            vvvvvvvvv
+                        // DerivedClassType2  ---+                       [Widen]
+                        return this;
+                    }
                 }
-                else if (rt.typeInfo.IsGenericTypeDefinition)
+
+                var lhsEquatableType = GetEquatableType(lhsType);
+                var rhsBaseDefinitionType = rhsType
+                    .Traverse(t => t.BaseType?.GetTypeInfo())
+                    .FirstOrDefault(t => lhsEquatableType.Equals(GetEquatableType(t)));
+                if (rhsBaseDefinitionType != null)
                 {
-                    var lhsDefinitionType = typeInfo.GetGenericTypeDefinition().GetTypeInfo();
-                    var rhsBaseDefinitionType = rt.typeInfo
-                        .Traverse(t => t.BaseType?.GetTypeInfo())
-                        .FirstOrDefault(t => t.IsGenericType && lhsDefinitionType.Equals(t.GetGenericTypeDefinition().GetTypeInfo()));
-                    if (rhsBaseDefinitionType != null)
+                    if (rhsType.IsGenericTypeDefinition)
                     {
                         // BaseClassType<int>    ---+--- DerivedClassType1<T>
                         //            vvvvvvvvv
                         //                          +--- DerivedClassType1<int>  [Widen: int]
-                        var argumentTypeMap = rhsBaseDefinitionType.GenericTypeArguments
-                            .Zip(typeInfo.GenericTypeArguments,
+                        var argumentTypeMap = GetGenericArguments(rhsBaseDefinitionType)
+                            .Zip(GetGenericArguments(lhsType),
                                 (rhsArgument, lhsArgument) => new {rhsArgument, lhsArgument})
                             .ToDictionary(entry => entry.rhsArgument, entry => entry.lhsArgument);
-                        var rhsMappedArguments = rt.typeInfo.GenericTypeParameters
+                        var rhsMappedArguments = GetGenericArguments(rhsType)
                             .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
                             .ToArray();
-                        var rshFixedType = rt.typeInfo.MakeGenericType(rhsMappedArguments).GetTypeInfo();
+                        var rshFixedType = rhsType.MakeGenericType(rhsMappedArguments).GetTypeInfo();
                         return context.FromType(rshFixedType);
+                    }
+                    else
+                    {
+                        // BaseClassType<T>  ---+--- DerivedClassType2
+                        //            vvvvvvvvv
+                        //                      +--- DerivedClassType2   [Widen]
+                        return rt;
                     }
                 }
 

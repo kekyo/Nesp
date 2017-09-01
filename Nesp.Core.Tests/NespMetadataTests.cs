@@ -360,6 +360,32 @@ namespace Nesp.MD
 
             Assert.AreSame(derivedInt32Type, combinedType1);
         }
+
+        public class DerivedClassType2 : BaseClassType<int>
+        { }
+
+        [Test]
+        public void CalculateCombinedNonGenericTypeAndGenericDefinitionTypeTest()
+        {
+            // DerivedClassType2  ---+--- BaseClassType<T>
+            //            vvvvvvvvv
+            // DerivedClassType2  ---+                       [Widen]
+
+            // BaseClassType<T>  ---+--- DerivedClassType2
+            //            vvvvvvvvv
+            //                      +--- DerivedClassType2   [Widen]
+
+            var context = new NespMetadataContext();
+            var derivedType = context.FromType(typeof(DerivedClassType2).GetTypeInfo());
+            var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
+
+            var combinedType1 = context.CalculateCombinedType(derivedType, baseType);
+            var combinedType2 = context.CalculateCombinedType(baseType, derivedType);
+
+            Assert.AreSame(combinedType1, combinedType2);
+
+            Assert.AreSame(derivedType, combinedType1);
+        }
         #endregion
     }
 }
