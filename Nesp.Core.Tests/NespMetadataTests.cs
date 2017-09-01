@@ -412,6 +412,55 @@ namespace Nesp.MD
 
             Assert.AreSame(derivedType, combinedType1);
         }
+
+        public class DerivedClassType4<T, U> : BaseClassType<T>
+        { }
+
+        [Test]
+        public void CalculateCombinedGenericDefinitionDerivedTypeWithTwoArgumentsAndGenericDefinitionTypeTest()
+        {
+            // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
+            //            vvvvvvvvv
+            // DerivedClassType4<T, U>   ---+                       [Widen]
+
+            // BaseClassType<T2>    ---+--- DerivedClassType4<T, U>
+            //            vvvvvvvvv
+            //                         +--- DerivedClassType4<T, U> [Widen]
+
+            var context = new NespMetadataContext();
+            var derivedType = context.FromType(typeof(DerivedClassType4<,>).GetTypeInfo());
+            var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
+
+            var combinedType1 = context.CalculateCombinedType(derivedType, baseType);
+            var combinedType2 = context.CalculateCombinedType(baseType, derivedType);
+
+            Assert.AreSame(combinedType1, combinedType2);
+
+            Assert.AreSame(derivedType, combinedType1);
+        }
+
+        [Test]
+        public void CalculateCombinedGenericDefinitionDerivedTypeAndGenericDefinitionTypeTest()
+        {
+            // DerivedClassType3<T>  ---+--- BaseClassType<T2>
+            //            vvvvvvvvv
+            // DerivedClassType3<T>  ---+                       [Widen]
+
+            // BaseClassType<T2>  ---+--- DerivedClassType3<T>
+            //            vvvvvvvvv
+            //                       +--- DerivedClassType3<T>  [Widen]
+
+            var context = new NespMetadataContext();
+            var derivedType = context.FromType(typeof(DerivedClassType3<>).GetTypeInfo());
+            var baseInt32Type = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
+
+            var combinedType1 = context.CalculateCombinedType(derivedType, baseInt32Type);
+            var combinedType2 = context.CalculateCombinedType(baseInt32Type, derivedType);
+
+            Assert.AreSame(combinedType1, combinedType2);
+
+            Assert.AreSame(derivedType, combinedType1);
+        }
         #endregion
     }
 }

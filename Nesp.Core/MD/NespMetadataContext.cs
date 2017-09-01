@@ -139,9 +139,15 @@ namespace Nesp.MD
                         // DerivedClassType1<T>    ---+--- BaseClassType<int>
                         //            vvvvvvvvv
                         // DerivedClassType1<int>  ---+                       [Widen: int]
+
+                        // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
+                        //            vvvvvvvvv
+                        // DerivedClassType4<T, U>   ---+                     [Widen]   // TODO: How to tell info about T == T2?
+
                         var argumentTypeMap = GetGenericArguments(lhsBaseDefinitionType)
                             .Zip(GetGenericArguments(rhsType),
                                 (lhsArgument, rhsArgument) => new {lhsArgument, rhsArgument})
+                            .Where(entry => entry.rhsArgument.IsGenericParameter == false)
                             .ToDictionary(entry => entry.lhsArgument, entry => entry.rhsArgument);
                         var lhsMappedArguments = GetGenericArguments(lhsType)
                             .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
@@ -169,9 +175,15 @@ namespace Nesp.MD
                         // BaseClassType<int>    ---+--- DerivedClassType1<T>
                         //            vvvvvvvvv
                         //                          +--- DerivedClassType1<int>  [Widen: int]
+
+                        // BaseClassType<T2>    ---+--- DerivedClassType4<T, U>
+                        //            vvvvvvvvv
+                        //                         +--- DerivedClassType4<T, U>  [Widen]   // TODO: How to tell info about T == T2?
+
                         var argumentTypeMap = GetGenericArguments(rhsBaseDefinitionType)
                             .Zip(GetGenericArguments(lhsType),
                                 (rhsArgument, lhsArgument) => new {rhsArgument, lhsArgument})
+                            .Where(entry => entry.lhsArgument.IsGenericParameter == false)
                             .ToDictionary(entry => entry.rhsArgument, entry => entry.lhsArgument);
                         var rhsMappedArguments = GetGenericArguments(rhsType)
                             .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
