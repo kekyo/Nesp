@@ -390,11 +390,11 @@ namespace Nesp.MD
         {
             // DerivedClassType2  ---+--- BaseClassType<T>
             //            vvvvvvvvv
-            // DerivedClassType2  ---+                       [Widen]
+            // DerivedClassType2  ---+                       [Widen: int]   // TODO: How to tell info about T == int?
 
             // BaseClassType<T>  ---+--- DerivedClassType2
             //            vvvvvvvvv
-            //                      +--- DerivedClassType2   [Widen]
+            //                      +--- DerivedClassType2   [Widen: int]   // TODO: How to tell info about T == int?
 
             var context = new NespMetadataContext();
             var derivedType = context.FromType(typeof(DerivedClassType2).GetTypeInfo());
@@ -416,11 +416,11 @@ namespace Nesp.MD
         {
             // DerivedClassType3<T>  ---+--- BaseClassType<int>
             //            vvvvvvvvv
-            // DerivedClassType3<T>  ---+                       [Widen]
+            // DerivedClassType3<T>  ---+                       [Widen: int]
 
             // BaseClassType<int>  ---+--- DerivedClassType3<T>
             //            vvvvvvvvv
-            //                        +--- DerivedClassType3<T> [Widen]
+            //                        +--- DerivedClassType3<T> [Widen: int]
 
             var context = new NespMetadataContext();
             var derivedType = context.FromType(typeof(DerivedClassType3<>).GetTypeInfo());
@@ -442,11 +442,11 @@ namespace Nesp.MD
         {
             // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
             //            vvvvvvvvv
-            // DerivedClassType4<T, U>   ---+                       [Widen]
+            // DerivedClassType4<T, U>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
 
             // BaseClassType<T2>    ---+--- DerivedClassType4<T, U>
             //            vvvvvvvvv
-            //                         +--- DerivedClassType4<T, U> [Widen]
+            //                         +--- DerivedClassType4<T, U> [Widen]   // TODO: How to tell info about T == T2?
 
             var context = new NespMetadataContext();
             var derivedType = context.FromType(typeof(DerivedClassType4<,>).GetTypeInfo());
@@ -492,19 +492,45 @@ namespace Nesp.MD
         { }
 
         [Test]
-        public void CalculateCombinedGenericDefinitionInterfaceAndGenericDefinitionTypeTest()
+        public void CalculateCombinedGenericDefinitionTypeAndGenericDefinitionInterfaceTypeTest()
         {
             // ImplementedClassType1<T>   ---+--- IInterfaceType<T2>
             //            vvvvvvvvv
-            // ImplementedClassType1<T>   ---+                       [Widen]
+            // ImplementedClassType1<T>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
 
             // IInterfaceType<T2>    ---+--- ImplementedClassType1<T>
             //            vvvvvvvvv
-            //                          +--- ImplementedClassType1<T> [Widen]
+            //                          +--- ImplementedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
 
             var context = new NespMetadataContext();
             var derivedType = context.FromType(typeof(ImplementedClassType1<>).GetTypeInfo());
             var baseType = context.FromType(typeof(IInterfaceType<>).GetTypeInfo());
+
+            var combinedType1 = context.CalculateCombinedType(derivedType, baseType);
+            var combinedType2 = context.CalculateCombinedType(baseType, derivedType);
+
+            Assert.AreSame(combinedType1, combinedType2);
+
+            Assert.AreSame(derivedType, combinedType1);
+        }
+
+        public class ImplementedClassType2<T> : IInterfaceType<int>
+        { }
+
+        [Test]
+        public void CalculateCombinedGenericDefinitionTypeAndGenericInt32InterfaceTypeTest()
+        {
+            // ImplementedClassType1<T>   ---+--- IInterfaceType<int>
+            //            vvvvvvvvv
+            // ImplementedClassType1<T>   ---+                         [Widen: int]
+
+            // IInterfaceType<int>    ---+--- ImplementedClassType1<T>
+            //            vvvvvvvvv
+            //                           +--- ImplementedClassType1<T> [Widen: int]
+
+            var context = new NespMetadataContext();
+            var derivedType = context.FromType(typeof(ImplementedClassType2<>).GetTypeInfo());
+            var baseType = context.FromType(typeof(IInterfaceType<int>).GetTypeInfo());
 
             var combinedType1 = context.CalculateCombinedType(derivedType, baseType);
             var combinedType2 = context.CalculateCombinedType(baseType, derivedType);
