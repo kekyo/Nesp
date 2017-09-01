@@ -81,10 +81,10 @@ namespace Nesp.MD
             var stringType = context.FromType(typeof(string).GetTypeInfo());
             var int32Type = context.FromType(typeof(int).GetTypeInfo());
 
-            var combinedType = context.CalculateCombinedType(stringType, int32Type);
+            var result = context.CalculateCombinedType(stringType, int32Type);
 
-            Assert.AreEqual("'T1", combinedType.FullName);
-            Assert.AreEqual("T1", combinedType.Name);
+            Assert.AreEqual("'T1", result.Combined.FullName);
+            Assert.AreEqual("T1", result.Combined.Name);
         }
 
         [Test]
@@ -111,9 +111,9 @@ namespace Nesp.MD
             var context = new NespMetadataContext();
             var stringType = context.FromType(typeof(string).GetTypeInfo());
 
-            var combinedType = context.CalculateCombinedType(stringType, stringType);
+            var result = context.CalculateCombinedType(stringType, stringType);
 
-            Assert.AreSame(stringType, combinedType);
+            Assert.AreSame(stringType, result.Combined);
         }
 
         [Test]
@@ -131,12 +131,12 @@ namespace Nesp.MD
             var stringType = context.FromType(typeof(string).GetTypeInfo());
             var objectType = context.FromType(typeof(object).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(stringType, objectType);
-            var combinedType2 = context.CalculateCombinedType(objectType, stringType);
+            var result1 = context.CalculateCombinedType(stringType, objectType);
+            var result2 = context.CalculateCombinedType(objectType, stringType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(stringType, combinedType1);
+            Assert.AreSame(stringType, result1.Combined);
         }
 
         [Test]
@@ -151,11 +151,11 @@ namespace Nesp.MD
             var int32Type = context.FromType(typeof(int).GetTypeInfo());
             var stringType = context.FromType(typeof(string).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(int32Type, stringType);
-            var combinedType2 = context.CalculateCombinedType(stringType, int32Type);
+            var result1 = context.CalculateCombinedType(int32Type, stringType);
+            var result2 = context.CalculateCombinedType(stringType, int32Type);
 
-            var polymorphicType1 = (NespPolymorphicTypeInformation)combinedType1;
-            var polymorphicType2 = (NespPolymorphicTypeInformation)combinedType2;
+            var polymorphicType1 = (NespPolymorphicTypeInformation)result1.Combined;
+            var polymorphicType2 = (NespPolymorphicTypeInformation)result2.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
@@ -178,14 +178,14 @@ namespace Nesp.MD
             var stringType = context.FromType(typeof(string).GetTypeInfo());
             var uriType = context.FromType(typeof(Uri).GetTypeInfo());
 
-            var combinedType11 = context.CalculateCombinedType(int32Type, stringType);
-            var combinedType12 = context.CalculateCombinedType(combinedType11, uriType);
+            var result11 = context.CalculateCombinedType(int32Type, stringType);
+            var result12 = context.CalculateCombinedType(result11.Combined, uriType);
 
-            var combinedType21 = context.CalculateCombinedType(int32Type, stringType);
-            var combinedType22 = context.CalculateCombinedType(uriType, combinedType21);
+            var result21 = context.CalculateCombinedType(int32Type, stringType);
+            var result22 = context.CalculateCombinedType(uriType, result21.Combined);
 
-            var polymorphicType1 = (NespPolymorphicTypeInformation)combinedType12;
-            var polymorphicType2 = (NespPolymorphicTypeInformation)combinedType22;
+            var polymorphicType1 = (NespPolymorphicTypeInformation)result12.Combined;
+            var polymorphicType2 = (NespPolymorphicTypeInformation)result22.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
@@ -207,14 +207,14 @@ namespace Nesp.MD
             var methodInfoType = context.FromType(typeof(MethodInfo).GetTypeInfo());
             var methodBaseType = context.FromType(typeof(MethodBase).GetTypeInfo());
 
-            var combinedType11 = context.CalculateCombinedType(int32Type, methodInfoType);
-            var combinedType12 = context.CalculateCombinedType(combinedType11, methodBaseType);
+            var result11 = context.CalculateCombinedType(int32Type, methodInfoType);
+            var result12 = context.CalculateCombinedType(result11.Combined, methodBaseType);
 
-            var combinedType21 = context.CalculateCombinedType(int32Type, methodInfoType);
-            var combinedType22 = context.CalculateCombinedType(methodBaseType, combinedType21);
+            var result21 = context.CalculateCombinedType(int32Type, methodInfoType);
+            var result22 = context.CalculateCombinedType(methodBaseType, result21.Combined);
 
-            var polymorphicType1 = (NespPolymorphicTypeInformation)combinedType12;
-            var polymorphicType2 = (NespPolymorphicTypeInformation)combinedType22;
+            var polymorphicType1 = (NespPolymorphicTypeInformation)result12.Combined;
+            var polymorphicType2 = (NespPolymorphicTypeInformation)result22.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
@@ -236,14 +236,14 @@ namespace Nesp.MD
             var methodBaseType = context.FromType(typeof(MethodBase).GetTypeInfo());
             var methodInfoType = context.FromType(typeof(MethodInfo).GetTypeInfo());
 
-            var combinedType11 = context.CalculateCombinedType(int32Type, methodBaseType);
-            var combinedType12 = context.CalculateCombinedType(combinedType11, methodInfoType);
+            var result11 = context.CalculateCombinedType(int32Type, methodBaseType);
+            var result12 = context.CalculateCombinedType(result11.Combined, methodInfoType);
 
-            var combinedType21 = context.CalculateCombinedType(int32Type, methodBaseType);
-            var combinedType22 = context.CalculateCombinedType(methodInfoType, combinedType21);
+            var result21 = context.CalculateCombinedType(int32Type, methodBaseType);
+            var result22 = context.CalculateCombinedType(methodInfoType, result21.Combined);
 
-            var polymorphicType1 = (NespPolymorphicTypeInformation)combinedType12;
-            var polymorphicType2 = (NespPolymorphicTypeInformation)combinedType22;
+            var polymorphicType1 = (NespPolymorphicTypeInformation)result12.Combined;
+            var polymorphicType2 = (NespPolymorphicTypeInformation)result22.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
@@ -265,16 +265,16 @@ namespace Nesp.MD
             var methodInfoType = context.FromType(typeof(MethodInfo).GetTypeInfo());
             var int32ArrayType = context.FromType(typeof(int[]).GetTypeInfo());
 
-            var combinedType11 = context.CalculateCombinedType(int32ArrayType, methodInfoType);
-            var combinedType12 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
-            var combinedType13 = context.CalculateCombinedType(combinedType11, combinedType12);
+            var result11 = context.CalculateCombinedType(int32ArrayType, methodInfoType);
+            var result12 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
+            var result13 = context.CalculateCombinedType(result11.Combined, result12.Combined);
 
-            var combinedType21 = context.CalculateCombinedType(int32ArrayType, methodBaseType);
-            var combinedType22 = context.CalculateCombinedType(methodInfoType, int32ArrayType);
-            var combinedType23 = context.CalculateCombinedType(combinedType21, combinedType22);
+            var result21 = context.CalculateCombinedType(int32ArrayType, methodBaseType);
+            var result22 = context.CalculateCombinedType(methodInfoType, int32ArrayType);
+            var result23 = context.CalculateCombinedType(result21.Combined, result22.Combined);
 
-            var polymorphicType1 = (NespPolymorphicTypeInformation)combinedType13;
-            var polymorphicType2 = (NespPolymorphicTypeInformation)combinedType23;
+            var polymorphicType1 = (NespPolymorphicTypeInformation)result13.Combined;
+            var polymorphicType2 = (NespPolymorphicTypeInformation)result23.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
@@ -308,18 +308,18 @@ namespace Nesp.MD
             var int32ArrayType = context.FromType(typeof(int[]).GetTypeInfo());
             var stringType = context.FromType(typeof(string).GetTypeInfo());
 
-            var combinedType11 = context.CalculateCombinedType(enumerableInt32Type, methodInfoType);
-            var combinedType12 = context.CalculateCombinedType(combinedType11, stringType);
-            var combinedType13 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
-            var combinedType14 = context.CalculateCombinedType(combinedType12, combinedType13);
+            var result11 = context.CalculateCombinedType(enumerableInt32Type, methodInfoType);
+            var result12 = context.CalculateCombinedType(result11.Combined, stringType);
+            var result13 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
+            var result14 = context.CalculateCombinedType(result12.Combined, result13.Combined);
 
-            var combinedType21 = context.CalculateCombinedType(enumerableInt32Type, methodInfoType);
-            var combinedType22 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
-            var combinedType23 = context.CalculateCombinedType(stringType, combinedType22);
-            var combinedType24 = context.CalculateCombinedType(combinedType23, combinedType21);
+            var result21 = context.CalculateCombinedType(enumerableInt32Type, methodInfoType);
+            var result22 = context.CalculateCombinedType(methodBaseType, int32ArrayType);
+            var result23 = context.CalculateCombinedType(stringType, result22.Combined);
+            var result24 = context.CalculateCombinedType(result23.Combined, result21.Combined);
 
-            var polymorphicType1 = (NespPolymorphicTypeInformation)combinedType14;
-            var polymorphicType2 = (NespPolymorphicTypeInformation)combinedType24;
+            var polymorphicType1 = (NespPolymorphicTypeInformation)result14.Combined;
+            var polymorphicType2 = (NespPolymorphicTypeInformation)result24.Combined;
 
             Assert.AreSame(polymorphicType1, polymorphicType2);
 
@@ -350,12 +350,12 @@ namespace Nesp.MD
             var derivedType = context.FromType(typeof(DerivedClassType1<>).GetTypeInfo());
             var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(derivedType, baseType);
-            var combinedType2 = context.CalculateCombinedType(baseType, derivedType);
+            var result1 = context.CalculateCombinedType(derivedType, baseType);
+            var result2 = context.CalculateCombinedType(baseType, derivedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(derivedType, combinedType1);
+            Assert.AreSame(derivedType, result1.Combined);
         }
 
         [Test]
@@ -374,12 +374,12 @@ namespace Nesp.MD
             var baseInt32Type = context.FromType(typeof(BaseClassType<int>).GetTypeInfo());
             var derivedInt32Type = context.FromType(typeof(DerivedClassType1<int>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(derivedType, baseInt32Type);
-            var combinedType2 = context.CalculateCombinedType(baseInt32Type, derivedType);
+            var result1 = context.CalculateCombinedType(derivedType, baseInt32Type);
+            var result2 = context.CalculateCombinedType(baseInt32Type, derivedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(derivedInt32Type, combinedType1);
+            Assert.AreSame(derivedInt32Type, result1.Combined);
         }
 
         public class DerivedClassType2 : BaseClassType<int>
@@ -400,12 +400,12 @@ namespace Nesp.MD
             var derivedType = context.FromType(typeof(DerivedClassType2).GetTypeInfo());
             var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(derivedType, baseType);
-            var combinedType2 = context.CalculateCombinedType(baseType, derivedType);
+            var result1 = context.CalculateCombinedType(derivedType, baseType);
+            var result2 = context.CalculateCombinedType(baseType, derivedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(derivedType, combinedType1);
+            Assert.AreSame(derivedType, result1.Combined);
         }
 
         public class DerivedClassType3<T> : BaseClassType<int>
@@ -426,12 +426,12 @@ namespace Nesp.MD
             var derivedType = context.FromType(typeof(DerivedClassType3<>).GetTypeInfo());
             var baseInt32Type = context.FromType(typeof(BaseClassType<int>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(derivedType, baseInt32Type);
-            var combinedType2 = context.CalculateCombinedType(baseInt32Type, derivedType);
+            var result1 = context.CalculateCombinedType(derivedType, baseInt32Type);
+            var result2 = context.CalculateCombinedType(baseInt32Type, derivedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(derivedType, combinedType1);
+            Assert.AreSame(derivedType, result1.Combined);
         }
 
         [Test]
@@ -449,12 +449,12 @@ namespace Nesp.MD
             var derivedType = context.FromType(typeof(DerivedClassType3<>).GetTypeInfo());
             var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(derivedType, baseType);
-            var combinedType2 = context.CalculateCombinedType(baseType, derivedType);
+            var result1 = context.CalculateCombinedType(derivedType, baseType);
+            var result2 = context.CalculateCombinedType(baseType, derivedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(derivedType, combinedType1);
+            Assert.AreSame(derivedType, result1.Combined);
         }
 
         public class DerivedClassType4<T, U> : BaseClassType<T>
@@ -475,12 +475,38 @@ namespace Nesp.MD
             var derivedType = context.FromType(typeof(DerivedClassType4<,>).GetTypeInfo());
             var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(derivedType, baseType);
-            var combinedType2 = context.CalculateCombinedType(baseType, derivedType);
+            var result1 = context.CalculateCombinedType(derivedType, baseType);
+            var result2 = context.CalculateCombinedType(baseType, derivedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(derivedType, combinedType1);
+            Assert.AreSame(derivedType, result1.Combined);
+        }
+
+        public class DerivedClassType5<T> : BaseClassType<int>
+        { }
+
+        [Test]
+        public void CalculateCombinedGenericDefinitionTypeAndGenericBaseTypeTest()
+        {
+            // DerivedClassType5<T>  ---+--- BaseClassType<T2>
+            //            vvvvvvvvv
+            // DerivedClassType5<T>  ---+                       [Widen: int]   // TODO: How to tell info about T == int?
+
+            // BaseClassType<T2>  ---+--- DerivedClassType5<T>
+            //            vvvvvvvvv
+            //                       +--- DerivedClassType5<T>  [Widen: int]   // TODO: How to tell info about T == int?
+
+            var context = new NespMetadataContext();
+            var derivedType = context.FromType(typeof(DerivedClassType5<>).GetTypeInfo());
+            var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
+
+            var result1 = context.CalculateCombinedType(derivedType, baseType);
+            var result2 = context.CalculateCombinedType(baseType, derivedType);
+
+            Assert.AreSame(result1.Combined, result2.Combined);
+
+            Assert.AreSame(derivedType, result1.Combined);
         }
         #endregion
 
@@ -506,12 +532,12 @@ namespace Nesp.MD
             var implementedType = context.FromType(typeof(ImplementedClassType1<>).GetTypeInfo());
             var interfaceType = context.FromType(typeof(IInterfaceType<>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(implementedType, interfaceType);
-            var combinedType2 = context.CalculateCombinedType(interfaceType, implementedType);
+            var result1 = context.CalculateCombinedType(implementedType, interfaceType);
+            var result2 = context.CalculateCombinedType(interfaceType, implementedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(implementedType, combinedType1);
+            Assert.AreSame(implementedType, result1.Combined);
         }
 
         [Test]
@@ -530,12 +556,12 @@ namespace Nesp.MD
             var interfaceInt32Type = context.FromType(typeof(IInterfaceType<int>).GetTypeInfo());
             var implementedInt32Type = context.FromType(typeof(ImplementedClassType1<int>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(implementedType, interfaceInt32Type);
-            var combinedType2 = context.CalculateCombinedType(interfaceInt32Type, implementedType);
+            var result1 = context.CalculateCombinedType(implementedType, interfaceInt32Type);
+            var result2 = context.CalculateCombinedType(interfaceInt32Type, implementedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(implementedInt32Type, combinedType1);
+            Assert.AreSame(implementedInt32Type, result1.Combined);
         }
 
         public class ImplementedClassType2 : IInterfaceType<int>
@@ -556,12 +582,12 @@ namespace Nesp.MD
             var implementedType = context.FromType(typeof(ImplementedClassType2).GetTypeInfo());
             var interfaceType = context.FromType(typeof(IInterfaceType<>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(implementedType, interfaceType);
-            var combinedType2 = context.CalculateCombinedType(interfaceType, implementedType);
+            var result1 = context.CalculateCombinedType(implementedType, interfaceType);
+            var result2 = context.CalculateCombinedType(interfaceType, implementedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(implementedType, combinedType1);
+            Assert.AreSame(implementedType, result1.Combined);
         }
 
         public class ImplementedClassType3<T> : IInterfaceType<int>
@@ -582,12 +608,12 @@ namespace Nesp.MD
             var implementedType = context.FromType(typeof(ImplementedClassType3<>).GetTypeInfo());
             var interfaceInt32Type = context.FromType(typeof(IInterfaceType<int>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(implementedType, interfaceInt32Type);
-            var combinedType2 = context.CalculateCombinedType(interfaceInt32Type, implementedType);
+            var result1 = context.CalculateCombinedType(implementedType, interfaceInt32Type);
+            var result2 = context.CalculateCombinedType(interfaceInt32Type, implementedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(implementedType, combinedType1);
+            Assert.AreSame(implementedType, result1.Combined);
         }
 
         [Test]
@@ -605,12 +631,12 @@ namespace Nesp.MD
             var implementedType = context.FromType(typeof(ImplementedClassType3<>).GetTypeInfo());
             var interfaceType = context.FromType(typeof(IInterfaceType<>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(implementedType, interfaceType);
-            var combinedType2 = context.CalculateCombinedType(interfaceType, implementedType);
+            var result1 = context.CalculateCombinedType(implementedType, interfaceType);
+            var result2 = context.CalculateCombinedType(interfaceType, implementedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(implementedType, combinedType1);
+            Assert.AreSame(implementedType, result1.Combined);
         }
 
         public class ImplementedClassType4<T, U> : IInterfaceType<T>
@@ -631,12 +657,12 @@ namespace Nesp.MD
             var implementedType = context.FromType(typeof(ImplementedClassType4<,>).GetTypeInfo());
             var interfaceType = context.FromType(typeof(IInterfaceType<>).GetTypeInfo());
 
-            var combinedType1 = context.CalculateCombinedType(implementedType, interfaceType);
-            var combinedType2 = context.CalculateCombinedType(interfaceType, implementedType);
+            var result1 = context.CalculateCombinedType(implementedType, interfaceType);
+            var result2 = context.CalculateCombinedType(interfaceType, implementedType);
 
-            Assert.AreSame(combinedType1, combinedType2);
+            Assert.AreSame(result1.Combined, result2.Combined);
 
-            Assert.AreSame(implementedType, combinedType1);
+            Assert.AreSame(implementedType, result1.Combined);
         }
         #endregion
     }

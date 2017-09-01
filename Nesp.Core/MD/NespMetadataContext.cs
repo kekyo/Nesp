@@ -27,6 +27,26 @@ using Nesp.Internals;
 
 namespace Nesp.MD
 {
+    public struct NespCalculateCombinedResult
+    {
+        public readonly NespTypeInformation LeftFixed;
+        public readonly NespTypeInformation RightFixed;
+        public readonly NespTypeInformation Combined;
+
+        internal NespCalculateCombinedResult(
+            NespTypeInformation left, NespTypeInformation right, NespTypeInformation combined)
+        {
+            this.LeftFixed = left;
+            this.RightFixed = right;
+            this.Combined = combined;
+        }
+
+        public override string ToString()
+        {
+            return $"{this.Combined} [{this.LeftFixed}, {this.RightFixed}]";
+        }
+    }
+
     public abstract class NespTypeInformation
         : IEquatable<NespTypeInformation>, IComparable<NespTypeInformation>
     {
@@ -37,8 +57,8 @@ namespace Nesp.MD
         public abstract string FullName { get; }
         public abstract string Name { get; }
 
-        internal abstract NespTypeInformation CalculateCombinedTypeWith(
-            NespMetadataContext context, NespTypeInformation type);
+        internal abstract NespCalculateCombinedResult CalculateCombinedTypeWith(
+            NespMetadataContext context, NespTypeInformation rhsType);
 
         public bool Equals(NespTypeInformation rhs)
         {
@@ -91,7 +111,7 @@ namespace Nesp.MD
                 : type.GenericTypeArguments;
         }
 
-        private static NespTypeInformation CalculateCombinedRuntimeTypeWith(
+        private static NespCalculateCombinedResult CalculateCombinedRuntimeTypeWith(
             NespMetadataContext context, NespRuntimeTypeInformation lhsType, NespRuntimeTypeInformation rhsType)
         {
             var lhsTypeInfo = lhsType.typeInfo;
@@ -111,7 +131,7 @@ namespace Nesp.MD
                 //            vvvvvvvvv
                 //                           +--- ImplementedClassType1<T> [Widen: int]
 
-                return rhsType;
+                return new NespCalculateCombinedResult(lhsType, rhsType, rhsType);
             }
 
             if (rhsTypeInfo.IsAssignableFrom(lhsTypeInfo))
@@ -128,7 +148,7 @@ namespace Nesp.MD
                 //            vvvvvvvvv
                 // ImplementedClassType1<T>   ---+                         [Widen: int]
 
-                return lhsType;
+                return new NespCalculateCombinedResult(lhsType, rhsType, lhsType);
             }
 
             var rhsEquatableTypeInfo = GetEquatableTypeInfo(rhsTypeInfo);
@@ -152,6 +172,10 @@ namespace Nesp.MD
                     //            vvvvvvvvv
                     // DerivedClassType4<T, U>   ---+                     [Widen]   // TODO: How to tell info about T == T2?
 
+                    // DerivedClassType5<T>  ---+--- BaseClassType<T2>
+                    //            vvvvvvvvv
+                    // DerivedClassType5<T>  ---+                       [Widen: int]   // TODO: How to tell info about T == int?
+
                     // ImplementedClassType1<T>   ---+--- IInterfaceType<T2>
                     //            vvvvvvvvv
                     // ImplementedClassType1<T>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
@@ -173,7 +197,9 @@ namespace Nesp.MD
                         .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
                         .ToArray();
                     var lhsFixedTypeInfo = lhsTypeInfo.MakeGenericType(lhsMappedArguments).GetTypeInfo();
-                    return context.FromType(lhsFixedTypeInfo);
+
+                    return new NespCalculateCombinedResult(
+                        lhsType, rhsType, context.FromType(lhsFixedTypeInfo));
                 }
                 else
                 {
@@ -185,7 +211,7 @@ namespace Nesp.MD
                     //            vvvvvvvvv
                     // ImplementedClassType2   ---+                       [Widen: int]   // TODO: How to tell info about T == int?
 
-                    return lhsType;
+                    return new NespCalculateCombinedResult(lhsType, rhsType, lhsType);
                 }
             }
 
@@ -210,6 +236,10 @@ namespace Nesp.MD
                     //            vvvvvvvvv
                     //                         +--- DerivedClassType4<T, U>  [Widen]   // TODO: How to tell info about T == T2?
 
+                    // BaseClassType<T2>  ---+--- DerivedClassType5<T>
+                    //            vvvvvvvvv
+                    //                       +--- DerivedClassType5<T>  [Widen: int]   // TODO: How to tell info about T == int?
+
                     // IInterfaceType<T2>    ---+--- ImplementedClassType1<T>
                     //            vvvvvvvvv
                     //                          +--- ImplementedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
@@ -231,7 +261,9 @@ namespace Nesp.MD
                         .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
                         .ToArray();
                     var rshFixedTypeInfo = rhsTypeInfo.MakeGenericType(rhsMappedArguments).GetTypeInfo();
-                    return context.FromType(rshFixedTypeInfo);
+
+                    return new NespCalculateCombinedResult(
+                        lhsType, rhsType, context.FromType(rshFixedTypeInfo));
                 }
                 else
                 {
@@ -243,7 +275,7 @@ namespace Nesp.MD
                     //            vvvvvvvvv
                     //                         +--- ImplementedClassType2 [Widen: int]   // TODO: How to tell info about T == int?
 
-                    return rhsType;
+                    return new NespCalculateCombinedResult(lhsType, rhsType, rhsType);
                 }
             }
 
@@ -251,16 +283,17 @@ namespace Nesp.MD
             //         vvvvvvvvv
             //             +-- int
             //             +-- BaseX [Combined: BaseX]
-            return context.GetOrAddPolymorphicType(new[] { lhsType, rhsType }.OrderBy(t => t));
+            return new NespCalculateCombinedResult(lhsType, rhsType, 
+                context.GetOrAddPolymorphicType(new[] { lhsType, rhsType }.OrderBy(t => t)));
         }
 
-        internal override NespTypeInformation CalculateCombinedTypeWith(
-            NespMetadataContext context, NespTypeInformation type)
+        internal override NespCalculateCombinedResult CalculateCombinedTypeWith(
+            NespMetadataContext context, NespTypeInformation rhsType)
         {
             /////////////////////////////////////////////
             // type is runtime (Both runtime type)
 
-            var rt = type as NespRuntimeTypeInformation;
+            var rt = rhsType as NespRuntimeTypeInformation;
             if (rt != null)
             {
                 return CalculateCombinedRuntimeTypeWith(context, this, rt);
@@ -269,7 +302,7 @@ namespace Nesp.MD
             /////////////////////////////////////////////
             // type is polymorphic (runtime vs polymorphic)
 
-            var pt = (NespPolymorphicTypeInformation)type;
+            var pt = (NespPolymorphicTypeInformation)rhsType;
             if (pt.types.Any(t => typeInfo.IsAssignableFrom(t.typeInfo)))
             {
                 // BaseX ------+-- int
@@ -277,7 +310,7 @@ namespace Nesp.MD
                 //         vvvvvvvvv
                 //             +-- int
                 //             +-- DerivedY [Widen: BaseX]
-                return type;
+                return new NespCalculateCombinedResult(this, rhsType, rhsType);
             }
 
             var widen = pt.types
@@ -292,7 +325,8 @@ namespace Nesp.MD
                 //            vvvvvvvvv
                 //                +-- int
                 //                +-- DerivedY [Widen: BaseX]
-                return context.GetOrAddPolymorphicType(widen);
+                return new NespCalculateCombinedResult(
+                    this, rhsType, context.GetOrAddPolymorphicType(widen));
             }
             else
             {
@@ -302,7 +336,8 @@ namespace Nesp.MD
                 //             +-- int
                 //             +-- string
                 //             +-- BaseX  [Combined: BaseX]
-                return context.GetOrAddPolymorphicType(widen.Concat(new[] { this }).OrderBy(t => t));
+                return new NespCalculateCombinedResult(
+                    this, rhsType, context.GetOrAddPolymorphicType(widen.Concat(new[] { this }).OrderBy(t => t)));
             }
         }
 
@@ -334,17 +369,17 @@ namespace Nesp.MD
 
         public NespRuntimeTypeInformation[] RuntimeTypes => types;
 
-        internal override NespTypeInformation CalculateCombinedTypeWith(
-            NespMetadataContext context, NespTypeInformation type)
+        internal override NespCalculateCombinedResult CalculateCombinedTypeWith(
+            NespMetadataContext context, NespTypeInformation rhsType)
         {
             /////////////////////////////////////////////
             // type is runtime (polymorphic vs runtime)
 
-            var pt = type as NespPolymorphicTypeInformation;
+            var pt = rhsType as NespPolymorphicTypeInformation;
             if (pt == null)
             {
                 // swap lhs and rhs
-                return type.CalculateCombinedTypeWith(context, this);
+                return rhsType.CalculateCombinedTypeWith(context, this);
             }
 
             /////////////////////////////////////////////
@@ -383,7 +418,8 @@ namespace Nesp.MD
                 // int[]     --+                 [Widen: IE<int>]
                 // DerivedY  --+                 [Widen: BaseX]
                 // string    --+                 [Combined: string]
-                return context.GetOrAddPolymorphicType(combined);
+                return new NespCalculateCombinedResult(
+                    this, rhsType, context.GetOrAddPolymorphicType(combined));
             }
 
             // int[]    --+---+-- BaseX
@@ -391,7 +427,7 @@ namespace Nesp.MD
             //           vvvvvvvvv
             // int[]    --+
             // DerivedY --+
-            return this;
+            return new NespCalculateCombinedResult(this, rhsType, this);
         }
 
         public override string ToString()
@@ -473,9 +509,10 @@ namespace Nesp.MD
             }
         }
 
-        public NespTypeInformation CalculateCombinedType(NespTypeInformation type1, NespTypeInformation type2)
+        public NespCalculateCombinedResult CalculateCombinedType(
+            NespTypeInformation lhsType, NespTypeInformation rhsType)
         {
-            return type1.CalculateCombinedTypeWith(this, type2);
+            return lhsType.CalculateCombinedTypeWith(this, rhsType);
         }
     }
 }
