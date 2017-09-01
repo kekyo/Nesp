@@ -131,6 +131,7 @@ namespace Nesp.MD
                 var rhsEquatableType = GetEquatableType(rhsType);
                 var lhsBaseDefinitionType = lhsType
                     .Traverse(t => t.BaseType?.GetTypeInfo())
+                    .Concat(lhsType.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
                     .FirstOrDefault(t => GetEquatableType(t).Equals(rhsEquatableType));
                 if (lhsBaseDefinitionType != null)
                 {
@@ -171,6 +172,7 @@ namespace Nesp.MD
                 var lhsEquatableType = GetEquatableType(lhsType);
                 var rhsBaseDefinitionType = rhsType
                     .Traverse(t => t.BaseType?.GetTypeInfo())
+                    .Concat(rhsType.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
                     .FirstOrDefault(t => lhsEquatableType.Equals(GetEquatableType(t)));
                 if (rhsBaseDefinitionType != null)
                 {
