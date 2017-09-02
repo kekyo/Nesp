@@ -477,11 +477,11 @@ namespace Nesp.MD
         {
             // DerivedClassType3<T>  ---+--- BaseClassType<T2>
             //            vvvvvvvvv
-            // DerivedClassType3<T>  ---+                       [Widen]  // TODO: How to tell info about T2 == int?
+            // DerivedClassType3<T>  ---+                       [Widen]
 
             // BaseClassType<T2>  ---+--- DerivedClassType3<T>
             //            vvvvvvvvv
-            //                       +--- DerivedClassType3<T>  [Widen]  // TODO: How to tell info about T2 == int?
+            //                       +--- DerivedClassType3<T>  [Widen]
 
             var context = new NespMetadataContext();
             var derivedType = context.FromType(typeof(DerivedClassType3<>).GetTypeInfo());
@@ -503,11 +503,11 @@ namespace Nesp.MD
         {
             // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
             //            vvvvvvvvv
-            // DerivedClassType4<T, U>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
+            // DerivedClassType4<T, U>   ---+                       [Widen]
 
             // BaseClassType<T2>    ---+--- DerivedClassType4<T, U>
             //            vvvvvvvvv
-            //                         +--- DerivedClassType4<T, U> [Widen]   // TODO: How to tell info about T == T2?
+            //                         +--- DerivedClassType4<T, U> [Widen]
 
             var context = new NespMetadataContext();
             var derivedType = context.FromType(typeof(DerivedClassType4<,>).GetTypeInfo());
@@ -565,11 +565,11 @@ namespace Nesp.MD
         {
             // ImplementedClassType1<T>   ---+--- IInterfaceType<T2>
             //            vvvvvvvvv
-            // ImplementedClassType1<T>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
+            // ImplementedClassType1<T>   ---+                       [Widen]
 
             // IInterfaceType<T2>    ---+--- ImplementedClassType1<T>
             //            vvvvvvvvv
-            //                          +--- ImplementedClassType1<T> [Widen]   // TODO: How to tell info about T == T2?
+            //                          +--- ImplementedClassType1<T> [Widen]
 
             var context = new NespMetadataContext();
             var implementedType = context.FromType(typeof(ImplementedClassType1<>).GetTypeInfo());
@@ -579,8 +579,19 @@ namespace Nesp.MD
             var result2 = context.CalculateCombinedType(interfaceType, implementedType);
 
             Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
 
             Assert.AreSame(implementedType, result1.Combined);
+            Assert.AreSame(implementedType, result1.LeftFixed);
+            Assert.AreNotSame(interfaceType, result1.RightFixed);
+
+            var dt = ((NespRuntimeTypeInformation) result1.RightFixed).typeInfo;
+
+            Assert.AreEqual(typeof(IInterfaceType<>), dt.GetGenericTypeDefinition());
+            Assert.AreEqual(
+                typeof(ImplementedClassType1<>),
+                dt.GetTypeInfo().GenericTypeArguments[0].DeclaringType);
         }
 
         [Test]
@@ -603,8 +614,12 @@ namespace Nesp.MD
             var result2 = context.CalculateCombinedType(interfaceInt32Type, implementedType);
 
             Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
 
             Assert.AreSame(implementedInt32Type, result1.Combined);
+            Assert.AreSame(implementedType, result1.LeftFixed);
+            Assert.AreSame(interfaceInt32Type, result1.RightFixed);
         }
 
         public class ImplementedClassType2 : IInterfaceType<int>
@@ -615,11 +630,11 @@ namespace Nesp.MD
         {
             // ImplementedClassType2   ---+--- IInterfaceType<T>
             //            vvvvvvvvv
-            // ImplementedClassType2   ---+                       [Widen: int]   // TODO: How to tell info about T == int?
+            // ImplementedClassType2   ---+                       [Widen: int]
 
             // IInterfaceType<T>    ---+--- ImplementedClassType2
             //            vvvvvvvvv
-            //                         +--- ImplementedClassType2 [Widen: int]   // TODO: How to tell info about T == int?
+            //                         +--- ImplementedClassType2 [Widen: int]
 
             var context = new NespMetadataContext();
             var implementedType = context.FromType(typeof(ImplementedClassType2).GetTypeInfo());
@@ -629,8 +644,14 @@ namespace Nesp.MD
             var result2 = context.CalculateCombinedType(interfaceType, implementedType);
 
             Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
+
+            var dt = ((NespRuntimeTypeInformation)result1.RightFixed).typeInfo;
 
             Assert.AreSame(implementedType, result1.Combined);
+            Assert.AreSame(implementedType, result1.LeftFixed);
+            Assert.AreSame(typeof(int), dt.GenericTypeArguments[0]);
         }
 
         public class ImplementedClassType3<T> : IInterfaceType<int>
@@ -655,8 +676,12 @@ namespace Nesp.MD
             var result2 = context.CalculateCombinedType(interfaceInt32Type, implementedType);
 
             Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
 
             Assert.AreSame(implementedType, result1.Combined);
+            Assert.AreSame(implementedType, result1.LeftFixed);
+            Assert.AreSame(interfaceInt32Type, result1.RightFixed);
         }
 
         [Test]
@@ -664,11 +689,11 @@ namespace Nesp.MD
         {
             // ImplementedClassType3<T>  ---+--- IInterfaceType<T2>
             //            vvvvvvvvv
-            // ImplementedClassType3<T>  ---+                        [Widen]  // TODO: How to tell info about T2 == int?
+            // ImplementedClassType3<T>  ---+                        [Widen]
 
             // IInterfaceType<T2>  ---+--- ImplementedClassType3<T>
             //            vvvvvvvvv
-            //                        +--- ImplementedClassType3<T>  [Widen]  // TODO: How to tell info about T2 == int?
+            //                        +--- ImplementedClassType3<T>  [Widen]
 
             var context = new NespMetadataContext();
             var implementedType = context.FromType(typeof(ImplementedClassType3<>).GetTypeInfo());
@@ -678,8 +703,17 @@ namespace Nesp.MD
             var result2 = context.CalculateCombinedType(interfaceType, implementedType);
 
             Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
 
             Assert.AreSame(implementedType, result1.Combined);
+            Assert.AreSame(implementedType, result1.LeftFixed);
+            Assert.AreNotSame(interfaceType, result1.RightFixed);
+
+            var dt = ((NespRuntimeTypeInformation)result1.RightFixed).typeInfo;
+
+            Assert.AreEqual(typeof(IInterfaceType<>), dt.GetGenericTypeDefinition());
+            Assert.AreEqual(typeof(int), dt.GetTypeInfo().GenericTypeArguments[0]);
         }
 
         public class ImplementedClassType4<T, U> : IInterfaceType<T>
@@ -690,11 +724,11 @@ namespace Nesp.MD
         {
             // ImplementedClassType4<T, U>   ---+--- IInterfaceType<T2>
             //            vvvvvvvvv
-            // ImplementedClassType4<T, U>   ---+                       [Widen]   // TODO: How to tell info about T == T2?
+            // ImplementedClassType4<T, U>   ---+                       [Widen]
 
             // IInterfaceType<T2>    ---+--- ImplementedClassType4<T, U>
             //            vvvvvvvvv
-            //                          +--- ImplementedClassType4<T, U> [Widen]   // TODO: How to tell info about T == T2?
+            //                          +--- ImplementedClassType4<T, U> [Widen]
 
             var context = new NespMetadataContext();
             var implementedType = context.FromType(typeof(ImplementedClassType4<,>).GetTypeInfo());
@@ -704,8 +738,50 @@ namespace Nesp.MD
             var result2 = context.CalculateCombinedType(interfaceType, implementedType);
 
             Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
 
             Assert.AreSame(implementedType, result1.Combined);
+            Assert.AreSame(implementedType, result1.LeftFixed);
+            Assert.AreNotSame(interfaceType, result1.RightFixed);
+
+            var dt = ((NespRuntimeTypeInformation)result1.RightFixed).typeInfo;
+
+            Assert.AreEqual(typeof(IInterfaceType<>), dt.GetGenericTypeDefinition());
+            Assert.AreEqual(
+                typeof(ImplementedClassType4<,>),
+                dt.GetTypeInfo().GenericTypeArguments[0].DeclaringType);
+        }
+
+        public class ImplementedClassType5<T> : IInterfaceType<int>
+        { }
+
+        [Test]
+        public void CalculateCombinedGenericDefinitionImplementedTypeAndGenericInterfaceTypeTest()
+        {
+            // ImplementedClassType5<T>  ---+--- IInterfaceType<T2>
+            //            vvvvvvvvv
+            // ImplementedClassType5<T>  ---+                        [Widen: int]
+
+            // IInterfaceType<T2>  ---+--- ImplementedClassType5<T>
+            //            vvvvvvvvv
+            //                        +--- ImplementedClassType5<T>  [Widen: int]
+
+            var context = new NespMetadataContext();
+            var implementedType = context.FromType(typeof(ImplementedClassType5<>).GetTypeInfo());
+            var interfaceType = context.FromType(typeof(IInterfaceType<>).GetTypeInfo());
+            var interfaceInt32Type = context.FromType(typeof(IInterfaceType<int>).GetTypeInfo());
+
+            var result1 = context.CalculateCombinedType(implementedType, interfaceType);
+            var result2 = context.CalculateCombinedType(interfaceType, implementedType);
+
+            Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
+
+            Assert.AreSame(implementedType, result1.Combined);
+            Assert.AreSame(implementedType, result1.LeftFixed);
+            Assert.AreSame(interfaceInt32Type, result1.RightFixed);
         }
         #endregion
     }
