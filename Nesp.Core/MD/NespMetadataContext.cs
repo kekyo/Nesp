@@ -106,7 +106,7 @@ namespace Nesp.MD
                 /////////////////////////////////////////////
                 // type is runtime (Both runtime type)
 
-                return context.CalculateCombinedRuntimeTypes(this, rt);
+                return context.CalculateCombinedBothRuntimeTypes(this, rt);
             }
             else
             {
@@ -114,7 +114,7 @@ namespace Nesp.MD
                 // type is polymorphic (runtime vs polymorphic)
 
                 var pt = (NespPolymorphicTypeInformation)rhsType;
-                return context.CalculateCombinedBothTypes(this, pt);
+                return context.CalculateCombinedDifferentTypes(this, pt);
             }
         }
 
@@ -131,8 +131,6 @@ namespace Nesp.MD
 
     public sealed class NespPolymorphicTypeInformation : NespTypeInformation
     {
-        private static readonly NespRuntimeTypeInformation[] empty = new NespRuntimeTypeInformation[0];
-
         internal readonly NespRuntimeTypeInformation[] types;
 
         internal NespPolymorphicTypeInformation(string name, NespRuntimeTypeInformation[] types)
@@ -156,7 +154,7 @@ namespace Nesp.MD
             if (rt != null)
             {
                 // swap lhs and rhs
-                var result = context.CalculateCombinedBothTypes(rt, this);
+                var result = context.CalculateCombinedDifferentTypes(rt, this);
                 return new NespCalculateCombinedResult(
                     result.RightFixed, result.LeftFixed, result.Combined);
             }
@@ -164,50 +162,8 @@ namespace Nesp.MD
             /////////////////////////////////////////////
             // type is polymorphic (both polymorphic type)
 
-            // TODO: Reduce calculation costs
             var pt = (NespPolymorphicTypeInformation)rhsType;
-            var assignableWiden = types
-                .SelectMany(t1 => pt.types
-                    .SelectMany(t2 => t1.typeInfo.IsAssignableFrom(t2.typeInfo)
-                        ? new[] { t2 }
-                        : t2.typeInfo.IsAssignableFrom(t1.typeInfo)
-                            ? new [] { t1 }
-                            : empty));
-            var combinedUnassignablesLeft = types
-                .SelectMany(t1 => pt.types
-                    .All(t2 => !t1.typeInfo.IsAssignableFrom(t2.typeInfo) && !t2.typeInfo.IsAssignableFrom(t1.typeInfo))
-                        ? new[] { t1 }
-                        : empty);
-            var combinedUnassignablesRight = pt.types
-                .SelectMany(t2 => types
-                    .All(t1 => !t1.typeInfo.IsAssignableFrom(t2.typeInfo) && !t2.typeInfo.IsAssignableFrom(t1.typeInfo))
-                        ? new[] { t2 }
-                        : empty);
-            var combined = assignableWiden
-                .Concat(combinedUnassignablesLeft)
-                .Concat(combinedUnassignablesRight)
-                .Distinct()
-                .OrderBy(t => t)
-                .ToArray();
-            if (combined.SequenceEqual(types) == false)
-            {
-                // IE<int>   --+---+-- BaseX
-                // DerivedY  --+   +-- int[]
-                // string    --+
-                //           vvvvvvvvv
-                // int[]     --+                 [Widen: IE<int>]
-                // DerivedY  --+                 [Widen: BaseX]
-                // string    --+                 [Combined: string]
-                return new NespCalculateCombinedResult(
-                    this, rhsType, context.GetOrAddPolymorphicType(combined));
-            }
-
-            // int[]    --+---+-- BaseX
-            // DerivedY --+   +-- int[]
-            //           vvvvvvvvv
-            // int[]    --+
-            // DerivedY --+
-            return new NespCalculateCombinedResult(this, rhsType, this);
+            return context.CalculateCombinedBothPolymorphicTypes(this, pt);
         }
 
         public override string ToString()
@@ -226,6 +182,9 @@ namespace Nesp.MD
 
     public sealed class NespMetadataContext
     {
+        private static readonly NespRuntimeTypeInformation[] emptyRuntimeTypes =
+            new NespRuntimeTypeInformation[0];
+
         private sealed class RuntimeTypesComparer : IEqualityComparer<NespRuntimeTypeInformation[]>
         {
             public static readonly RuntimeTypesComparer Instance = new RuntimeTypesComparer();
@@ -289,6 +248,7 @@ namespace Nesp.MD
             }
         }
 
+        #region Calculate by both runtime types
         private static TypeInfo GetEquatableTypeInfo(TypeInfo type)
         {
             return (type.IsGenericType && !type.IsGenericTypeDefinition)
@@ -303,7 +263,99 @@ namespace Nesp.MD
                 : type.GenericTypeArguments;
         }
 
-        internal NespCalculateCombinedResult CalculateCombinedRuntimeTypes(
+        private NespCalculateCombinedResult? TryCalculateCombinedComplexTypes(
+            NespRuntimeTypeInformation lhsType, NespRuntimeTypeInformation rhsType,
+            TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo)
+        {
+            var rhsEquatableTypeInfo = GetEquatableTypeInfo(rhsTypeInfo);
+            var lhsBaseTypeInfo = lhsTypeInfo
+                .Traverse(t => t.BaseType?.GetTypeInfo())
+                .Concat(lhsTypeInfo.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
+                .FirstOrDefault(t => GetEquatableTypeInfo(t).Equals(rhsEquatableTypeInfo));
+            if (lhsBaseTypeInfo == null)
+            {
+                return null;
+            }
+
+            if (lhsTypeInfo.IsGenericTypeDefinition)
+            {
+                // DerivedClassType1<T>   ---+--- BaseClassType<T2>
+                //            vvvvvvvvv
+                // DerivedClassType1<T>   ---+                        [Widen]
+
+                // DerivedClassType1<T>    ---+--- BaseClassType<int>
+                //            vvvvvvvvv
+                // DerivedClassType1<int>  ---+                       [Widen: int]
+
+                // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
+                //            vvvvvvvvv
+                // DerivedClassType4<T, U>   ---+                     [Widen]
+
+                // DerivedClassType5<T>  ---+--- BaseClassType<T2>
+                //            vvvvvvvvv
+                // DerivedClassType5<T>  ---+                       [Widen: int]
+
+                // DerivedClassType6<T, U>  ---+--- DerivedClassType4<T2, U2>
+                //            vvvvvvvvv
+                // DerivedClassType6<T, U>  ---+                              [Widen: U, int]
+
+                // ImplementedClassType1<T>   ---+--- IInterfaceType<T2>
+                //            vvvvvvvvv
+                // ImplementedClassType1<T>   ---+                       [Widen]
+
+                // ImplementedClassType1<T>   ---+--- IInterfaceType<int>
+                //            vvvvvvvvv
+                // ImplementedClassType1<int> ---+                           [Widen: int]
+
+                // ImplementedClassType4<T, U>   ---+--- IInterfaceType<T2>
+                //            vvvvvvvvv
+                // ImplementedClassType4<T, U>   ---+                       [Widen]
+
+                // ImplementedClassType5<T>  ---+--- IInterfaceType<T2>
+                //            vvvvvvvvv
+                // ImplementedClassType5<T>  ---+                        [Widen: int]
+
+                // Calculate T --> T2 relation result
+                var rhsFixedType = rhsTypeInfo.IsGenericTypeDefinition
+                    ? this.FromType(
+                        rhsTypeInfo.MakeGenericType(GetGenericArguments(lhsBaseTypeInfo)).GetTypeInfo())
+                    : rhsType;
+
+                var argumentTypeMap = GetGenericArguments(lhsBaseTypeInfo)
+                    .Zip(GetGenericArguments(rhsTypeInfo),
+                        (lhsArgument, rhsArgument) => new { lhsArgument, rhsArgument })
+                    .Where(entry => entry.rhsArgument.IsGenericParameter == false)
+                    .ToDictionary(entry => entry.lhsArgument, entry => entry.rhsArgument);
+                var lhsMappedArguments = GetGenericArguments(lhsTypeInfo)
+                    .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
+                    .ToArray();
+                var combinedTypeInfo = lhsTypeInfo.MakeGenericType(lhsMappedArguments).GetTypeInfo();
+
+                return new NespCalculateCombinedResult(
+                    lhsType, rhsFixedType, this.FromType(combinedTypeInfo));
+            }
+
+            if (rhsTypeInfo.IsGenericTypeDefinition)
+            {
+                // DerivedClassType2  ---+--- BaseClassType<T>
+                //            vvvvvvvvv
+                // DerivedClassType2  ---+                       [Widen: int]
+
+                // ImplementedClassType2   ---+--- IInterfaceType<T>
+                //            vvvvvvvvv
+                // ImplementedClassType2   ---+                       [Widen: int]
+
+                // Calculate T --> T2 relation result
+                var rhsFixedType = this.FromType(
+                    rhsTypeInfo.MakeGenericType(GetGenericArguments(lhsBaseTypeInfo)).GetTypeInfo());
+
+                return new NespCalculateCombinedResult(lhsType, rhsFixedType, lhsType);
+            }
+
+            return null;
+        }
+
+        internal NespCalculateCombinedResult CalculateCombinedBothRuntimeTypes(
             NespRuntimeTypeInformation lhsType, NespRuntimeTypeInformation rhsType)
         {
             var lhsTypeInfo = lhsType.typeInfo;
@@ -351,158 +403,17 @@ namespace Nesp.MD
                 return new NespCalculateCombinedResult(lhsType, rhsType, rhsType);
             }
 
-            var rhsEquatableTypeInfo = GetEquatableTypeInfo(rhsTypeInfo);
-            var lhsBaseTypeInfo = lhsTypeInfo
-                .Traverse(t => t.BaseType?.GetTypeInfo())
-                .Concat(lhsTypeInfo.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
-                .FirstOrDefault(t => GetEquatableTypeInfo(t).Equals(rhsEquatableTypeInfo));
-            if (lhsBaseTypeInfo != null)
+            var result = this.TryCalculateCombinedComplexTypes(lhsType, rhsType, lhsTypeInfo, rhsTypeInfo);
+            if (result.HasValue)
             {
-                // Calculate T --> T2 relation result
-                var rhsFixedType = (rhsTypeInfo.IsGenericTypeDefinition)
-                    ? this.FromType(rhsTypeInfo.MakeGenericType(GetGenericArguments(lhsBaseTypeInfo)).GetTypeInfo())
-                    : rhsType;
-
-                if (lhsTypeInfo.IsGenericTypeDefinition)
-                {
-                    // DerivedClassType1<T>   ---+--- BaseClassType<T2>
-                    //            vvvvvvvvv
-                    // DerivedClassType1<T>   ---+                        [Widen]
-
-                    // DerivedClassType1<T>    ---+--- BaseClassType<int>
-                    //            vvvvvvvvv
-                    // DerivedClassType1<int>  ---+                       [Widen: int]
-
-                    // DerivedClassType4<T, U>   ---+--- BaseClassType<T2>
-                    //            vvvvvvvvv
-                    // DerivedClassType4<T, U>   ---+                     [Widen]
-
-                    // DerivedClassType5<T>  ---+--- BaseClassType<T2>
-                    //            vvvvvvvvv
-                    // DerivedClassType5<T>  ---+                       [Widen: int]
-                    
-                    // DerivedClassType6<T, U>  ---+--- DerivedClassType4<T2, U2>
-                    //            vvvvvvvvv
-                    // DerivedClassType6<T, U>  ---+                              [Widen: U, int]
-
-                    // ImplementedClassType1<T>   ---+--- IInterfaceType<T2>
-                    //            vvvvvvvvv
-                    // ImplementedClassType1<T>   ---+                       [Widen]
-
-                    // ImplementedClassType1<T>   ---+--- IInterfaceType<int>
-                    //            vvvvvvvvv
-                    // ImplementedClassType1<int> ---+                           [Widen: int]
-
-                    // ImplementedClassType4<T, U>   ---+--- IInterfaceType<T2>
-                    //            vvvvvvvvv
-                    // ImplementedClassType4<T, U>   ---+                       [Widen]
-
-                    // ImplementedClassType5<T>  ---+--- IInterfaceType<T2>
-                    //            vvvvvvvvv
-                    // ImplementedClassType5<T>  ---+                        [Widen: int]
-
-                    var argumentTypeMap = GetGenericArguments(lhsBaseTypeInfo)
-                        .Zip(GetGenericArguments(rhsTypeInfo),
-                            (lhsArgument, rhsArgument) => new { lhsArgument, rhsArgument })
-                        .Where(entry => entry.rhsArgument.IsGenericParameter == false)
-                        .ToDictionary(entry => entry.lhsArgument, entry => entry.rhsArgument);
-                    var lhsMappedArguments = GetGenericArguments(lhsTypeInfo)
-                        .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
-                        .ToArray();
-                    var combinedTypeInfo = lhsTypeInfo.MakeGenericType(lhsMappedArguments).GetTypeInfo();
-
-                    return new NespCalculateCombinedResult(
-                        lhsType, rhsFixedType, this.FromType(combinedTypeInfo));
-                }
-                else
-                {
-                    // DerivedClassType2  ---+--- BaseClassType<T>
-                    //            vvvvvvvvv
-                    // DerivedClassType2  ---+                       [Widen: int]
-
-                    // ImplementedClassType2   ---+--- IInterfaceType<T>
-                    //            vvvvvvvvv
-                    // ImplementedClassType2   ---+                       [Widen: int]
-
-                    return new NespCalculateCombinedResult(lhsType, rhsFixedType, lhsType);
-                }
+                return result.Value;
             }
 
-            var lhsEquatableTypeInfo = GetEquatableTypeInfo(lhsTypeInfo);
-            var rhsBaseTypeInfo = rhsTypeInfo
-                .Traverse(t => t.BaseType?.GetTypeInfo())
-                .Concat(rhsTypeInfo.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
-                .FirstOrDefault(t => lhsEquatableTypeInfo.Equals(GetEquatableTypeInfo(t)));
-            if (rhsBaseTypeInfo != null)
+            result = this.TryCalculateCombinedComplexTypes(rhsType, lhsType, rhsTypeInfo, lhsTypeInfo);
+            if (result.HasValue)
             {
-                // Calculate T --> T2 relation result
-                var lhsFixedType = (lhsTypeInfo.IsGenericTypeDefinition)
-                    ? this.FromType(lhsTypeInfo.MakeGenericType(GetGenericArguments(rhsBaseTypeInfo)).GetTypeInfo())
-                    : lhsType;
-
-                if (rhsTypeInfo.IsGenericTypeDefinition)
-                {
-                    // BaseClassType<T2>    ---+--- DerivedClassType1<T>
-                    //            vvvvvvvvv
-                    //                         +--- DerivedClassType1<T> [Widen]
-
-                    // BaseClassType<int>    ---+--- DerivedClassType1<T>
-                    //            vvvvvvvvv
-                    //                          +--- DerivedClassType1<int>  [Widen: int]
-
-                    // BaseClassType<T2>    ---+--- DerivedClassType4<T, U>
-                    //            vvvvvvvvv
-                    //                         +--- DerivedClassType4<T, U>  [Widen]
-
-                    // BaseClassType<T2>  ---+--- DerivedClassType5<T>
-                    //            vvvvvvvvv
-                    //                       +--- DerivedClassType5<T>  [Widen: int]
-
-                    // DerivedClassType4<T2, U2>  ---+--- DerivedClassType6<T, U>
-                    //            vvvvvvvvv
-                    //                               +--- DerivedClassType6<T, U> [Widen: U, int]
-
-                    // IInterfaceType<T2>    ---+--- ImplementedClassType1<T>
-                    //            vvvvvvvvv
-                    //                          +--- ImplementedClassType1<T> [Widen]
-
-                    // IInterfaceType<int>    ---+--- ImplementedClassType1<T>
-                    //            vvvvvvvvv
-                    //                           +--- ImplementedClassType1<int> [Widen: int]
-
-                    // IInterfaceType<T2>    ---+--- ImplementedClassType4<T, U>
-                    //            vvvvvvvvv
-                    //                          +--- ImplementedClassType4<T, U> [Widen]
-
-                    // IInterfaceType<T2>  ---+--- ImplementedClassType5<T>
-                    //            vvvvvvvvv
-                    //                        +--- ImplementedClassType5<T>  [Widen: int]
-
-                    var argumentTypeMap = GetGenericArguments(rhsBaseTypeInfo)
-                        .Zip(GetGenericArguments(lhsTypeInfo),
-                            (rhsArgument, lhsArgument) => new { rhsArgument, lhsArgument })
-                        .Where(entry => entry.lhsArgument.IsGenericParameter == false)
-                        .ToDictionary(entry => entry.rhsArgument, entry => entry.lhsArgument);
-                    var rhsMappedArguments = GetGenericArguments(rhsTypeInfo)
-                        .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
-                        .ToArray();
-                    var combinedTypeInfo = rhsTypeInfo.MakeGenericType(rhsMappedArguments).GetTypeInfo();
-
-                    return new NespCalculateCombinedResult(
-                        lhsFixedType, rhsType, this.FromType(combinedTypeInfo));
-                }
-                else
-                {
-                    // BaseClassType<T>  ---+--- DerivedClassType2
-                    //            vvvvvvvvv
-                    //                      +--- DerivedClassType2   [Widen: int]
-
-                    // IInterfaceType<T>    ---+--- ImplementedClassType2
-                    //            vvvvvvvvv
-                    //                         +--- ImplementedClassType2 [Widen: int]
-
-                    return new NespCalculateCombinedResult(lhsFixedType, rhsType, rhsType);
-                }
+                return new NespCalculateCombinedResult(
+                    result.Value.RightFixed, result.Value.LeftFixed, result.Value.Combined);
             }
 
             // BaseX ------+-- int
@@ -512,47 +423,181 @@ namespace Nesp.MD
             return new NespCalculateCombinedResult(lhsType, rhsType,
                 this.GetOrAddPolymorphicType(new[] { lhsType, rhsType }.OrderBy(t => t)));
         }
+        #endregion
 
-        internal NespCalculateCombinedResult CalculateCombinedBothTypes(
+        #region Calculate by different types
+        private static IEnumerable<NespRuntimeTypeInformation> UnwrapRuntimeTypes<T>(
+            IEnumerable<T> enumerable, Func<T, NespTypeInformation> extractor)
+        {
+            foreach (var value in enumerable)
+            {
+                var type = extractor(value);
+                var pt = type as NespPolymorphicTypeInformation;
+                if (pt != null)
+                {
+                    foreach (var inner in pt.types)
+                    {
+                        yield return inner;
+                    }
+                }
+                else
+                {
+                    yield return (NespRuntimeTypeInformation)type;
+                }
+            }
+        }
+
+        private NespTypeInformation GetOrAddTypeFromTypes(NespRuntimeTypeInformation[] types)
+        {
+            return (types.Length >= 2)
+                ? (NespTypeInformation)this.GetOrAddPolymorphicType(types)
+                : types[0];
+        }
+
+        private NespTypeInformation RecalculateByCombinedRuntimeType(
+            NespPolymorphicTypeInformation rhsType,
+            NespRuntimeTypeInformation[] combinedRuntimeTypes,
+            Func<NespCalculateCombinedResult, NespTypeInformation> extractor)
+        {
+            var recomputedResultsByRuntimeType =
+                (from combinedRuntimeType in combinedRuntimeTypes
+                 from rt in rhsType.types
+                 select this.CalculateCombinedType(combinedRuntimeType, rt))
+                .ToArray();
+
+            var recomputedCombinedTypes =
+                UnwrapRuntimeTypes(recomputedResultsByRuntimeType, extractor)
+                .Distinct()
+                .OrderBy(t => t)
+                .ToArray();
+
+            return this.GetOrAddTypeFromTypes(recomputedCombinedTypes);
+        }
+
+        internal NespCalculateCombinedResult CalculateCombinedDifferentTypes(
             NespRuntimeTypeInformation lhsType, NespPolymorphicTypeInformation rhsType)
         {
-            if (rhsType.types.Any(t => lhsType.typeInfo.IsAssignableFrom(t.typeInfo)))
+            var results = rhsType.types
+                .Select(rt => this.CalculateCombinedType(lhsType, rt))
+                .ToArray();
+
+            var combinedRuntimeTypes = results
+                .Collect(result => result.Combined as NespRuntimeTypeInformation)
+                .Distinct()
+                .ToArray();
+            if (combinedRuntimeTypes.Length >= 1)
             {
                 // BaseX ------+-- int
                 //             +-- DerivedY
                 //         vvvvvvvvv
                 //             +-- int
                 //             +-- DerivedY [Widen: BaseX]
-                return new NespCalculateCombinedResult(lhsType, rhsType, rhsType);
+
+                // BaseX ------+-- int
+                //             +-- DerivedY
+                //             +-- DerivedZ
+                //         vvvvvvvvv
+                //             +-- int
+                //             +-- DerivedY [Widen: BaseX]
+                //             +-- DerivedZ [Widen: BaseX]
+
+                var combinedType = this.RecalculateByCombinedRuntimeType(
+                    rhsType, combinedRuntimeTypes, result => result.Combined);
+                var leftFixedType = this.RecalculateByCombinedRuntimeType(
+                    rhsType, combinedRuntimeTypes, result => result.LeftFixed);
+                var rightFixedType = this.RecalculateByCombinedRuntimeType(
+                    rhsType, combinedRuntimeTypes, result => result.RightFixed);
+
+                return new NespCalculateCombinedResult(leftFixedType, rightFixedType, combinedType);
             }
 
-            var widen = rhsType.types
-                .Select(t => t.typeInfo.IsAssignableFrom(lhsType.typeInfo) ? lhsType : t)
+            // DerivedY ------+-- int
+            //                +-- BaseX
+            //            vvvvvvvvv
+            //                +-- int
+            //                +-- DerivedY [Widen: BaseX]
+
+            // BaseX ------+-- int
+            //             +-- string
+            //         vvvvvvvvv
+            //             +-- int
+            //             +-- string
+            //             +-- BaseX  [Combined: BaseX]
+
+            var combinedResults =
+                UnwrapRuntimeTypes(results, result => result.Combined)
                 .Distinct()
                 .OrderBy(t => t)
                 .ToArray();
-            if (widen.SequenceEqual(rhsType.types) == false)
-            {
-                // DerivedY ------+-- int
-                //                +-- BaseX
-                //            vvvvvvvvv
-                //                +-- int
-                //                +-- DerivedY [Widen: BaseX]
-                return new NespCalculateCombinedResult(
-                    lhsType, rhsType, this.GetOrAddPolymorphicType(widen));
-            }
-            else
-            {
-                // BaseX ------+-- int
-                //             +-- string
-                //         vvvvvvvvv
-                //             +-- int
-                //             +-- string
-                //             +-- BaseX  [Combined: BaseX]
-                return new NespCalculateCombinedResult(
-                    lhsType, rhsType, this.GetOrAddPolymorphicType(widen.Concat(new[] { lhsType }).OrderBy(t => t)));
-            }
+            var combinedResultType = this.GetOrAddTypeFromTypes(combinedResults);
+
+            var leftFixedResults =
+                UnwrapRuntimeTypes(results, result => result.LeftFixed)
+                .Distinct()
+                .OrderBy(t => t)
+                .ToArray();
+            var leftFixedResultType = this.GetOrAddTypeFromTypes(leftFixedResults);
+
+            var rightFixedResults =
+                UnwrapRuntimeTypes(results, result => result.RightFixed)
+                .Distinct()
+                .OrderBy(t => t)
+                .ToArray();
+            var rightFixedResultType = this.GetOrAddTypeFromTypes(rightFixedResults);
+
+            return new NespCalculateCombinedResult(leftFixedResultType, rightFixedResultType, combinedResultType);
         }
+        #endregion
+
+        #region Calculate by both polymorphic types
+        internal NespCalculateCombinedResult CalculateCombinedBothPolymorphicTypes(
+            NespPolymorphicTypeInformation lhsType, NespPolymorphicTypeInformation rhsType)
+        {
+            // TODO: Reduce calculation costs
+            var assignableWiden = lhsType.types
+                .SelectMany(t1 => rhsType.types
+                    .SelectMany(t2 => t1.typeInfo.IsAssignableFrom(t2.typeInfo)
+                        ? new[] { t2 }
+                        : t2.typeInfo.IsAssignableFrom(t1.typeInfo)
+                            ? new[] { t1 }
+                            : emptyRuntimeTypes));
+            var combinedUnassignablesLeft = lhsType.types
+                .SelectMany(t1 => rhsType.types
+                    .All(t2 => !t1.typeInfo.IsAssignableFrom(t2.typeInfo) && !t2.typeInfo.IsAssignableFrom(t1.typeInfo))
+                    ? new[] { t1 }
+                    : emptyRuntimeTypes);
+            var combinedUnassignablesRight = rhsType.types
+                .SelectMany(t2 => lhsType.types
+                    .All(t1 => !t1.typeInfo.IsAssignableFrom(t2.typeInfo) && !t2.typeInfo.IsAssignableFrom(t1.typeInfo))
+                    ? new[] { t2 }
+                    : emptyRuntimeTypes);
+            var combined = assignableWiden
+                .Concat(combinedUnassignablesLeft)
+                .Concat(combinedUnassignablesRight)
+                .Distinct()
+                .OrderBy(t => t)
+                .ToArray();
+            if (combined.SequenceEqual(lhsType.types) == false)
+            {
+                // IE<int>   --+---+-- BaseX
+                // DerivedY  --+   +-- int[]
+                // string    --+
+                //           vvvvvvvvv
+                // int[]     --+                 [Widen: IE<int>]
+                // DerivedY  --+                 [Widen: BaseX]
+                // string    --+                 [Combined: string]
+                return new NespCalculateCombinedResult(
+                    lhsType, rhsType, this.GetOrAddPolymorphicType(combined));
+            }
+
+            // int[]    --+---+-- BaseX
+            // DerivedY --+   +-- int[]
+            //           vvvvvvvvv
+            // int[]    --+
+            // DerivedY --+
+            return new NespCalculateCombinedResult(lhsType, rhsType, lhsType);
+        }
+        #endregion
 
         public NespCalculateCombinedResult CalculateCombinedType(
             NespTypeInformation lhsType, NespTypeInformation rhsType)

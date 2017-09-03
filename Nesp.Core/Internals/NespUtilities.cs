@@ -304,37 +304,15 @@ namespace Nesp.Internals
             }
         }
 
-        public static IEnumerable<V> UnbalancedZip<T, U, V>(
-            this IEnumerable<T> enumerable0, IEnumerable<U> enumerable1, Func<T, U, V> predict)
+        public static IEnumerable<U> Collect<T, U>(this IEnumerable<T> enumerable, Func<T, U> selector)
+            where U : class
         {
-            using (var enumerator0 = enumerable0.GetEnumerator())
+            foreach (var value in enumerable)
             {
-                using (var enumerator1 = enumerable1.GetEnumerator())
+                var result = selector(value);
+                if (result != null)
                 {
-                loop:
-                    var next0 = enumerator0.MoveNext();
-                    var next1 = enumerator1.MoveNext();
-                    if (next0 && next1)
-                    {
-                        yield return predict(enumerator0.Current, enumerator1.Current);
-                        goto loop;
-                    }
-                    if (next0)
-                    {
-                        do
-                        {
-                            yield return predict(enumerator0.Current, default(U));
-                        }
-                        while (enumerator0.MoveNext());
-                    }
-                    else if (next1)
-                    {
-                        do
-                        {
-                            yield return predict(default(T), enumerator1.Current);
-                        }
-                        while (enumerator1.MoveNext());
-                    }
+                    yield return result;
                 }
             }
         }
