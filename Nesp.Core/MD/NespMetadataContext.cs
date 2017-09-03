@@ -380,6 +380,10 @@ namespace Nesp.MD
                     // DerivedClassType5<T>  ---+--- BaseClassType<T2>
                     //            vvvvvvvvv
                     // DerivedClassType5<T>  ---+                       [Widen: int]
+                    
+                    // DerivedClassType6<T, U>  ---+--- DerivedClassType4<T2, U2>
+                    //            vvvvvvvvv
+                    // DerivedClassType6<T, U>  ---+                              [Widen: U, int]
 
                     // ImplementedClassType1<T>   ---+--- IInterfaceType<T2>
                     //            vvvvvvvvv
@@ -453,6 +457,10 @@ namespace Nesp.MD
                     // BaseClassType<T2>  ---+--- DerivedClassType5<T>
                     //            vvvvvvvvv
                     //                       +--- DerivedClassType5<T>  [Widen: int]
+
+                    // DerivedClassType4<T2, U2>  ---+--- DerivedClassType6<T, U>
+                    //            vvvvvvvvv
+                    //                               +--- DerivedClassType6<T, U> [Widen: U, int]
 
                     // IInterfaceType<T2>    ---+--- ImplementedClassType1<T>
                     //            vvvvvvvvv

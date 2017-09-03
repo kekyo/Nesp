@@ -568,6 +568,44 @@ namespace Nesp.MD
             Assert.AreSame(derivedType, result1.LeftFixed);
             Assert.AreSame(baseInt32Type, result1.RightFixed);
         }
+
+        public class DerivedClassType6<T, U> : DerivedClassType4<U, int>
+        { }
+
+        [Test]
+        public void CalculateCombinedGenericDefinitionWithComplexArgumentsTypeAndGenericDefinitionTypeTest()
+        {
+            // DerivedClassType6<T, U>  ---+--- DerivedClassType4<T2, U2>
+            //            vvvvvvvvv
+            // DerivedClassType6<T, U>  ---+                              [Widen: U, int]
+
+            // DerivedClassType4<T2, U2>  ---+--- DerivedClassType6<T, U>
+            //            vvvvvvvvv
+            //                               +--- DerivedClassType6<T, U> [Widen: U, int]
+
+            var context = new NespMetadataContext();
+            var derivedType = context.FromType(typeof(DerivedClassType6<,>).GetTypeInfo());
+            var baseType = context.FromType(typeof(DerivedClassType4<,>).GetTypeInfo());
+
+            var result1 = context.CalculateCombinedType(derivedType, baseType);
+            var result2 = context.CalculateCombinedType(baseType, derivedType);
+
+            Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
+
+            Assert.AreSame(derivedType, result1.Combined);
+            Assert.AreSame(derivedType, result1.LeftFixed);
+            Assert.AreNotSame(baseType, result1.RightFixed);
+
+            var dt = ((NespRuntimeTypeInformation)result1.RightFixed).typeInfo;
+
+            Assert.AreEqual(typeof(DerivedClassType4<,>), dt.GetGenericTypeDefinition());
+
+            var baseTypeArguments = dt.GetTypeInfo().GenericTypeArguments;
+            Assert.AreEqual(typeof(DerivedClassType6<,>), baseTypeArguments[0].DeclaringType);
+            Assert.AreEqual(typeof(int), baseTypeArguments[1]);
+        }
         #endregion
 
         #region CalculateCombined (Generic interface)
@@ -816,6 +854,47 @@ namespace Nesp.MD
             Assert.AreSame(implementedType, result1.Combined);
             Assert.AreSame(implementedType, result1.LeftFixed);
             Assert.AreSame(interfaceInt32Type, result1.RightFixed);
+        }
+
+        public interface IInterfaceType<T, U>
+        { }
+
+        public class ImplementedClassType6<T, U> : IInterfaceType<U, int>
+        { }
+
+        [Test]
+        public void CalculateCombinedGenericDefinitionInterfaceWithComplexArgumentsTypeAndGenericDefinitionInterfaceTypeTest()
+        {
+            // ImplementedClassType6<T, U>  ---+--- IInterfaceType<T2, U2>
+            //            vvvvvvvvv
+            // ImplementedClassType6<T, U>  ---+                           [Widen: U, int]
+
+            // IInterfaceType<T2, U2>  ---+--- ImplementedClassType6<T, U>
+            //            vvvvvvvvv
+            //                            +--- ImplementedClassType6<T, U> [Widen: U, int]
+
+            var context = new NespMetadataContext();
+            var implementedType = context.FromType(typeof(ImplementedClassType6<,>).GetTypeInfo());
+            var interfaceType = context.FromType(typeof(IInterfaceType<,>).GetTypeInfo());
+
+            var result1 = context.CalculateCombinedType(implementedType, interfaceType);
+            var result2 = context.CalculateCombinedType(interfaceType, implementedType);
+
+            Assert.AreSame(result1.Combined, result2.Combined);
+            Assert.AreSame(result1.LeftFixed, result2.RightFixed);
+            Assert.AreSame(result1.RightFixed, result2.LeftFixed);
+
+            Assert.AreSame(implementedType, result1.Combined);
+            Assert.AreSame(implementedType, result1.LeftFixed);
+            Assert.AreNotSame(interfaceType, result1.RightFixed);
+
+            var dt = ((NespRuntimeTypeInformation)result1.RightFixed).typeInfo;
+
+            Assert.AreEqual(typeof(IInterfaceType<,>), dt.GetGenericTypeDefinition());
+
+            var baseTypeArguments = dt.GetTypeInfo().GenericTypeArguments;
+            Assert.AreEqual(typeof(ImplementedClassType6<,>), baseTypeArguments[0].DeclaringType);
+            Assert.AreEqual(typeof(int), baseTypeArguments[1]);
         }
         #endregion
     }
