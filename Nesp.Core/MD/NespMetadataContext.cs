@@ -309,6 +309,31 @@ namespace Nesp.MD
             var lhsTypeInfo = lhsType.typeInfo;
             var rhsTypeInfo = rhsType.typeInfo;
 
+            if (rhsTypeInfo.IsAssignableFrom(lhsTypeInfo))
+            {
+                // DerivedY ------+-- BaseX
+                //            vvvvvvvvv
+                // DerivedY ------+         [Widen: BaseX]
+
+                // BaseClassType<T> ------+-- BaseClassType<T2>
+                //            vvvvvvvvv
+                // BaseClassType<T> ------+                     [Normalized]
+
+                // IInterfaceType<T> ------+-- IInterfaceType<T2>
+                //            vvvvvvvvv
+                // IInterfaceType<T> ------+                     [Normalized]
+
+                // DerivedClassType3<T>  ---+--- BaseClassType<int>
+                //            vvvvvvvvv
+                // DerivedClassType3<T>  ---+                       [Widen: int]
+
+                // ImplementedClassType1<T>   ---+--- IInterfaceType<int>
+                //            vvvvvvvvv
+                // ImplementedClassType1<T>   ---+                         [Widen: int]
+
+                return new NespCalculateCombinedResult(lhsType, rhsType, lhsType);
+            }
+
             if (lhsTypeInfo.IsAssignableFrom(rhsTypeInfo))
             {
                 // BaseX ------+-- DerivedY
@@ -324,23 +349,6 @@ namespace Nesp.MD
                 //                           +--- ImplementedClassType1<T> [Widen: int]
 
                 return new NespCalculateCombinedResult(lhsType, rhsType, rhsType);
-            }
-
-            if (rhsTypeInfo.IsAssignableFrom(lhsTypeInfo))
-            {
-                // DerivedY ------+-- BaseX
-                //            vvvvvvvvv
-                // DerivedY ------+         [Widen: BaseX]
-
-                // DerivedClassType3<T>  ---+--- BaseClassType<int>
-                //            vvvvvvvvv
-                // DerivedClassType3<T>  ---+                       [Widen: int]
-
-                // ImplementedClassType1<T>   ---+--- IInterfaceType<int>
-                //            vvvvvvvvv
-                // ImplementedClassType1<T>   ---+                         [Widen: int]
-
-                return new NespCalculateCombinedResult(lhsType, rhsType, lhsType);
             }
 
             var rhsEquatableTypeInfo = GetEquatableTypeInfo(rhsTypeInfo);

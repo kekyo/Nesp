@@ -102,7 +102,7 @@ namespace Nesp.MD
 
         #region CalculateCombined
         [Test]
-        public void CalculateCombinedBothEqualTypesTest()
+        public void CalculateCombinedSameTypesTest()
         {
             // BaseX ------+-- DerivedY
             //            vvvvvvvvv
@@ -370,6 +370,23 @@ namespace Nesp.MD
         public abstract class BaseClassType<T>
         { }
 
+        [Test]
+        public void CalculateCombinedSameGenericDefinitionTypesTest()
+        {
+            // BaseClassType<T> ------+-- BaseClassType<T2>
+            //            vvvvvvvvv
+            // BaseClassType<T> ------+                     [Normalized]
+
+            var context = new NespMetadataContext();
+            var baseType = context.FromType(typeof(BaseClassType<>).GetTypeInfo());
+
+            var result = context.CalculateCombinedType(baseType, baseType);
+
+            Assert.AreSame(baseType, result.LeftFixed);
+            Assert.AreSame(baseType, result.RightFixed);
+            Assert.AreSame(baseType, result.Combined);
+        }
+
         public class DerivedClassType1<T> : BaseClassType<T>
         { }
 
@@ -556,6 +573,23 @@ namespace Nesp.MD
         #region CalculateCombined (Generic interface)
         public interface IInterfaceType<T>
         { }
+
+        [Test]
+        public void CalculateCombinedSameGenericDefinitionInterfaceTypesTest()
+        {
+            // IInterfaceType<T> ------+-- IInterfaceType<T2>
+            //            vvvvvvvvv
+            // IInterfaceType<T> ------+                     [Normalized]
+
+            var context = new NespMetadataContext();
+            var interfaceType = context.FromType(typeof(IInterfaceType<>).GetTypeInfo());
+
+            var result = context.CalculateCombinedType(interfaceType, interfaceType);
+
+            Assert.AreSame(interfaceType, result.LeftFixed);
+            Assert.AreSame(interfaceType, result.RightFixed);
+            Assert.AreSame(interfaceType, result.Combined);
+        }
 
         public class ImplementedClassType1<T> : IInterfaceType<T>
         { }
