@@ -83,7 +83,7 @@ namespace Nesp.MD
 
     public sealed class NespRuntimeTypeInformation : NespTypeInformation
     {
-        internal readonly TypeInfo typeInfo;
+        private readonly TypeInfo typeInfo;
 
         internal NespRuntimeTypeInformation(TypeInfo typeInfo)
         {
@@ -95,7 +95,63 @@ namespace Nesp.MD
             .Split('.')
             .Last();
 
-        public TypeInfo RuntimeType => this.typeInfo;
+        public bool IsGenericTypeDefinition => this.typeInfo.IsGenericTypeDefinition;
+        public bool IsGenericParameter => this.typeInfo.IsGenericParameter;
+
+        public NespRuntimeTypeInformation GetDeclaringType(NespMetadataContext context)
+        {
+            var declaringTypeInfo = typeInfo.DeclaringType?.GetTypeInfo();
+            return (declaringTypeInfo != null)
+                ? (NespRuntimeTypeInformation)context.FromType(declaringTypeInfo)
+                : null;
+        }
+
+        public NespRuntimeTypeInformation[] GetRelatedTypes(NespMetadataContext context)
+        {
+            return typeInfo
+                .Traverse(t => t.BaseType?.GetTypeInfo())
+                .Concat(typeInfo.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
+                .Select(ti => (NespRuntimeTypeInformation)context.FromType(ti))
+                .ToArray();
+        }
+
+        public NespRuntimeTypeInformation GetGenericTypeDefinition(NespMetadataContext context)
+        {
+            return (NespRuntimeTypeInformation)context.FromType(
+                typeInfo.GetGenericTypeDefinition().GetTypeInfo());
+        }
+
+        public NespRuntimeTypeInformation[] GetGenericArguments(NespMetadataContext context)
+        {
+            return (typeInfo.IsGenericTypeDefinition
+                ? typeInfo.GenericTypeParameters
+                : typeInfo.GenericTypeArguments)
+                .Select(t => (NespRuntimeTypeInformation)context.FromType(t.GetTypeInfo()))
+                .ToArray();
+        }
+
+        public NespRuntimeTypeInformation MakeGenericType(
+            NespMetadataContext context, IEnumerable<NespRuntimeTypeInformation> types)
+        {
+            var genericTypeInfo = typeInfo.MakeGenericType(types
+                .Select(t => t.typeInfo.AsType())
+                .ToArray())
+                .GetTypeInfo();
+            return (NespRuntimeTypeInformation)context.FromType(genericTypeInfo);
+        }
+
+        internal bool IsAssignableFrom(NespRuntimeTypeInformation fromType)
+        {
+            return typeInfo.IsAssignableFrom(fromType.typeInfo);
+        }
+
+        internal NespRuntimeTypeInformation GetEquatableType(NespMetadataContext context)
+        {
+            return (NespRuntimeTypeInformation)context.FromType(
+                (typeInfo.IsGenericType && !typeInfo.IsGenericTypeDefinition)
+                ? typeInfo.GetGenericTypeDefinition().GetTypeInfo()
+                : typeInfo);
+        }
 
         internal override NespCalculateCombinedResult CalculateCombinedTypeWith(
             NespMetadataContext context, NespTypeInformation rhsType)
@@ -182,7 +238,7 @@ namespace Nesp.MD
 
     public sealed class NespMetadataContext
     {
-        private static readonly NespRuntimeTypeInformation[] emptyRuntimeTypes =
+        internal static readonly NespRuntimeTypeInformation[] emptyRuntimeTypes =
             new NespRuntimeTypeInformation[0];
 
         private sealed class RuntimeTypesComparer : IEqualityComparer<NespRuntimeTypeInformation[]>
@@ -249,35 +305,19 @@ namespace Nesp.MD
         }
 
         #region Calculate by both runtime types
-        private static TypeInfo GetEquatableTypeInfo(TypeInfo type)
-        {
-            return (type.IsGenericType && !type.IsGenericTypeDefinition)
-                ? type.GetGenericTypeDefinition().GetTypeInfo()
-                : type;
-        }
-
-        private static Type[] GetGenericArguments(TypeInfo type)
-        {
-            return type.IsGenericTypeDefinition
-                ? type.GenericTypeParameters
-                : type.GenericTypeArguments;
-        }
-
         private NespCalculateCombinedResult? TryCalculateCombinedComplexTypes(
-            NespRuntimeTypeInformation lhsType, NespRuntimeTypeInformation rhsType,
-            TypeInfo lhsTypeInfo, TypeInfo rhsTypeInfo)
+            NespRuntimeTypeInformation lhsType, NespRuntimeTypeInformation rhsType)
         {
-            var rhsEquatableTypeInfo = GetEquatableTypeInfo(rhsTypeInfo);
-            var lhsBaseTypeInfo = lhsTypeInfo
-                .Traverse(t => t.BaseType?.GetTypeInfo())
-                .Concat(lhsTypeInfo.ImplementedInterfaces.Select(t => t.GetTypeInfo()))
-                .FirstOrDefault(t => GetEquatableTypeInfo(t).Equals(rhsEquatableTypeInfo));
-            if (lhsBaseTypeInfo == null)
+            var rhsEquatableType = rhsType.GetEquatableType(this);
+            var lhsBaseType = lhsType
+                .GetRelatedTypes(this)
+                .FirstOrDefault(t => t.GetEquatableType(this).Equals(rhsEquatableType));
+            if (lhsBaseType == null)
             {
                 return null;
             }
 
-            if (lhsTypeInfo.IsGenericTypeDefinition)
+            if (lhsType.IsGenericTypeDefinition)
             {
                 // DerivedClassType1<T>   ---+--- BaseClassType<T2>
                 //            vvvvvvvvv
@@ -316,26 +356,25 @@ namespace Nesp.MD
                 // ImplementedClassType5<T>  ---+                        [Widen: int]
 
                 // Calculate T --> T2 relation result
-                var rhsFixedType = rhsTypeInfo.IsGenericTypeDefinition
-                    ? this.FromType(
-                        rhsTypeInfo.MakeGenericType(GetGenericArguments(lhsBaseTypeInfo)).GetTypeInfo())
+                var rhsFixedType = rhsType.IsGenericTypeDefinition
+                    ? rhsType.MakeGenericType(this, lhsBaseType.GetGenericArguments(this))
                     : rhsType;
 
-                var argumentTypeMap = GetGenericArguments(lhsBaseTypeInfo)
-                    .Zip(GetGenericArguments(rhsTypeInfo),
+                var argumentTypeMap = lhsBaseType.GetGenericArguments(this)
+                    .Zip(rhsType.GetGenericArguments(this),
                         (lhsArgument, rhsArgument) => new { lhsArgument, rhsArgument })
                     .Where(entry => entry.rhsArgument.IsGenericParameter == false)
                     .ToDictionary(entry => entry.lhsArgument, entry => entry.rhsArgument);
-                var lhsMappedArguments = GetGenericArguments(lhsTypeInfo)
+                var lhsMappedArguments = lhsType.GetGenericArguments(this)
                     .Select(t => argumentTypeMap.TryGetValue(t, out var r) ? r : t)
                     .ToArray();
-                var combinedTypeInfo = lhsTypeInfo.MakeGenericType(lhsMappedArguments).GetTypeInfo();
+                var combinedType = lhsType.MakeGenericType(this, lhsMappedArguments);
 
                 return new NespCalculateCombinedResult(
-                    lhsType, rhsFixedType, this.FromType(combinedTypeInfo));
+                    lhsType, rhsFixedType, combinedType);
             }
 
-            if (rhsTypeInfo.IsGenericTypeDefinition)
+            if (rhsType.IsGenericTypeDefinition)
             {
                 // DerivedClassType2  ---+--- BaseClassType<T>
                 //            vvvvvvvvv
@@ -346,8 +385,8 @@ namespace Nesp.MD
                 // ImplementedClassType2   ---+                       [Widen: int]
 
                 // Calculate T --> T2 relation result
-                var rhsFixedType = this.FromType(
-                    rhsTypeInfo.MakeGenericType(GetGenericArguments(lhsBaseTypeInfo)).GetTypeInfo());
+                var rhsFixedType = rhsType.MakeGenericType(
+                    this, lhsBaseType.GetGenericArguments(this));
 
                 return new NespCalculateCombinedResult(lhsType, rhsFixedType, lhsType);
             }
@@ -358,10 +397,7 @@ namespace Nesp.MD
         internal NespCalculateCombinedResult CalculateCombinedBothRuntimeTypes(
             NespRuntimeTypeInformation lhsType, NespRuntimeTypeInformation rhsType)
         {
-            var lhsTypeInfo = lhsType.typeInfo;
-            var rhsTypeInfo = rhsType.typeInfo;
-
-            if (rhsTypeInfo.IsAssignableFrom(lhsTypeInfo))
+            if (rhsType.IsAssignableFrom(lhsType))
             {
                 // DerivedY ------+-- BaseX
                 //            vvvvvvvvv
@@ -386,7 +422,7 @@ namespace Nesp.MD
                 return new NespCalculateCombinedResult(lhsType, rhsType, lhsType);
             }
 
-            if (lhsTypeInfo.IsAssignableFrom(rhsTypeInfo))
+            if (lhsType.IsAssignableFrom(rhsType))
             {
                 // BaseX ------+-- DerivedY
                 //            vvvvvvvvv
@@ -403,13 +439,13 @@ namespace Nesp.MD
                 return new NespCalculateCombinedResult(lhsType, rhsType, rhsType);
             }
 
-            var result = this.TryCalculateCombinedComplexTypes(lhsType, rhsType, lhsTypeInfo, rhsTypeInfo);
+            var result = this.TryCalculateCombinedComplexTypes(lhsType, rhsType);
             if (result.HasValue)
             {
                 return result.Value;
             }
 
-            result = this.TryCalculateCombinedComplexTypes(rhsType, lhsType, rhsTypeInfo, lhsTypeInfo);
+            result = this.TryCalculateCombinedComplexTypes(rhsType, lhsType);
             if (result.HasValue)
             {
                 return new NespCalculateCombinedResult(
@@ -556,19 +592,19 @@ namespace Nesp.MD
             // TODO: Reduce calculation costs
             var assignableWiden = lhsType.types
                 .SelectMany(t1 => rhsType.types
-                    .SelectMany(t2 => t1.typeInfo.IsAssignableFrom(t2.typeInfo)
+                    .SelectMany(t2 => t1.IsAssignableFrom(t2)
                         ? new[] { t2 }
-                        : t2.typeInfo.IsAssignableFrom(t1.typeInfo)
+                        : t2.IsAssignableFrom(t1)
                             ? new[] { t1 }
                             : emptyRuntimeTypes));
             var combinedUnassignablesLeft = lhsType.types
                 .SelectMany(t1 => rhsType.types
-                    .All(t2 => !t1.typeInfo.IsAssignableFrom(t2.typeInfo) && !t2.typeInfo.IsAssignableFrom(t1.typeInfo))
+                    .All(t2 => !t1.IsAssignableFrom(t2) && !t2.IsAssignableFrom(t1))
                     ? new[] { t1 }
                     : emptyRuntimeTypes);
             var combinedUnassignablesRight = rhsType.types
                 .SelectMany(t2 => lhsType.types
-                    .All(t1 => !t1.typeInfo.IsAssignableFrom(t2.typeInfo) && !t2.typeInfo.IsAssignableFrom(t1.typeInfo))
+                    .All(t1 => !t1.IsAssignableFrom(t2) && !t2.IsAssignableFrom(t1))
                     ? new[] { t2 }
                     : emptyRuntimeTypes);
             var combined = assignableWiden
