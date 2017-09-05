@@ -98,6 +98,12 @@ namespace Nesp.MD
         public bool IsGenericTypeDefinition => this.typeInfo.IsGenericTypeDefinition;
         public bool IsGenericParameter => this.typeInfo.IsGenericParameter;
 
+        public bool IsEqualsOfType(Type type) =>
+            (type != null) && typeInfo.Equals(type.GetTypeInfo());
+
+        public bool IsEqualsOfType(TypeInfo typeInfo) =>
+            (typeInfo != null) && this.typeInfo.Equals(typeInfo);
+
         public NespRuntimeTypeInformation GetDeclaringType(NespMetadataContext context)
         {
             var declaringTypeInfo = typeInfo.DeclaringType?.GetTypeInfo();
@@ -106,7 +112,7 @@ namespace Nesp.MD
                 : null;
         }
 
-        public NespRuntimeTypeInformation[] GetRelatedTypes(NespMetadataContext context)
+        public NespRuntimeTypeInformation[] GetAllRelatedTypes(NespMetadataContext context)
         {
             return typeInfo
                 .Traverse(t => t.BaseType?.GetTypeInfo())
@@ -187,18 +193,16 @@ namespace Nesp.MD
 
     public sealed class NespPolymorphicTypeInformation : NespTypeInformation
     {
-        internal readonly NespRuntimeTypeInformation[] types;
-
         internal NespPolymorphicTypeInformation(string name, NespRuntimeTypeInformation[] types)
         {
             this.Name = name;
-            this.types = types;
+            this.RuntimeTypes = types;
         }
 
         public override string FullName => "'" + this.Name;
         public override string Name { get; }
 
-        public NespRuntimeTypeInformation[] RuntimeTypes => types;
+        public readonly NespRuntimeTypeInformation[] RuntimeTypes;
 
         internal override NespCalculateCombinedResult CalculateCombinedTypeWith(
             NespMetadataContext context, NespTypeInformation rhsType)
@@ -224,13 +228,13 @@ namespace Nesp.MD
 
         public override string ToString()
         {
-            var t = string.Join(",", this.types.Select(rt => rt.ToString()));
+            var t = string.Join(",", this.RuntimeTypes.Select(rt => rt.ToString()));
             return $"{this.FullName} [{t}]";
         }
 
         public override int GetHashCode()
         {
-            return types.Aggregate(
+            return this.RuntimeTypes.Aggregate(
                 this.FullName.GetHashCode(),
                 (last, type) => last ^ type.GetHashCode());
         }
@@ -310,7 +314,7 @@ namespace Nesp.MD
         {
             var rhsEquatableType = rhsType.GetEquatableType(this);
             var lhsBaseType = lhsType
-                .GetRelatedTypes(this)
+                .GetAllRelatedTypes(this)
                 .FirstOrDefault(t => t.GetEquatableType(this).Equals(rhsEquatableType));
             if (lhsBaseType == null)
             {
@@ -471,7 +475,7 @@ namespace Nesp.MD
                 var pt = type as NespPolymorphicTypeInformation;
                 if (pt != null)
                 {
-                    foreach (var inner in pt.types)
+                    foreach (var inner in pt.RuntimeTypes)
                     {
                         yield return inner;
                     }
@@ -497,7 +501,7 @@ namespace Nesp.MD
         {
             var recomputedResultsByRuntimeType =
                 (from combinedRuntimeType in combinedRuntimeTypes
-                 from rt in rhsType.types
+                 from rt in rhsType.RuntimeTypes
                  select this.CalculateCombinedType(combinedRuntimeType, rt))
                 .ToArray();
 
@@ -513,7 +517,7 @@ namespace Nesp.MD
         internal NespCalculateCombinedResult CalculateCombinedDifferentTypes(
             NespRuntimeTypeInformation lhsType, NespPolymorphicTypeInformation rhsType)
         {
-            var results = rhsType.types
+            var results = rhsType.RuntimeTypes
                 .Select(rt => this.CalculateCombinedType(lhsType, rt))
                 .ToArray();
 
@@ -590,20 +594,20 @@ namespace Nesp.MD
             NespPolymorphicTypeInformation lhsType, NespPolymorphicTypeInformation rhsType)
         {
             // TODO: Reduce calculation costs
-            var assignableWiden = lhsType.types
-                .SelectMany(t1 => rhsType.types
+            var assignableWiden = lhsType.RuntimeTypes
+                .SelectMany(t1 => rhsType.RuntimeTypes
                     .SelectMany(t2 => t1.IsAssignableFrom(t2)
                         ? new[] { t2 }
                         : t2.IsAssignableFrom(t1)
                             ? new[] { t1 }
                             : emptyRuntimeTypes));
-            var combinedUnassignablesLeft = lhsType.types
-                .SelectMany(t1 => rhsType.types
+            var combinedUnassignablesLeft = lhsType.RuntimeTypes
+                .SelectMany(t1 => rhsType.RuntimeTypes
                     .All(t2 => !t1.IsAssignableFrom(t2) && !t2.IsAssignableFrom(t1))
                     ? new[] { t1 }
                     : emptyRuntimeTypes);
-            var combinedUnassignablesRight = rhsType.types
-                .SelectMany(t2 => lhsType.types
+            var combinedUnassignablesRight = rhsType.RuntimeTypes
+                .SelectMany(t2 => lhsType.RuntimeTypes
                     .All(t1 => !t1.IsAssignableFrom(t2) && !t2.IsAssignableFrom(t1))
                     ? new[] { t2 }
                     : emptyRuntimeTypes);
@@ -613,7 +617,7 @@ namespace Nesp.MD
                 .Distinct()
                 .OrderBy(t => t)
                 .ToArray();
-            if (combined.SequenceEqual(lhsType.types) == false)
+            if (combined.SequenceEqual(lhsType.RuntimeTypes) == false)
             {
                 // IE<int>   --+---+-- BaseX
                 // DerivedY  --+   +-- int[]

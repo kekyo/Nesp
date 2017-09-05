@@ -598,13 +598,13 @@ namespace Nesp.MD
             Assert.AreSame(derivedType, result1.LeftFixed);
             Assert.AreNotSame(baseType, result1.RightFixed);
 
-            var dt = ((NespRuntimeTypeInformation)result1.RightFixed);
+            var dt = (NespRuntimeTypeInformation)result1.RightFixed;
 
-            Assert.AreEqual(typeof(DerivedClassType4<,>), dt.GetGenericTypeDefinition(context));
+            Assert.IsTrue(dt.GetGenericTypeDefinition(context).IsEqualsOfType(typeof(DerivedClassType4<,>)));
 
             var baseTypeArguments = dt.GetGenericArguments(context);
-            Assert.AreEqual(typeof(DerivedClassType6<,>), baseTypeArguments[0].GetDeclaringType(context));
-            Assert.AreEqual(typeof(int), baseTypeArguments[1]);
+            Assert.IsTrue(baseTypeArguments[0].GetDeclaringType(context).IsEqualsOfType(typeof(DerivedClassType6<,>)));
+            Assert.IsTrue(baseTypeArguments[1].IsEqualsOfType(typeof(int)));
         }
 
         [Test]
@@ -694,12 +694,11 @@ namespace Nesp.MD
             Assert.AreSame(implementedType, result1.LeftFixed);
             Assert.AreNotSame(interfaceType, result1.RightFixed);
 
-            var dt = ((NespRuntimeTypeInformation) result1.RightFixed);
+            var dt = (NespRuntimeTypeInformation)result1.RightFixed;
 
-            Assert.AreEqual(typeof(IInterfaceType<>), dt.GetGenericTypeDefinition(context));
-            Assert.AreEqual(
-                typeof(ImplementedClassType1<>),
-                dt.GetGenericArguments(context)[0].GetDeclaringType(context));
+            Assert.IsTrue(dt.GetGenericTypeDefinition(context).IsEqualsOfType(typeof(IInterfaceType<>)));
+            Assert.IsTrue(dt.GetGenericArguments(context)[0]
+                .GetDeclaringType(context).IsEqualsOfType(typeof(ImplementedClassType1<>)));
         }
 
         [Test]
@@ -755,11 +754,11 @@ namespace Nesp.MD
             Assert.AreSame(result1.LeftFixed, result2.RightFixed);
             Assert.AreSame(result1.RightFixed, result2.LeftFixed);
 
-            var dt = ((NespRuntimeTypeInformation)result1.RightFixed);
+            var dt = (NespRuntimeTypeInformation)result1.RightFixed;
 
-            Assert.AreSame(implementedType, result1.Combined);
-            Assert.AreSame(implementedType, result1.LeftFixed);
-            Assert.AreSame(typeof(int), dt.GetGenericArguments(context)[0]);
+            Assert.IsTrue(result1.Combined.Equals(implementedType));
+            Assert.IsTrue(result1.LeftFixed.Equals(implementedType));
+            Assert.IsTrue(dt.GetGenericArguments(context)[0].IsEqualsOfType(typeof(int)));
         }
 
         public class ImplementedClassType3<T> : IInterfaceType<int>
@@ -818,10 +817,10 @@ namespace Nesp.MD
             Assert.AreSame(implementedType, result1.LeftFixed);
             Assert.AreNotSame(interfaceType, result1.RightFixed);
 
-            var dt = ((NespRuntimeTypeInformation)result1.RightFixed);
+            var dt = (NespRuntimeTypeInformation)result1.RightFixed;
 
-            Assert.AreEqual(typeof(IInterfaceType<>), dt.GetGenericTypeDefinition(context));
-            Assert.AreEqual(typeof(int), dt.GetGenericArguments(context)[0]);
+            Assert.IsTrue(dt.GetGenericTypeDefinition(context).IsEqualsOfType(typeof(IInterfaceType<>)));
+            Assert.IsTrue(dt.GetGenericArguments(context)[0].IsEqualsOfType(typeof(int)));
         }
 
         public class ImplementedClassType4<T, U> : IInterfaceType<T>
@@ -853,12 +852,11 @@ namespace Nesp.MD
             Assert.AreSame(implementedType, result1.LeftFixed);
             Assert.AreNotSame(interfaceType, result1.RightFixed);
 
-            var dt = ((NespRuntimeTypeInformation)result1.RightFixed);
+            var dt = (NespRuntimeTypeInformation)result1.RightFixed;
 
-            Assert.AreEqual(typeof(IInterfaceType<>), dt.GetGenericTypeDefinition(context));
-            Assert.AreEqual(
-                typeof(ImplementedClassType4<,>),
-                dt.GetGenericArguments(context)[0].GetDeclaringType(context));
+            Assert.IsTrue(dt.GetGenericTypeDefinition(context).IsEqualsOfType(typeof(IInterfaceType<>)));
+            Assert.IsTrue(dt.GetGenericArguments(context)[0].
+                GetDeclaringType(context).IsEqualsOfType(typeof(ImplementedClassType4<,>)));
         }
 
         public class ImplementedClassType5<T> : IInterfaceType<int>
@@ -924,13 +922,13 @@ namespace Nesp.MD
             Assert.AreSame(implementedType, result1.LeftFixed);
             Assert.AreNotSame(interfaceType, result1.RightFixed);
 
-            var dt = ((NespRuntimeTypeInformation)result1.RightFixed);
+            var dt = (NespRuntimeTypeInformation)result1.RightFixed;
 
-            Assert.AreEqual(typeof(IInterfaceType<,>), dt.GetGenericTypeDefinition(context));
+            Assert.IsTrue(dt.GetGenericTypeDefinition(context).IsEqualsOfType(typeof(IInterfaceType<,>)));
 
             var baseTypeArguments = dt.GetGenericArguments(context);
-            Assert.AreEqual(typeof(ImplementedClassType6<,>), baseTypeArguments[0].GetDeclaringType(context));
-            Assert.AreEqual(typeof(int), baseTypeArguments[1]);
+            Assert.IsTrue(baseTypeArguments[0].GetDeclaringType(context).IsEqualsOfType(typeof(ImplementedClassType6<,>)));
+            Assert.IsTrue(baseTypeArguments[1].IsEqualsOfType(typeof(int)));
         }
         #endregion
     }
