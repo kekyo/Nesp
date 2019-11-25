@@ -1,5 +1,7 @@
 # Nesp - A Lisp-like lightweight functional language on .NET
 
+(Sorry, this project is deprecated. I'm started my own research project instead it. Currently closed source, but I'll open it near future.)
+
 ![Nesp](Images/Nesp512.png)
 
 [![AppVeyor Nesp](https://ci.appveyor.com/api/projects/status/1j6821cl3y5y9etu?svg=true)](https://ci.appveyor.com/project/kekyo/nesp)
